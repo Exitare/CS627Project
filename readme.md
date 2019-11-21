@@ -7,3 +7,6 @@
 - [Scikit](https://scikit-learn.org/stable/tutorial/basic/tutorial.html)  
 - [Coding standards](https://docs.ckan.org/en/2.8/contributing/python.html)
 
+# Installation
+
+s
