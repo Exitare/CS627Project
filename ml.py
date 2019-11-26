@@ -3,10 +3,10 @@ from sklearn import __version__
 import pandas as pd
 import argparse
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression
 import numpy as np
 import ast
-
+import matplotlib.pyplot as plt
 
 class Prediction:
 
@@ -30,12 +30,18 @@ def load_data(args):
 
     prep.df = remove_bad_columns(prep.df)
     prep.df.fillna(0, inplace=True)
-    array_one = prep.df[0: 9998]
-    array_two = prep.df[9998: 19996]
-    model = LogisticRegression()
-    X_train, X_test, y_train, y_test = train_test_split(array_one, array_two, test_size=0.33, random_state=2)
+    X = prep.df
+    y = prep.df['runtime']
+
+    model = LinearRegression()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
     model.fit(X_train, y_train)
-    # print(model.predict(X_test))
+    y_test_hat = model.predict(X_test)
+    print(f"model score is : {model.score(X_test, y_test)}")
+    plt.plot([0, 2.5], [0, 2.5], 'k', lw=0.5)  # reference diagonal
+    plt.plot(y_test, y_test_hat, '.')
+    plt.axis('square')
+    plt.show()
 
 
 def handle_args():
