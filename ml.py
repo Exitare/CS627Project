@@ -80,18 +80,17 @@ def predict_cpu_usage(df):
 
     model = LinearRegression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
-    X_train, X_validation, y_train, y_validation = train_test_split(X_train, y_train, test_size=0.33, random_state=2)
     model.fit(X_train, y_train)
-    y_test_hat = model.predict(X_train)
+    y_test_hat = model.predict(X_test)
 
     print(f"CPU model test score is : {model.score(X_test, y_test)}")
     print(f"CPU model train score is : {model.score(X_train, y_train)}")
     print(f"Predication: {y_test_hat[:5]}")
-    print(f"Y Values: {y_train[:5]}")
+    print(f"Y Values: {y_test[:5]}")
 
     scores = cross_val_score(model, X, y, cv=5)
     print(f"CPU Cross validation score is : {scores}")
-    show_plot(X_train, y_train, "square")
+    # show_plot(X_train, y_train, "square")
 
 
 # hyper_parameter(X, y)
