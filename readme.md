@@ -1,12 +1,10 @@
-# CS 627 Final project
+# Galaxy Resource Predictions
+
+## Installation
+
+Execute setup.py
 
 
-# Lecture
+## Sample Data
 
-- [Pickle](https://docs.python.org/2/library/pickle.html)  
-- [Scikit](https://scikit-learn.org/stable/tutorial/basic/tutorial.html)  
-- [Coding standards](https://docs.ckan.org/en/2.8/contributing/python.html)
-
-# Installation
-
-s
+Sampla data is provided for bwa-mem algorithm.
