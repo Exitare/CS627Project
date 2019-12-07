@@ -24,7 +24,7 @@ def remove_bad_columns(dataframe):
 def convert_factorial_to_numerical(dataframe):
     """
     Converts categorical datacolumns to numerical
-    :param df:
+    :param dataframe:
     :return:
     """
 

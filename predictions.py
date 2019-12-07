@@ -1,5 +1,5 @@
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
 from dataprocessing import remove_bad_columns
 
 
@@ -19,7 +19,8 @@ def predict_cpu_usage(df):
     print("Training model...")
 
     model = LinearRegression()
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
+    X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_test)
 
@@ -52,8 +53,8 @@ def predict_memory_usage(df):
     del data['memtotal']
     X = data
 
+    # model = Ridge(alpha=1.0)
     model = LinearRegression()
-
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_train)
@@ -84,12 +85,16 @@ def hyper_parameter(X, y):
     print(result['test_score'], [est.best_params_ for est in result['estimator']])
 
 
+def splitting_model(X, y):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=1)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.33, random_state=1)
+    return X_train, X_test, y_train, y_test, X_val, y_val
 
 # X_train, X_test, y_train, y_test
- #   = train_test_split(X, y, test_size=0.2, random_state=1)
+#   = train_test_split(X, y, test_size=0.2, random_state=1)
 
- #X_train, X_val, y_train, y_val
-  #  = train_test_split(X_train, y_train, test_size=0.2, random_state=1)
+# X_train, X_val, y_train, y_val
+#  = train_test_split(X_train, y_train, test_size=0.2, random_state=1)
 
 
-  #https://datascience.stackexchange.com/questions/15135/train-test-validation-set-splitting-in-sklearn
+# https://datascience.stackexchange.com/questions/15135/train-test-validation-set-splitting-in-sklearn
