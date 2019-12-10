@@ -1,4 +1,4 @@
-def remove_bad_columns(dataframe):
+def remove_bad_columns(df):
     """
 
     :param dataframe:
@@ -12,13 +12,13 @@ def remove_bad_columns(dataframe):
                'parameters.analysis_type.io_options.io_options_selector',
                'parameters.analysis_type.scoring_options.scoring_options_selector',
                'parameters.fastq_input.fastq_input_selector', 'parameters.rg.rg_selector',
-               'parameters.reference_source.index_a', 'parameters.analysis_type.analysis_type_selector',
+               'parameters.reference_source.index_a',
                'job_runner_name', 'handler', 'destination_id', 'parameters.reference_source.ref_file']
 
     for column in columns:
-        del dataframe[column]
+        del df[column]
     # use pd to remove
-    return dataframe
+    return df
 
 
 def convert_factorial_to_numerical(dataframe):
@@ -31,7 +31,9 @@ def convert_factorial_to_numerical(dataframe):
     print("Decoding categorical data columns...")
 
     cleanup_nums = {"fastq_input2_filetype": {"none": 0, "uncompressed": 1, "compressed": 2},
-                    "fastq_input1_filetype": {"compressed": 0, "uncompressed": 1}}
+                    "fastq_input1_filetype": {"compressed": 0, "uncompressed": 1},
+                    "parameters.analysis_type.analysis_type_selector": {'illumina': 0, 'full': 1, 'pacbio': 2,
+                                                                        'ont2d': 3}}
 
     dataframe.replace(cleanup_nums, inplace=True)
     return dataframe
