@@ -4,7 +4,7 @@ import pandas as pd
 import argparse
 import copy
 
-from predictions import predict_cpu_usage, predict_memory_usage
+from predictions import predict_cpu_usage, predict_memory_usage, predict_total_time
 from dataprocessing import convert_factorial_to_numerical
 
 
@@ -21,6 +21,8 @@ def start():
     predict_cpu_usage(copy.deepcopy(df))
     print("--------")
     predict_memory_usage(copy.deepcopy(df))
+    print("--------")
+    predict_total_time(df)
 
 
 def load_data(args):
@@ -50,6 +52,9 @@ def handle_args():
     parser = argparse.ArgumentParser(description='Get the impact of tool features on it\'s runtime.',
                                      epilog='Accepts tsv and csv files')
     parser.add_argument('--filename', dest='filename', action='store', required=True)
+    parser.add_argument('--model', dest='model', action='store', required=False, default='linear',
+                        help='select the desired algorithm. (default: LinearRegression)',
+                        choices=['linear', 'ridge', 'lasso'])
     args = parser.parse_args()
     return args
 
@@ -57,4 +62,3 @@ def handle_args():
 if __name__ == '__main__':
     start()
     exit(0)
-
