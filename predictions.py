@@ -18,7 +18,7 @@ def predict_cpu_usage(df):
 
     print("Training model...")
 
-    model = LinearRegression()
+    model = Ridge()
     # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
@@ -31,14 +31,10 @@ def predict_cpu_usage(df):
 
     scores = cross_val_score(model, X, y, cv=5)
     print(f"CPU Cross validation score is : {scores}")
+    print("")
     print(model.coef_)
-    # show_plot(X_train, y_train, "square")
+    print("")
 
-
-# hyper_parameter(X, y)
-# Lasso, Ridge
-# Grid search
-# train data split again, validation data using to set hyperparamter
 
 def predict_memory_usage(df):
     """
@@ -55,7 +51,7 @@ def predict_memory_usage(df):
 
     # model = Ridge(alpha=1.0)
     model = LinearRegression()
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
+    X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_train)
     print(f"Memory model test score is : {model.score(X_test, y_test)}")
@@ -64,37 +60,40 @@ def predict_memory_usage(df):
 
     scores = cross_val_score(model, X, y, cv=5)
     print(f"Memory Cross validation score is : {scores}")
-    # show_plot(y_test, y_test_hat, "square")
 
 
-def hyper_parameter(X, y):
-    ridge = make_pipeline(LinearRegression())
-    print(ridge.get_params())
+def predict_total_time(df):
+    """
+    Trains the model to predict the total time
+    :param df:
+    :return:
+    """
+    print("Total time predication started...")
+    data = remove_bad_columns(df)
 
-    hyperparameters = [{'linearfeatures__degree': range(1, 10)}]
-    # the keywords have to match keys in pipe.get_params().keys()
+    y = data['runtime']
+    del data['runtime']
+    X = data
 
-    hyp = GridSearchCV(ridge, hyperparameters,
-                       cv=StratifiedKFold(3, shuffle=True),
-                       n_jobs=-1)  # parallelize
+    # model = Ridge(alpha=1.0)
+    model = LinearRegression()
+    X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
+    model.fit(X_train, y_train)
+    y_test_hat = model.predict(X_train)
+    print(f"Total time model test score is : {model.score(X_test, y_test)}")
+    print(f"Total time model train score is : {model.score(X_train, y_train)}")
+    print(f"Predication: {y_test_hat}")
 
-    result = cross_validate(hyp, X, y,
-                            cv=StratifiedKFold(4, shuffle=True),
-                            return_estimator=True)
-
-    print(result['test_score'], [est.best_params_ for est in result['estimator']])
+    scores = cross_val_score(model, X, y, cv=5)
+    print(f"Total time Cross validation score is : {scores}")
 
 
 def splitting_model(X, y):
+    """
+    Using the train_test_split function twice, to generate a valid train, test and validation set.
+    """
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=1)
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.33, random_state=1)
     return X_train, X_test, y_train, y_test, X_val, y_val
-
-# X_train, X_test, y_train, y_test
-#   = train_test_split(X, y, test_size=0.2, random_state=1)
-
-# X_train, X_val, y_train, y_val
-#  = train_test_split(X_train, y_train, test_size=0.2, random_state=1)
-
 
 # https://datascience.stackexchange.com/questions/15135/train-test-validation-set-splitting-in-sklearn
