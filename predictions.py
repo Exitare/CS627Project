@@ -6,20 +6,20 @@ from dataprocessing import remove_bad_columns
 def predict_cpu_usage(df):
     """
     Trains the model to predict the cpu usage
+    This function will be deprected in further version and is therefore not maintained anymore.
+    As galaxy is only setting the cpu count by a handwritten algorithm this is not useful to predict.
     :param df:
     :return:
     """
     print("CPU usage predication started...")
-    data = remove_bad_columns(df)
 
-    y = data['processor_count']
-    del data['processor_count']
-    X = data
+    y = df['processor_count']
+    del df['processor_count']
+    X = df
 
     print("Training model...")
 
     model = Ridge()
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_test)
@@ -31,9 +31,6 @@ def predict_cpu_usage(df):
 
     scores = cross_val_score(model, X, y, cv=5)
     print(f"CPU Cross validation score is : {scores}")
-    print("")
-    print(model.coef_)
-    print("")
 
 
 def predict_memory_usage(df):
@@ -42,12 +39,10 @@ def predict_memory_usage(df):
     :param df:
     :return:
     """
-    print("Memory usage predication started...")
-    data = remove_bad_columns(df)
 
-    y = data['memtotal']
-    del data['memtotal']
-    X = data
+    y = df['memtotal']
+    del df['memtotal']
+    X = df
 
     # model = Ridge(alpha=1.0)
     model = LinearRegression()
@@ -60,6 +55,9 @@ def predict_memory_usage(df):
 
     scores = cross_val_score(model, X, y, cv=5)
     print(f"Memory Cross validation score is : {scores}")
+    print("")
+    print(model.coef_)
+    print("")
 
 
 def predict_total_time(df):
@@ -69,11 +67,10 @@ def predict_total_time(df):
     :return:
     """
     print("Total time predication started...")
-    data = remove_bad_columns(df)
 
-    y = data['runtime']
-    del data['runtime']
-    X = data
+    y = df['runtime']
+    del df['runtime']
+    X = df
 
     # model = Ridge(alpha=1.0)
     model = LinearRegression()

@@ -1,19 +1,22 @@
+from sklearn import preprocessing
+
+
+# https://scikit-learn.org/stable/modules/preprocessing.html
+# https://chrisalbon.com/machine_learning/preprocessing_structured_data/convert_pandas_categorical_column_into_integers_for_scikit-learn/
+
+def normalize_X(X):
+    return preprocessing.MinMaxScaler(X)
+
+
 def remove_bad_columns(df):
     """
-
-    :param dataframe:
+    :param df:
     :return:
     """
 
     print("Removing columns...")
 
-    columns = ['ref_file_filetype',
-               'parameters.analysis_type.algorithmic_options.algorithmic_options_selector',
-               'parameters.analysis_type.io_options.io_options_selector',
-               'parameters.analysis_type.scoring_options.scoring_options_selector',
-               'parameters.fastq_input.fastq_input_selector', 'parameters.rg.rg_selector',
-               'parameters.reference_source.index_a',
-               'job_runner_name', 'handler', 'destination_id', 'parameters.reference_source.ref_file']
+    columns = ['job_runner_name', 'handler', 'destination_id']
 
     for column in columns:
         del df[column]
@@ -21,19 +24,18 @@ def remove_bad_columns(df):
     return df
 
 
-def convert_factorial_to_numerical(dataframe):
+def convert_factorial_to_numerical(df):
     """
-    Converts categorical datacolumns to numerical
-    :param dataframe:
+    Converts categorical data columns to its numerical equivalent using scikits´ LabelEncoder
+    :param df:
     :return:
     """
-
     print("Decoding categorical data columns...")
+    columns = df.select_dtypes(exclude=['int', 'float']).columns
+    le = preprocessing.LabelEncoder()
 
-    cleanup_nums = {"fastq_input2_filetype": {"none": 0, "uncompressed": 1, "compressed": 2},
-                    "fastq_input1_filetype": {"compressed": 0, "uncompressed": 1},
-                    "parameters.analysis_type.analysis_type_selector": {'illumina': 0, 'full': 1, 'pacbio': 2,
-                                                                        'ont2d': 3}}
+    for column in columns:
+        le.fit(df[column])
+        df[column] = le.transform(df[column])
 
-    dataframe.replace(cleanup_nums, inplace=True)
-    return dataframe
+    return df
