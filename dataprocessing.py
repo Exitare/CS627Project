@@ -15,12 +15,19 @@ def remove_bad_columns(df):
     """
 
     print("Removing columns...")
+    columns = []
+    if 'job_runner_name' in df.columns:
+        columns.append('job_runner_name')
 
-    columns = ['job_runner_name', 'handler', 'destination_id']
+    if 'handler' in df.columns:
+        columns.append('handler')
+
+    if 'destination_id' in df.columns:
+        columns.append('destination_id')
 
     for column in columns:
         del df[column]
-    # use pd to remove
+
     return df
 
 
@@ -32,10 +39,15 @@ def convert_factorial_to_numerical(df):
     """
     print("Decoding categorical data columns...")
     columns = df.select_dtypes(exclude=['int', 'float']).columns
+    print(columns)
     le = preprocessing.LabelEncoder()
-
+    print('here')
     for column in columns:
+        print(column)
+        for value in column:
+            print(value)
         le.fit(df[column])
+        #le.fit_transform(df[column].astype(str))
         df[column] = le.transform(df[column])
 
     return df
