@@ -1,6 +1,6 @@
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
-from dataprocessing import remove_bad_columns
+from dataprocessing import normalize_X
 
 
 def predict_cpu_usage(df):
@@ -16,7 +16,7 @@ def predict_cpu_usage(df):
     y = df['processor_count']
     del df['processor_count']
     X = df
-
+    X = normalize_X(X)
     print("Training model...")
 
     model = Ridge()
@@ -43,7 +43,7 @@ def predict_memory_usage(df):
     y = df['memtotal']
     del df['memtotal']
     X = df
-
+    X = normalize_X(X)
     # model = Ridge(alpha=1.0)
     model = LinearRegression()
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
@@ -55,7 +55,7 @@ def predict_memory_usage(df):
 
     scores = cross_val_score(model, X, y, cv=5)
     print(f"Memory Cross validation score is : {scores}")
-    print("")
+    print("Feature weights:")
     print(model.coef_)
     print("")
 
@@ -71,7 +71,7 @@ def predict_total_time(df):
     y = df['runtime']
     del df['runtime']
     X = df
-
+    X = normalize_X(X)
     # model = Ridge(alpha=1.0)
     model = LinearRegression()
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
@@ -83,6 +83,10 @@ def predict_total_time(df):
 
     scores = cross_val_score(model, X, y, cv=5)
     print(f"Total time Cross validation score is : {scores}")
+
+    print("Feature weights:")
+    print(model.coef_)
+    print("")
 
 
 def splitting_model(X, y):

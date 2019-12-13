@@ -6,11 +6,12 @@ import numpy as np
 # https://chrisalbon.com/machine_learning/preprocessing_structured_data/convert_pandas_categorical_column_into_integers_for_scikit-learn/
 
 def normalize_X(X):
-    return preprocessing.MinMaxScaler(X)
+    return preprocessing.scale(X)
 
 
 def remove_bad_columns(df):
     """
+    Removing columns which are not necessary for model training or predictions like job runner name or handler name
     :param df:
     :return:
     """
@@ -40,11 +41,8 @@ def convert_factorial_to_numerical(df):
     """
     print("Decoding categorical data columns...")
     columns = df.select_dtypes(exclude=['int', 'float']).columns
-    print(columns)
     le = preprocessing.LabelEncoder()
-    print('here')
     for column in columns:
-        print(column)
         le.fit(df[column])
         # le.fit_transform(df[column].astype(str))
         df[column] = le.transform(df[column])
@@ -53,13 +51,28 @@ def convert_factorial_to_numerical(df):
 
 
 def fill_na(df):
+    """
+    Filling all NAs.
+    Changing boolean values to string values to replace them.
+    """
     numeric_columns = df.select_dtypes(exclude=['object']).columns
     categorical_columns = df.select_dtypes(exclude=['int', 'float']).columns
+
+    mask = df.applymap(type) != bool
+    d = {True: 'True', False: 'False'}
+    df = df.where(mask, df.replace(d))
 
     for column in numeric_columns:
         df[column].fillna(0, inplace=True)
 
     for column in categorical_columns:
-        df[column].fillna('0', inplace=True)
+        if True in df[column]:
+            df[column].fillna('False', inplace=True)
+
+        elif False in df[column]:
+            df[column].fillna('False', inplace=True)
+
+        else:
+            df[column].fillna('0', inplace=True)
 
     return df

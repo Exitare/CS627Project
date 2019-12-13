@@ -18,11 +18,15 @@ def start():
     print(f"Using sklearn version {__version__}")
     args = handle_args()
     df = load_data(args)
-    predict_cpu_usage(copy.deepcopy(df))
-    print("--------")
-    predict_memory_usage(copy.deepcopy(df))
-    print("--------")
-    predict_total_time(df)
+    if 'processor_count' in df.columns:
+        predict_cpu_usage(copy.deepcopy(df))
+        print("--------")
+
+    if 'mem_total' in df.columns:
+        predict_memory_usage(copy.deepcopy(df))
+        print("--------")
+    if 'runtime' in df.columns:
+        predict_total_time(df)
 
 
 def load_data(args):
@@ -39,7 +43,6 @@ def load_data(args):
     else:
         raise ValueError("unrecognized filetype: %s. I only accept tsv or csv files" % args.filename)
 
-    # df.fillna(0, inplace=True)
     df = fill_na(df)
     df = remove_bad_columns(df)
     df = convert_factorial_to_numerical(df)
