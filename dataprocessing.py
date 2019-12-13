@@ -1,4 +1,5 @@
 from sklearn import preprocessing
+import numpy as np
 
 
 # https://scikit-learn.org/stable/modules/preprocessing.html
@@ -44,10 +45,21 @@ def convert_factorial_to_numerical(df):
     print('here')
     for column in columns:
         print(column)
-        for value in column:
-            print(value)
         le.fit(df[column])
-        #le.fit_transform(df[column].astype(str))
+        # le.fit_transform(df[column].astype(str))
         df[column] = le.transform(df[column])
+
+    return df
+
+
+def fill_na(df):
+    numeric_columns = df.select_dtypes(exclude=['object']).columns
+    categorical_columns = df.select_dtypes(exclude=['int', 'float']).columns
+
+    for column in numeric_columns:
+        df[column].fillna(0, inplace=True)
+
+    for column in categorical_columns:
+        df[column].fillna('0', inplace=True)
 
     return df

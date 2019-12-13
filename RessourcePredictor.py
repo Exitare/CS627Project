@@ -5,7 +5,7 @@ import argparse
 import copy
 
 from predictions import predict_cpu_usage, predict_memory_usage, predict_total_time
-from dataprocessing import convert_factorial_to_numerical, remove_bad_columns
+from dataprocessing import convert_factorial_to_numerical, remove_bad_columns, fill_na
 
 
 # https://pbpython.com/categorical-encoding.html
@@ -39,7 +39,8 @@ def load_data(args):
     else:
         raise ValueError("unrecognized filetype: %s. I only accept tsv or csv files" % args.filename)
 
-    df.fillna(0, inplace=True)
+    # df.fillna(0, inplace=True)
+    df = fill_na(df)
     df = remove_bad_columns(df)
     df = convert_factorial_to_numerical(df)
     return df
