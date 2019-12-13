@@ -44,7 +44,6 @@ def predict_memory_usage(df):
     del df['memtotal']
     X = df
     X = normalize_X(X)
-    # model = Ridge(alpha=1.0)
     model = LinearRegression()
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
