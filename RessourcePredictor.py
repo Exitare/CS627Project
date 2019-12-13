@@ -6,7 +6,7 @@ import copy
 
 from predictions import predict_cpu_usage, predict_memory_usage, predict_total_time
 from dataprocessing import convert_factorial_to_numerical, remove_bad_columns, fill_na
-
+import Constants
 
 # https://pbpython.com/categorical-encoding.html
 
@@ -17,6 +17,8 @@ def start():
     """
     print(f"Using sklearn version {__version__}")
     args = handle_args()
+    Constants.SELECTED_ALGORITHM = args.model
+    print(f"Using {Constants.SELECTED_ALGORITHM} model")
     df = load_data(args)
     if 'processor_count' in df.columns:
         predict_cpu_usage(copy.deepcopy(df))
@@ -59,7 +61,7 @@ def handle_args():
     parser.add_argument('--filename', dest='filename', action='store', required=True)
     parser.add_argument('--model', dest='model', action='store', required=False, default='linear',
                         help='select the desired algorithm. (default: LinearRegression)',
-                        choices=['linear', 'ridge', 'lasso'])
+                        choices=[Constants.Model.LASSO.name, Constants.Model.LINEAR.name, Constants.Model.RIDGE.name])
     args = parser.parse_args()
     return args
 

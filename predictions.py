@@ -1,6 +1,13 @@
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
+from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, Lasso
 from dataprocessing import normalize_X
+import Constants
+
+# Negative crossvalidation score
+# https://stackoverflow.com/questions/21443865/scikit-learn-cross-validation-negative-values-with-mean-squared-error
+
+# Why splitting twice
+# https://datascience.stackexchange.com/questions/15135/train-test-validation-set-splitting-in-sklearn
 
 
 def predict_cpu_usage(df):
@@ -71,7 +78,6 @@ def predict_total_time(df):
     del df['runtime']
     X = df
     X = normalize_X(X)
-    # model = Ridge(alpha=1.0)
     model = LinearRegression()
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
@@ -96,4 +102,13 @@ def splitting_model(X, y):
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.33, random_state=1)
     return X_train, X_test, y_train, y_test, X_val, y_val
 
-# https://datascience.stackexchange.com/questions/15135/train-test-validation-set-splitting-in-sklearn
+
+def select_model():
+    if Constants.SELECTED_ALGORITHM == Constants.Model.LINEAR:
+        return LinearRegression()
+
+    elif Constants.SELECTED_ALGORITHM == Constants.Model.LASSO:
+        return Lasso()
+
+    else:
+        return Ridge()

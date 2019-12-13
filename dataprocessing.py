@@ -6,7 +6,8 @@ import numpy as np
 # https://chrisalbon.com/machine_learning/preprocessing_structured_data/convert_pandas_categorical_column_into_integers_for_scikit-learn/
 
 def normalize_X(X):
-    return preprocessing.scale(X)
+    return X
+    # return preprocessing.scale(X)
 
 
 def remove_bad_columns(df):
