@@ -4,10 +4,14 @@ import numpy as np
 
 # https://scikit-learn.org/stable/modules/preprocessing.html
 # https://chrisalbon.com/machine_learning/preprocessing_structured_data/convert_pandas_categorical_column_into_integers_for_scikit-learn/
+# https://stackoverflow.com/questions/51741605/standardize-dataset-containing-too-large-values Scaler
 
 def normalize_X(X):
-    return X
-    # return preprocessing.scale(X)
+    """
+    Standard Scaler to normalize the data using z-scores
+    """
+    scaler = preprocessing.StandardScaler()
+    return scaler.fit_transform(X)
 
 
 def remove_bad_columns(df):
