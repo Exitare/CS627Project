@@ -22,16 +22,27 @@ So the first weight is the first column which is used for prediction.
 
 ## Installation
 
-Those packages are required for using this tool.
+These packages are required for using this tool.
 
-- scikit
-- argparse
-- pandas
+- [scikit-learn](https://scikit-learn.org/stable/install.html) 
+- [argparse](https://docs.python.org/3/library/argparse.html)
+- [pandas](https://pandas.pydata.org)
 
+
+## Command Line Arguments
+
+Right now two command line arguments are available.
+- filename (required)
+- model (optional)
+
+Filename is required because the file must be given. There is no default value.  
+Model is optional. The model specifies the machine learning algorithm used for training the model.  
+If no model is specific a plain LinearRegression is used. Other possibilities are Lassse or Ridge.
 
 ## Sample Data
 
-Sampla data is provided for bwa-mem algorithm and stringtie.
+Sampla data is provided for bwa-mem algorithm and stringtie.    
+Please have a look at the Data/ folder.
 
 
 ## Example usage
