@@ -8,6 +8,7 @@ from predictions import predict_cpu_usage, predict_memory_usage, predict_total_t
 from dataprocessing import convert_factorial_to_numerical, remove_bad_columns, fill_na
 import Constants
 
+
 # https://pbpython.com/categorical-encoding.html
 
 def start():
@@ -21,13 +22,17 @@ def start():
     print(f"Using {Constants.SELECTED_ALGORITHM} model")
     df = load_data(args)
     if 'processor_count' in df.columns:
+        print("Predicting cpu count")
         predict_cpu_usage(copy.deepcopy(df))
         print("--------")
 
-    if 'mem_total' in df.columns:
+    if 'memtotal' in df.columns:
+        print("Predicting total memory used")
         predict_memory_usage(copy.deepcopy(df))
         print("--------")
+
     if 'runtime' in df.columns:
+        print("Predicting total runtime")
         predict_total_time(df)
 
 
