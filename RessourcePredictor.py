@@ -17,21 +17,28 @@ def start():
     :return:
     """
     print(f"Using sklearn version {__version__}")
+    # Handle arguments
     args = handle_args()
     Constants.SELECTED_ALGORITHM = args.model
     print(f"Using {Constants.SELECTED_ALGORITHM} model")
+
+    # Load data
     df = load_data(args)
     print("")
+
+    # Processor count prediction
     if 'processor_count' in df.columns:
         print("Predicting cpu count")
         predict_cpu_usage(copy.deepcopy(df))
         print("--------")
 
+    # Total memory usage
     if 'memtotal' in df.columns:
         print("Predicting total memory used")
         predict_memory_usage(copy.deepcopy(df))
         print("--------")
 
+    # Total runtime
     if 'runtime' in df.columns:
         print("Predicting total runtime")
         predict_total_time(df)

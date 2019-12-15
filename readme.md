@@ -35,9 +35,9 @@ Right now two command line arguments are available.
 - filename (required)
 - model (optional)
 
-Filename is required because the file must be given. There is no default value.  
+Filename is required because the filename must be given. There is no default value.  
 Model is optional. The model specifies the machine learning algorithm used for training the model.  
-If no model is specific a plain LinearRegression is used. Other possibilities are Lassse or Ridge.
+If no model is specified, plain Linear Regression is used. Other possibilities are Lasso or Ridge.
 
 ## Sample Data
 
