@@ -26,7 +26,7 @@ def predict_cpu_usage(df):
     X = normalize_X(X)
     print("Training model...")
 
-    model = Ridge()
+    model = select_model()
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_test)
@@ -51,7 +51,7 @@ def predict_memory_usage(df):
     del df['memtotal']
     X = df
     X = normalize_X(X)
-    model = LinearRegression()
+    model = select_model()
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_train)
@@ -78,7 +78,7 @@ def predict_total_time(df):
     del df['runtime']
     X = df
     X = normalize_X(X)
-    model = LinearRegression()
+    model = select_model()
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_train)
@@ -104,11 +104,14 @@ def splitting_model(X, y):
 
 
 def select_model():
-    if Constants.SELECTED_ALGORITHM == Constants.Model.LINEAR:
-        return LinearRegression()
+    """
+    Select the appropriate model based on the given argument
+    """
+    if Constants.SELECTED_ALGORITHM == Constants.Model.RIDGE.name:
+        return Ridge()
 
-    elif Constants.SELECTED_ALGORITHM == Constants.Model.LASSO:
+    elif Constants.SELECTED_ALGORITHM == Constants.Model.LASSO.name:
         return Lasso()
 
     else:
-        return Ridge()
+        return LinearRegression()
