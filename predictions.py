@@ -33,11 +33,11 @@ def predict_cpu_usage(df):
 
     print(f"CPU model test score is : {model.score(X_test, y_test)}")
     print(f"CPU model train score is : {model.score(X_train, y_train)}")
-    print(f"Predication: {y_test_hat[:5]}")
-    print(f"Y Values: {y_test[:5]}")
+    print(f"Prediction: {y_test_hat[:5]}")
 
     scores = cross_val_score(model, X, y, cv=5)
     print(f"CPU Cross validation score is : {scores}")
+    print("")
 
 
 def predict_memory_usage(df):
@@ -54,13 +54,14 @@ def predict_memory_usage(df):
     model = select_model()
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
-    y_test_hat = model.predict(X_train)
+    y_test_hat = model.predict(X_test)
     print(f"Memory model test score is : {model.score(X_test, y_test)}")
     print(f"Memory model train score is : {model.score(X_train, y_train)}")
-    print(f"Predication: {y_test_hat}")
+    print(f"Prediction: {y_test_hat}")
 
     scores = cross_val_score(model, X, y, cv=5)
     print(f"Memory Cross validation score is : {scores}")
+
     print("Feature weights:")
     print(model.coef_)
     print("")
@@ -81,10 +82,10 @@ def predict_total_time(df):
     model = select_model()
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
-    y_test_hat = model.predict(X_train)
+    y_test_hat = model.predict(X_test)
     print(f"Total time model test score is : {model.score(X_test, y_test)}")
     print(f"Total time model train score is : {model.score(X_train, y_train)}")
-    print(f"Predication: {y_test_hat}")
+    print(f"Prediction: {y_test_hat}")
 
     scores = cross_val_score(model, X, y, cv=5)
     print(f"Total time Cross validation score is : {scores}")

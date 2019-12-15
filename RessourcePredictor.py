@@ -21,6 +21,7 @@ def start():
     Constants.SELECTED_ALGORITHM = args.model
     print(f"Using {Constants.SELECTED_ALGORITHM} model")
     df = load_data(args)
+    print("")
     if 'processor_count' in df.columns:
         print("Predicting cpu count")
         predict_cpu_usage(copy.deepcopy(df))
