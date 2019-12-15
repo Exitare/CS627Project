@@ -1,7 +1,9 @@
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, Lasso
+from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, Lasso, RidgeCV
 from dataprocessing import normalize_X
 import Constants
+import pandas as pd
+
 
 # Negative crossvalidation score
 # https://stackoverflow.com/questions/21443865/scikit-learn-cross-validation-negative-values-with-mean-squared-error
@@ -18,8 +20,9 @@ def predict_cpu_usage(df):
     :param df:
     :return:
     """
-    print("CPU usage predication started...")
+    print("CPU usage prediction started...")
 
+    # Prepare dataframe
     y = df['processor_count']
     del df['processor_count']
     X = df
@@ -46,25 +49,44 @@ def predict_memory_usage(df):
     :param df:
     :return:
     """
+    print("Total memory usage prediction started...")
+    coef = pd.DataFrame()
 
+    # Prepare dataframe
     y = df['memtotal']
     del df['memtotal']
     X = df
     X = normalize_X(X)
+
+    # Select model
     model = select_model()
+
+    # Split and train model
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_test)
+
+    # Calculate model score
     print(f"Memory model test score is : {model.score(X_test, y_test)}")
     print(f"Memory model train score is : {model.score(X_train, y_train)}")
     print(f"Prediction: {y_test_hat}")
 
+    # Calculate cross validation
     scores = cross_val_score(model, X, y, cv=5)
     print(f"Memory Cross validation score is : {scores}")
 
+    # Get feature weights aka coefficents for each feature
+    coef['Name'] = df.columns
+    coef['coef'] = model.coef_
     print("Feature weights:")
-    print(model.coef_)
+    print(coef)
     print("")
+
+    # If model selection is Ridge print best alpha value
+    if Constants.SELECTED_ALGORITHM == Constants.Model.RIDGE.name:
+        print("Best alpha value for Ridge:")
+        print(model.alpha_)
+        print("")
 
 
 def predict_total_time(df):
@@ -73,26 +95,44 @@ def predict_total_time(df):
     :param df:
     :return:
     """
-    print("Total time predication started...")
+    print("Total time prediction started...")
+    coef = pd.DataFrame()
 
+    # Prepare dataframe
     y = df['runtime']
     del df['runtime']
     X = df
     X = normalize_X(X)
+
+    # Select model
     model = select_model()
+
+    # Split and train model
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_test)
+
+    # Calculate model scores
     print(f"Total time model test score is : {model.score(X_test, y_test)}")
     print(f"Total time model train score is : {model.score(X_train, y_train)}")
     print(f"Prediction: {y_test_hat}")
 
+    # Calculate cross validation
     scores = cross_val_score(model, X, y, cv=5)
     print(f"Total time Cross validation score is : {scores}")
 
+    # Get feature weights aka coefficents for each feature
+    coef['Name'] = df.columns
+    coef['coef'] = model.coef_
     print("Feature weights:")
-    print(model.coef_)
+    print(coef)
     print("")
+
+    # If model selection is Ridge print best alpha value
+    if Constants.SELECTED_ALGORITHM == Constants.Model.RIDGE.name:
+        print("Best alpha value for Ridge:")
+        print(model.alpha_)
+        print("")
 
 
 def splitting_model(X, y):
@@ -109,7 +149,7 @@ def select_model():
     Select the appropriate model based on the given argument
     """
     if Constants.SELECTED_ALGORITHM == Constants.Model.RIDGE.name:
-        return Ridge()
+        return RidgeCV(alphas=[0.1, 1.0, 10.0])
 
     elif Constants.SELECTED_ALGORITHM == Constants.Model.LASSO.name:
         return Lasso()
