@@ -7,4 +7,5 @@ class Model(Enum):
     LASSO = 3
 
 
+# The selected Algorithm
 SELECTED_ALGORITHM = ''
