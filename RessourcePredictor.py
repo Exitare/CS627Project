@@ -27,10 +27,10 @@ def start():
     print("")
 
     # Processor count prediction
-    if 'processor_count' in df.columns:
-        print("Predicting cpu count")
-        predict_cpu_usage(copy.deepcopy(df))
-        print("--------")
+    #    if 'processor_count' in df.columns:
+    #       print("Predicting cpu count")
+    #      predict_cpu_usage(copy.deepcopy(df))
+    #     print("--------")
 
     # Total memory usage
     if 'memtotal' in df.columns:
@@ -72,9 +72,9 @@ def handle_args():
     parser = argparse.ArgumentParser(description='Get the impact of tool features on it\'s runtime.',
                                      epilog='Accepts tsv and csv files')
     parser.add_argument('--filename', dest='filename', action='store', required=True)
-    parser.add_argument('--model', dest='model', action='store', required=False, default='linear',
+    parser.add_argument('--model', dest='model', action='store', required=False, default='FOREST',
                         help='select the desired algorithm. (default: LinearRegression)',
-                        choices=[Constants.Model.LASSO.name, Constants.Model.LINEAR.name, Constants.Model.RIDGE.name])
+                        choices=[Constants.Model.LASSO.name, Constants.Model.FOREST.name, Constants.Model.RIDGE.name])
     args = parser.parse_args()
     return args
 

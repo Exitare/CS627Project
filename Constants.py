@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class Model(Enum):
-    LINEAR = 1
+    FOREST = 1
     RIDGE = 2
     LASSO = 3
 

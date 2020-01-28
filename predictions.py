@@ -1,5 +1,6 @@
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, Lasso, RidgeCV
+from sklearn.ensemble import RandomForestRegressor
 from dataprocessing import normalize_X
 import Constants
 import pandas as pd
@@ -76,11 +77,12 @@ def predict_memory_usage(df):
     print(f"Memory Cross validation score is : {scores}")
 
     # Get feature weights aka coefficents for each feature
-    coef['Name'] = df.columns
-    coef['coef'] = model.coef_
-    print("Feature weights:")
-    print(coef)
-    print("")
+    if Constants.SELECTED_ALGORITHM != Constants.Model.FOREST.name:
+        coef['Name'] = df.columns
+        coef['coef'] = model.coef_
+        print("Feature weights:")
+        print(coef)
+        print("")
 
     # If model selection is Ridge print best alpha value
     if Constants.SELECTED_ALGORITHM == Constants.Model.RIDGE.name:
@@ -122,11 +124,12 @@ def predict_total_time(df):
     print(f"Total time Cross validation score is : {scores}")
 
     # Get feature weights aka coefficents for each feature
-    coef['Name'] = df.columns
-    coef['coef'] = model.coef_
-    print("Feature weights:")
-    print(coef)
-    print("")
+    if Constants.SELECTED_ALGORITHM != Constants.Model.FOREST.name:
+        coef['Name'] = df.columns
+        coef['coef'] = model.coef_
+        print("Feature weights:")
+        print(coef)
+        print("")
 
     # If model selection is Ridge print best alpha value
     if Constants.SELECTED_ALGORITHM == Constants.Model.RIDGE.name:
@@ -155,4 +158,4 @@ def select_model():
         return Lasso()
 
     else:
-        return LinearRegression()
+        return RandomForestRegressor(n_estimators=12, random_state=0)
