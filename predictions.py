@@ -37,7 +37,7 @@ def predict_cpu_usage(df):
 
     print(f"CPU model test score is : {model.score(X_test, y_test)}")
     print(f"CPU model train score is : {model.score(X_train, y_train)}")
-    print(f"Prediction: {y_test_hat[:5]}")
+    # print(f"Prediction: {y_test_hat[:5]}")
 
     scores = cross_val_score(model, X, y, cv=5)
     print(f"CPU Cross validation score is : {scores}")
@@ -50,8 +50,6 @@ def predict_memory_usage(df):
     :param df:
     :return:
     """
-    print("Total memory usage prediction started...")
-    coef = pd.DataFrame()
 
     # Prepare dataframe
     y = df['memtotal']
@@ -70,25 +68,12 @@ def predict_memory_usage(df):
     # Calculate model score
     print(f"Memory model test score is : {model.score(X_test, y_test)}")
     print(f"Memory model train score is : {model.score(X_train, y_train)}")
-    print(f"Prediction: {y_test_hat}")
+    # print(f"Prediction: {y_test_hat}")
 
     # Calculate cross validation
     scores = cross_val_score(model, X, y, cv=5)
     print(f"Memory Cross validation score is : {scores}")
-
-    # Get feature weights aka coefficents for each feature
-    if Constants.SELECTED_ALGORITHM != Constants.Model.FOREST.name:
-        coef['Name'] = df.columns
-        coef['coef'] = model.coef_
-        print("Feature weights:")
-        print(coef)
-        print("")
-
-    # If model selection is Ridge print best alpha value
-    if Constants.SELECTED_ALGORITHM == Constants.Model.RIDGE.name:
-        print("Best alpha value for Ridge:")
-        print(model.alpha_)
-        print("")
+    return model, model.score(X_test, y_test), model.score(X_train, y_train), cross_val_score(model, X, y, cv=5)
 
 
 def predict_total_time(df):
@@ -97,8 +82,6 @@ def predict_total_time(df):
     :param df:
     :return:
     """
-    print("Total time prediction started...")
-    coef = pd.DataFrame()
 
     # Prepare dataframe
     y = df['runtime']
@@ -117,25 +100,12 @@ def predict_total_time(df):
     # Calculate model scores
     print(f"Total time model test score is : {model.score(X_test, y_test)}")
     print(f"Total time model train score is : {model.score(X_train, y_train)}")
-    print(f"Prediction: {y_test_hat}")
+    # print(f"Prediction: {y_test_hat}")
 
     # Calculate cross validation
     scores = cross_val_score(model, X, y, cv=5)
     print(f"Total time Cross validation score is : {scores}")
-
-    # Get feature weights aka coefficents for each feature
-    if Constants.SELECTED_ALGORITHM != Constants.Model.FOREST.name:
-        coef['Name'] = df.columns
-        coef['coef'] = model.coef_
-        print("Feature weights:")
-        print(coef)
-        print("")
-
-    # If model selection is Ridge print best alpha value
-    if Constants.SELECTED_ALGORITHM == Constants.Model.RIDGE.name:
-        print("Best alpha value for Ridge:")
-        print(model.alpha_)
-        print("")
+    return model, model.score(X_test, y_test), model.score(X_train, y_train), cross_val_score(model, X, y, cv=5)
 
 
 def splitting_model(X, y):

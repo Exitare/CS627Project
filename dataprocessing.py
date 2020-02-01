@@ -1,5 +1,8 @@
 from sklearn import preprocessing
 import numpy as np
+import pandas as pd
+
+np.random.seed(10)
 
 
 # https://scikit-learn.org/stable/modules/preprocessing.html
@@ -81,3 +84,11 @@ def fill_na(df):
             df[column].fillna('0', inplace=True)
 
     return df
+
+
+def remove_random_rows(df, amount):
+    """
+
+    """
+    drop_indices = np.random.choice(df.index, amount, replace=False)
+    return df.drop(drop_indices)
