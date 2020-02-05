@@ -92,3 +92,5 @@ def remove_random_rows(df, amount):
     """
     drop_indices = np.random.choice(df.index, amount, replace=False)
     return df.drop(drop_indices)
+
+
