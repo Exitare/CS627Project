@@ -65,7 +65,7 @@ def calculate_row_by_row(df):
         #   stats.print_alpha(model)
 
 
-def calculate_ten_percent_steps(df, percent):
+def calculate_memory(df, percent):
     """
 
     :param df: The dataframe
@@ -78,7 +78,6 @@ def calculate_ten_percent_steps(df, percent):
     print(f"Remaining row count {len(df.index)}")
 
     memoryScore = Score(0, 0, 0)
-    runtimeScore = Score(0, 0, 0)
 
     if 'memtotal' in df.columns:
         model, testScore, trainScore, crossScore = predict_memory_usage(df)
@@ -87,6 +86,16 @@ def calculate_ten_percent_steps(df, percent):
         memoryScore.testScore = testScore
         memoryScore.crossValidationScore = crossScore
 
+    return memoryScore
+
+
+def calculate_runtime(df, percent):
+    rows = int(len(df.index) * percent / 100)
+    df = remove_random_rows(df, rows)
+    print(f"Remaining row count {len(df.index)}")
+
+    runtimeScore = Score(0, 0, 0)
+
     if 'runtime' in df.columns:
         model, testScore, trainScore, crossScore = predict_total_time(df)
         crossScore = np.mean(crossScore)
@@ -94,4 +103,4 @@ def calculate_ten_percent_steps(df, percent):
         runtimeScore.trainScore = trainScore
         runtimeScore.crossValidationScore = crossScore
 
-    return memoryScore, runtimeScore
+    return runtimeScore

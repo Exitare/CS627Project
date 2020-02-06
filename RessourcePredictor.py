@@ -4,7 +4,7 @@ import argparse
 
 from Services.PreProcessing import convert_factorial_to_numerical, remove_bad_columns, fill_na
 import Constants
-from Actions import calculate_ten_percent_steps
+from Actions import calculate_memory, calculate_runtime
 
 
 # https://pbpython.com/categorical-encoding.html
@@ -24,10 +24,26 @@ def start():
 
     df = load_data(args)
     columns = ['Test Score', 'Train Score', 'Cross Score Mean']
-    scores = pd.DataFrame(columns=columns)
-    scores.append(calculate_ten_percent_steps(df, 10))
-    scores.append(calculate_ten_percent_steps(df, 20))
-    print(scores)
+    memory_scores = [calculate_memory(df, 0), calculate_memory(df, 10), calculate_memory(df, 20),
+                     calculate_memory(df, 30),
+                     calculate_memory(df, 40),
+                     calculate_memory(df, 50), calculate_memory(df, 60), calculate_memory(df, 70),
+                     calculate_memory(df, 80),
+                     calculate_memory(df, 90), calculate_memory(df, 99)]
+
+    runtime_scores = [calculate_runtime(df, 0), calculate_runtime(df, 10), calculate_runtime(df, 20),
+                      calculate_runtime(df, 30),
+                      calculate_runtime(df, 40),
+                      calculate_runtime(df, 50), calculate_runtime(df, 60), calculate_runtime(df, 70),
+                      calculate_runtime(df, 80), calculate_runtime(df, 90), calculate_runtime(df, 99)]
+
+    memoryDF = pd.DataFrame([vars(x) for x in memory_scores])
+    runtimeDF = pd.DataFrame([vars(x) for x in runtime_scores])
+
+    print("Memory scores:")
+    print(memoryDF)
+    print("Runtime scores:")
+    print(runtimeDF)
 
 
 def load_data(args):
