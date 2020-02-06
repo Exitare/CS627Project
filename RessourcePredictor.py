@@ -1,15 +1,10 @@
-from sklearn import datasets
 from sklearn import __version__
 import pandas as pd
-import numpy as np
 import argparse
-import copy
 
-from predictions import predict_cpu_usage, predict_memory_usage, predict_total_time
-from dataprocessing import convert_factorial_to_numerical, remove_bad_columns, fill_na, remove_random_rows
+from Services.PreProcessing import convert_factorial_to_numerical, remove_bad_columns, fill_na
 import Constants
-import stats
-from Score import Score
+from Actions import calculate_ten_percent_steps
 
 
 # https://pbpython.com/categorical-encoding.html
@@ -27,63 +22,12 @@ def start():
 
     # Load data
 
-    memoryScores = Score({"value": 0, "rowcount": 0}, {"value": 0, "rowcount": 0}, {"value": 0, "rowcount": 0})
-    runtimeScores = Score({"value": 0, "rowcount": 0}, {"value": 0, "rowcount": 0}, {"value": 0, "rowcount": 0})
-
     df = load_data(args)
-    deepCopy = df
-    for i in range(len(deepCopy.index)):
-        print("")
-        df = deepCopy
-        df = remove_random_rows(df, i)
-
-        print("-------------")
-        print(i)
-        print(f"Test with {len(df.index)} rows")
-        print("")
-        # Total memory usage
-        if 'memtotal' in df.columns:
-            model, testScore, trainScore, crossScore = predict_memory_usage(copy.deepcopy(df))
-
-            crossScore = np.mean(crossScore)
-
-            if float(testScore) >= memoryScores.testScore.get("value"):
-                memoryScores.testScore = {"value": testScore, "rowcount": len(df.index)}
-
-            if float(trainScore) >= memoryScores.trainScore.get("value"):
-                memoryScores.trainScore = {"value": trainScore, "rowcount": len(df.index)}
-
-            if float(crossScore) >= memoryScores.crossValidationScore.get("value"):
-                memoryScores.crossValidationScore = {"value": crossScore, "rowcount": len(df.index)}
-
-        #  if Constants.SELECTED_ALGORITHM != Constants.Model.FOREST.name:
-        #     stats.print_coef(df, model)
-
-        # If model selection is Ridge print best alpha value
-        # if Constants.SELECTED_ALGORITHM == Constants.Model.RIDGE.name:
-        #   stats.print_alpha(model)
-
-        # Total runtime
-        if 'runtime' in df.columns:
-            print("Predicting total runtime")
-            model, testScore, trainScore, crossScore = predict_total_time(df)
-            crossScore = np.mean(crossScore)
-
-            if float(testScore) >= runtimeScores.testScore.get("value"):
-                runtimeScores.testScore = {"value": testScore, "rowcount": len(df.index)}
-
-            if float(trainScore) >= runtimeScores.trainScore.get("value"):
-                runtimeScores.trainScore = {"value": trainScore, "rowcount": len(df.index)}
-
-            if float(crossScore) >= runtimeScores.crossValidationScore.get("value"):
-                runtimeScores.crossValidationScore = {"value": crossScore, "rowcount": len(df.index)}
-
-        # if Constants.SELECTED_ALGORITHM != Constants.Model.FOREST.name:
-        #    stats.print_coef(df, model)
-
-        # If model selection is Ridge print best alpha value
-        # if Constants.SELECTED_ALGORITHM == Constants.Model.RIDGE.name:
-        #   stats.print_alpha(model)
+    columns = ['Test Score', 'Train Score', 'Cross Score Mean']
+    scores = pd.DataFrame(columns=columns)
+    scores.append(calculate_ten_percent_steps(df, 10))
+    scores.append(calculate_ten_percent_steps(df, 20))
+    print(scores)
 
 
 def load_data(args):

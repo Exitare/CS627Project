@@ -1,9 +1,8 @@
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, Lasso, RidgeCV
+from sklearn.linear_model import Lasso, RidgeCV
 from sklearn.ensemble import RandomForestRegressor
-from dataprocessing import normalize_X
+from Services.PreProcessing import normalize_X
 import Constants
-import pandas as pd
 
 
 # Negative crossvalidation score
