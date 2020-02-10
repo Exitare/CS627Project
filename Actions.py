@@ -81,7 +81,6 @@ def calculate_memory(df, percent):
 
     if 'memtotal' in df.columns:
         model, testScore, trainScore, crossScore = predict_memory_usage(df)
-        crossScore = np.mean(crossScore)
         memoryScore.trainScore = trainScore
         memoryScore.testScore = testScore
         memoryScore.crossValidationScore = crossScore

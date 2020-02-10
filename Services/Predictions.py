@@ -3,6 +3,7 @@ from sklearn.linear_model import Lasso, RidgeCV
 from sklearn.ensemble import RandomForestRegressor
 from Services.PreProcessing import normalize_X
 import Constants
+import numpy as np
 
 
 # Negative crossvalidation score
@@ -70,9 +71,13 @@ def predict_memory_usage(df):
     # print(f"Prediction: {y_test_hat}")
 
     # Calculate cross validation
-    scores = cross_val_score(model, X, y, cv=5)
-    print(f"Memory Cross validation score is : {scores}")
-    return model, model.score(X_test, y_test), model.score(X_train, y_train), cross_val_score(model, X, y, cv=5)
+    scores = []
+
+    for x in range(1, 10):
+        scores.append(cross_val_score(model, X, y, cv=5))
+
+    print(f"Memory Cross validation score is : {np.mean(scores)}")
+    return model, model.score(X_test, y_test), model.score(X_train, y_train), np.mean(scores)
 
 
 def predict_total_time(df):
@@ -102,9 +107,13 @@ def predict_total_time(df):
     # print(f"Prediction: {y_test_hat}")
 
     # Calculate cross validation
-    scores = cross_val_score(model, X, y, cv=5)
-    print(f"Total time Cross validation score is : {scores}")
-    return model, model.score(X_test, y_test), model.score(X_train, y_train), cross_val_score(model, X, y, cv=5)
+    scores = []
+
+    for x in range(1, 10):
+        scores.append(cross_val_score(model, X, y, cv=5))
+
+    print(f"Memory Cross validation score is : {np.mean(scores)}")
+    return model, model.score(X_test, y_test), model.score(X_train, y_train), np.mean(scores)
 
 
 def splitting_model(X, y):
