@@ -81,7 +81,6 @@ def calculate_memory(df, percent):
 
     if 'memtotal' in df.columns:
         model, testScore, trainScore, crossScore = predict_memory_usage(df)
-        crossScore = np.mean(crossScore)
         memoryScore.trainScore = trainScore
         memoryScore.testScore = testScore
         memoryScore.crossValidationScore = crossScore
@@ -98,7 +97,6 @@ def calculate_runtime(df, percent):
 
     if 'runtime' in df.columns:
         model, testScore, trainScore, crossScore = predict_total_time(df)
-        crossScore = np.mean(crossScore)
         runtimeScore.testScore = testScore
         runtimeScore.trainScore = trainScore
         runtimeScore.crossValidationScore = crossScore
