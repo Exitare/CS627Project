@@ -5,7 +5,7 @@ import argparse
 from Services.PreProcessing import convert_factorial_to_numerical, remove_bad_columns, fill_na
 import Constants
 from Actions import calculate_memory, calculate_runtime
-
+from Services.File import create_file
 
 # https://pbpython.com/categorical-encoding.html
 
@@ -42,8 +42,10 @@ def start():
 
     print("Memory scores:")
     print(memoryDF)
+    create_file(memoryDF)
     print("Runtime scores:")
     print(runtimeDF)
+    create_file(runtimeDF)
 
 
 def load_data(args):

@@ -1,4 +1,7 @@
 import matplotlib.pyplot as plt
+from sklearn.model_selection import validation_curve
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestRegressor
 
 
 def show_plot(x, y, axis: str):
@@ -10,3 +13,8 @@ def show_plot(x, y, axis: str):
     plt.plot(x, y, '.')
     plt.axis(axis)
     plt.show()
+
+
+def plot_validation_curve(X, y):
+    train_sizes, train_scores, valid_scores = validation_curve(
+        validation_curve(RandomForestRegressor()), X, y, "alpha", 1, cv=5)

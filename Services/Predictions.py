@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 from Services.PreProcessing import normalize_X
 import Constants
 import numpy as np
+from Services.Plotting import plot_validation_curve
 
 
 # Negative crossvalidation score
@@ -35,8 +36,8 @@ def predict_cpu_usage(df):
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_test)
 
-    print(f"CPU model test score is : {model.score(X_test, y_test)}")
-    print(f"CPU model train score is : {model.score(X_train, y_train)}")
+    # print(f"CPU model test score is : {model.score(X_test, y_test)}")
+    # print(f"CPU model train score is : {model.score(X_train, y_train)}")
     # print(f"Prediction: {y_test_hat[:5]}")
 
     scores = cross_val_score(model, X, y, cv=5)
@@ -63,12 +64,6 @@ def predict_memory_usage(df):
     # Split and train model
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
-    y_test_hat = model.predict(X_test)
-
-    # Calculate model score
-    print(f"Memory model test score is : {model.score(X_test, y_test)}")
-    print(f"Memory model train score is : {model.score(X_train, y_train)}")
-    # print(f"Prediction: {y_test_hat}")
 
     # Calculate cross validation
     scores = []
@@ -76,7 +71,6 @@ def predict_memory_usage(df):
     for x in range(1, 11):
         scores.append(cross_val_score(model, X, y, cv=5))
 
-    print(f"Memory Cross validation score is : {np.mean(scores)}")
     return model, model.score(X_test, y_test), model.score(X_train, y_train), np.mean(scores)
 
 
@@ -99,12 +93,6 @@ def predict_total_time(df):
     # Split and train model
     X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
     model.fit(X_train, y_train)
-    y_test_hat = model.predict(X_test)
-
-    # Calculate model scores
-    print(f"Total time model test score is : {model.score(X_test, y_test)}")
-    print(f"Total time model train score is : {model.score(X_train, y_train)}")
-    # print(f"Prediction: {y_test_hat}")
 
     # Calculate cross validation
     scores = []
@@ -112,8 +100,7 @@ def predict_total_time(df):
     for x in range(1, 11):
         scores.append(cross_val_score(model, X, y, cv=5))
 
-    print(f"Total time Cross validation score is : {np.mean(scores)}")
-    return model, model.score(X_test, y_test), model.score(X_train, y_train), cross_val_score(model, X, y, cv=5)
+    return model, model.score(X_test, y_test), model.score(X_train, y_train), np.mean(scores)
 
 
 def splitting_model(X, y):
