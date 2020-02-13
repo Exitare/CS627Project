@@ -5,7 +5,8 @@ import argparse
 from Services.PreProcessing import convert_factorial_to_numerical, remove_bad_columns, fill_na
 import Constants
 from Actions import calculate_memory, calculate_runtime
-from Services.File import create_file
+from Services.File import create_file, createFolder
+
 
 # https://pbpython.com/categorical-encoding.html
 
@@ -24,28 +25,32 @@ def start():
 
     df = load_data(args)
     columns = ['Test Score', 'Train Score', 'Cross Score Mean']
-    memory_scores = [calculate_memory(df, 0), calculate_memory(df, 10), calculate_memory(df, 20),
-                     calculate_memory(df, 30),
-                     calculate_memory(df, 40),
-                     calculate_memory(df, 50), calculate_memory(df, 60), calculate_memory(df, 70),
-                     calculate_memory(df, 80),
-                     calculate_memory(df, 90), calculate_memory(df, 99)]
-
+    # memory_scores = [calculate_memory(df, 0), calculate_memory(df, 10), calculate_memory(df, 20),
+    #                 calculate_memory(df, 30),
+    #                calculate_memory(df, 40),
+    #               calculate_memory(df, 50), calculate_memory(df, 60), calculate_memory(df, 70),
+    #              calculate_memory(df, 80),
+    #             calculate_memory(df, 90), calculate_memory(df, 99)]
+    print("Predicting...")
     runtime_scores = [calculate_runtime(df, 0), calculate_runtime(df, 10), calculate_runtime(df, 20),
                       calculate_runtime(df, 30),
                       calculate_runtime(df, 40),
                       calculate_runtime(df, 50), calculate_runtime(df, 60), calculate_runtime(df, 70),
                       calculate_runtime(df, 80), calculate_runtime(df, 90), calculate_runtime(df, 99)]
 
-    memoryDF = pd.DataFrame([vars(x) for x in memory_scores])
+    #  memoryDF = pd.DataFrame([vars(x) for x in memory_scores])
     runtimeDF = pd.DataFrame([vars(x) for x in runtime_scores])
 
-    print("Memory scores:")
-    print(memoryDF)
-    create_file(memoryDF)
+    folder = createFolder(args)
+
+    #  print("Memory scores:")
+    # print(memoryDF)
+    # if folder != "":
+    #   create_file(memoryDF, "memoryscores", folder)
     print("Runtime scores:")
     print(runtimeDF)
-    create_file(runtimeDF)
+    if folder != "":
+        create_file(runtimeDF, folder, "runtimescores")
 
 
 def load_data(args):
