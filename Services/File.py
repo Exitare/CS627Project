@@ -12,7 +12,7 @@ def create_file(df, folder, name):
 
 def createFolder(filename):
     now = datetime.datetime.now()
-    path = f"Results/{filename}{now.strftime('%Y-%m-%d-%H-%M-%S')}"
+    path = f"Results/{now.strftime('%Y-%m-%d-%H-%M-%S')}"
     try:
         os.mkdir(path)
 

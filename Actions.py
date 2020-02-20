@@ -14,7 +14,7 @@ def calculate_memory(df, percent):
 
     rows = int(len(df.index) * percent / 100)
     df = remove_random_rows(df, rows)
-    memoryScore = Score(0, 0, 0)
+    memoryScore = Score(0, 0, 0, 0)
 
     if 'memtotal' in df.columns:
         model, testScore, trainScore, crossScore = predict_memory_usage(df)
@@ -28,12 +28,13 @@ def calculate_memory(df, percent):
 def calculate_runtime(df, percent):
     rows = int(len(df.index) * percent / 100)
     df = remove_random_rows(df, rows)
-    runtimeScore = Score(0, 0, 0)
+    runtimeScore = Score(0, 0, 0, 0)
 
     if 'runtime' in df.columns:
-        model, testScore, trainScore, crossScore = predict_total_time(df)
+        model, testScore, trainScore, crossScore, variance = predict_total_time(df)
         runtimeScore.testScore = testScore
         runtimeScore.trainScore = trainScore
         runtimeScore.crossValidationScore = crossScore
+        runtimeScore.variance = variance
 
     return runtimeScore

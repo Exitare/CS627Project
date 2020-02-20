@@ -18,3 +18,10 @@ def show_plot(x, y, axis: str):
 def plot_validation_curve(X, y):
     train_sizes, train_scores, valid_scores = validation_curve(
         validation_curve(RandomForestRegressor()), X, y, "alpha", 1, cv=5)
+
+
+def test_plot(x, y):
+    fig, ax = plt.subplots()
+    plt.bar(x, y)
+    plt.xticks(x)
+    plt.show()
