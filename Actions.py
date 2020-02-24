@@ -35,9 +35,7 @@ def calculate_runtime(df, percent):
 
     if 'runtime' in df.columns:
         runtimeScore = Score(0, 0, 0, 0)
-        model, testScore, trainScore, crossScore, variance = predict_total_time(df)
-        runtimeScore.testScore = testScore
-        runtimeScore.trainScore = trainScore
+        model, crossScore, variance = predict_total_time(df)
         runtimeScore.crossValidationScore = crossScore
         runtimeScore.variance = variance
         return runtimeScore
