@@ -45,33 +45,29 @@ def predict_cpu_usage(df):
     print("")
 
 
-def predict_memory_usage(df):
+def predict_memory_usage(df, column_to_remove):
     """
     Trains the model to predict memory usage
     :param df:
+    :param column_to_remove
     :return:
     """
 
     # Prepare dataframe
-    y = df['memtotal']
-    del df['memtotal']
+    y = df[column_to_remove]
+    del df[column_to_remove]
     X = df
     X = normalize_X(X)
 
     # Select model
     model = select_model()
 
-    # Split and train model
-    X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
-    model.fit(X_train, y_train)
-
     # Calculate cross validation
     scores = []
+    print(np.mean(cross_val_score(model, X, y, cv=5)))
+    scores.append(np.mean(cross_val_score(model, X, y, cv=5)))
 
-    for x in range(1, 11):
-        scores.append(cross_val_score(model, X, y, cv=5))
-
-    return model, model.score(X_test, y_test), model.score(X_train, y_train), np.mean(scores)
+    return model, np.mean(scores), np.var(scores)
 
 
 def predict_total_time(df):
@@ -91,8 +87,8 @@ def predict_total_time(df):
     model = select_model()
 
     # Split and train model
-    X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
-    model.fit(X_train, y_train)
+    # X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
+    # model.fit(X_train, y_train)
 
     # Calculate cross validation
     scores = []
@@ -124,4 +120,4 @@ def select_model():
         return Lasso()
 
     else:
-        return RandomForestRegressor(n_estimators=12, random_state=0)
+        return RandomForestRegressor(n_estimators=12, random_state=1)

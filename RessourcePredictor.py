@@ -25,23 +25,35 @@ def start():
     # Load data
 
     df = load_data(args)
-
     print("Predicting...")
+    memory_scores = [calculate_memory(df, 0), calculate_memory(df, 10), calculate_memory(df, 20),
+                     calculate_memory(df, 30),
+                     calculate_memory(df, 40),
+                     calculate_memory(df, 50), calculate_memory(df, 60), calculate_memory(df, 70),
+                     calculate_memory(df, 80), calculate_memory(df, 90), calculate_memory(df, 99)]
+
     runtime_scores = [calculate_runtime(df, 0), calculate_runtime(df, 10), calculate_runtime(df, 20),
                       calculate_runtime(df, 30),
                       calculate_runtime(df, 40),
                       calculate_runtime(df, 50), calculate_runtime(df, 60), calculate_runtime(df, 70),
                       calculate_runtime(df, 80), calculate_runtime(df, 90), calculate_runtime(df, 99)]
 
-    runtimeDF = pd.DataFrame([vars(x) for x in runtime_scores])
-
     folder = createFolder(args)
+    if not any(x is None for x in runtime_scores):
+        runtimeDF = pd.DataFrame([vars(x) for x in runtime_scores])
+        print("Runtime scores:")
+        print(runtimeDF)
+        if folder != "":
+            create_file(runtimeDF, folder, "runtime_scores")
 
-    print("Runtime scores:")
-    print(runtimeDF)
-    test_plot(np.array(11), runtimeDF.iloc[:, 3])
-    if folder != "":
-        create_file(runtimeDF, folder, "runtimescores")
+    if not any(x is None for x in memory_scores):
+        memoryDF = pd.DataFrame([vars(x) for x in memory_scores])
+        print('Memory scores:')
+        print(memoryDF)
+        if folder != "":
+            create_file(memoryDF, folder, "memory_scores")
+
+   # test_plot(len(memoryDF.index), memoryDF.iloc[:, 3])
 
 
 def load_data(args):
