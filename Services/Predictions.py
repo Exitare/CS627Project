@@ -90,7 +90,6 @@ def predict_total_time(df):
     scores = []
 
     for x in range(1, 11):
-        # scores.append(cross_val_score(model, X, y, cv=int(np.abs(np.random.normal(5, 11, 1)))))
         scores.append(cross_val_score(model, X, y, cv=5))
 
     return model, np.mean(scores), np.var(scores)

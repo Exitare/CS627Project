@@ -6,7 +6,7 @@ from Services.PreProcessing import convert_factorial_to_numerical, remove_bad_co
 import Constants
 from Actions import calculate_memory, calculate_runtime
 from Services.File import create_file, createFolder
-from Services.Plotting import test_plot
+from Services.Plotting import plot_variance
 
 
 # https://pbpython.com/categorical-encoding.html
@@ -43,6 +43,7 @@ def start():
         runtimeDF = pd.DataFrame([vars(x) for x in runtime_scores])
         print("Runtime scores:")
         print(runtimeDF)
+        plot_variance(runtimeDF.index, runtimeDF.iloc[:, 3], 'runtime', folder)
         if folder != "":
             create_file(runtimeDF, folder, "runtime_scores")
 
@@ -52,8 +53,6 @@ def start():
         print(memoryDF)
         if folder != "":
             create_file(memoryDF, folder, "memory_scores")
-
-   # test_plot(len(memoryDF.index), memoryDF.iloc[:, 3])
 
 
 def load_data(args):

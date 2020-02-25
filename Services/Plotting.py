@@ -20,8 +20,14 @@ def plot_validation_curve(X, y):
         validation_curve(RandomForestRegressor()), X, y, "alpha", 1, cv=5)
 
 
-def test_plot(x, y):
+def plot_variance(x, y, action, folder):
     fig, ax = plt.subplots()
+    labels = ['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '99']
+    ax.set_ylabel('Variance')
+    ax.set_xlabel("Percentage of rows removed")
+    ax.set_title('Variance depending how many rows are getting removed')
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+
     plt.bar(x, y)
-    plt.xticks(x)
-    plt.show()
+    plt.savefig(f"{folder}/{action}.jpg", dpi=None,  format='png')
