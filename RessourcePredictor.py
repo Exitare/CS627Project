@@ -51,6 +51,7 @@ def start():
         memoryDF = pd.DataFrame([vars(x) for x in memory_scores])
         print('Memory scores:')
         print(memoryDF)
+        plot_variance( memoryDF.index, memoryDF.iloc[:, 3], 'memory', folder)
         if folder != "":
             create_file(memoryDF, folder, "memory_scores")
 
