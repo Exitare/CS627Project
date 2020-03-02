@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 from Services.PreProcessing import normalize_X
 import Constants
 import numpy as np
+from Services.Plotting import plot_validation_curve
 
 
 # Negative crossvalidation score
@@ -35,8 +36,8 @@ def predict_cpu_usage(df):
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_test)
 
-    print(f"CPU model test score is : {model.score(X_test, y_test)}")
-    print(f"CPU model train score is : {model.score(X_train, y_train)}")
+    # print(f"CPU model test score is : {model.score(X_test, y_test)}")
+    # print(f"CPU model train score is : {model.score(X_train, y_train)}")
     # print(f"Prediction: {y_test_hat[:5]}")
 
     scores = cross_val_score(model, X, y, cv=5)
@@ -44,40 +45,30 @@ def predict_cpu_usage(df):
     print("")
 
 
-def predict_memory_usage(df):
+def predict_memory_usage(df, column_to_remove):
     """
     Trains the model to predict memory usage
     :param df:
+    :param column_to_remove
     :return:
     """
 
     # Prepare dataframe
-    y = df['memtotal']
-    del df['memtotal']
+    y = df[column_to_remove]
+    del df[column_to_remove]
     X = df
     X = normalize_X(X)
 
     # Select model
     model = select_model()
 
-    # Split and train model
-    X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
-    model.fit(X_train, y_train)
-    y_test_hat = model.predict(X_test)
-
-    # Calculate model score
-    print(f"Memory model test score is : {model.score(X_test, y_test)}")
-    print(f"Memory model train score is : {model.score(X_train, y_train)}")
-    # print(f"Prediction: {y_test_hat}")
-
     # Calculate cross validation
     scores = []
 
-    for x in range(1, 10):
-        scores.append(cross_val_score(model, X, y, cv=5))
+    print(np.mean(cross_val_score(model, X, y, cv=5)))
+    scores.append(np.mean(cross_val_score(model, X, y, cv=5)))
 
-    print(f"Memory Cross validation score is : {np.mean(scores)}")
-    return model, model.score(X_test, y_test), model.score(X_train, y_train), np.mean(scores)
+    return model, np.mean(scores), np.var(scores)
 
 
 def predict_total_time(df):
@@ -96,33 +87,13 @@ def predict_total_time(df):
     # Select model
     model = select_model()
 
-    # Split and train model
-    X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
-    model.fit(X_train, y_train)
-    y_test_hat = model.predict(X_test)
-
-    # Calculate model scores
-    print(f"Total time model test score is : {model.score(X_test, y_test)}")
-    print(f"Total time model train score is : {model.score(X_train, y_train)}")
-    # print(f"Prediction: {y_test_hat}")
-
     # Calculate cross validation
     scores = []
 
-    for x in range(1, 10):
+    for x in range(1, 11):
         scores.append(cross_val_score(model, X, y, cv=5))
 
-    print(f"Memory Cross validation score is : {np.mean(scores)}")
-    return model, model.score(X_test, y_test), model.score(X_train, y_train), np.mean(scores)
-
-
-def splitting_model(X, y):
-    """
-    Using the train_test_split function twice, to generate a valid train, test and validation set.
-    """
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=1)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.33, random_state=1)
-    return X_train, X_test, y_train, y_test, X_val, y_val
+    return model, np.mean(scores), np.var(scores)
 
 
 def select_model():
@@ -136,4 +107,4 @@ def select_model():
         return Lasso()
 
     else:
-        return RandomForestRegressor(n_estimators=12, random_state=0)
+        return RandomForestRegressor(n_estimators=12, random_state=1)

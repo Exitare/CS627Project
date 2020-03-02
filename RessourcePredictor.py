@@ -1,10 +1,12 @@
 from sklearn import __version__
 import pandas as pd
 import argparse
-
+import numpy as np
 from Services.PreProcessing import convert_factorial_to_numerical, remove_bad_columns, fill_na
 import Constants
 from Actions import calculate_memory, calculate_runtime
+from Services.File import create_file, createFolder
+from Services.Plotting import plot_variance
 
 
 # https://pbpython.com/categorical-encoding.html
@@ -23,13 +25,12 @@ def start():
     # Load data
 
     df = load_data(args)
-    columns = ['Test Score', 'Train Score', 'Cross Score Mean']
+    print("Predicting...")
     memory_scores = [calculate_memory(df, 0), calculate_memory(df, 10), calculate_memory(df, 20),
                      calculate_memory(df, 30),
                      calculate_memory(df, 40),
                      calculate_memory(df, 50), calculate_memory(df, 60), calculate_memory(df, 70),
-                     calculate_memory(df, 80),
-                     calculate_memory(df, 90), calculate_memory(df, 99)]
+                     calculate_memory(df, 80), calculate_memory(df, 90), calculate_memory(df, 99)]
 
     runtime_scores = [calculate_runtime(df, 0), calculate_runtime(df, 10), calculate_runtime(df, 20),
                       calculate_runtime(df, 30),
@@ -37,13 +38,21 @@ def start():
                       calculate_runtime(df, 50), calculate_runtime(df, 60), calculate_runtime(df, 70),
                       calculate_runtime(df, 80), calculate_runtime(df, 90), calculate_runtime(df, 99)]
 
-    memoryDF = pd.DataFrame([vars(x) for x in memory_scores])
-    runtimeDF = pd.DataFrame([vars(x) for x in runtime_scores])
+    folder = createFolder(args)
+    if not any(x is None for x in runtime_scores):
+        runtimeDF = pd.DataFrame([vars(x) for x in runtime_scores])
+        print("Runtime scores:")
+        print(runtimeDF)
+        plot_variance(runtimeDF.index, runtimeDF.iloc[:, 3], 'runtime', folder)
+        if folder != "":
+            create_file(runtimeDF, folder, "runtime_scores")
 
-    print("Memory scores:")
-    print(memoryDF)
-    print("Runtime scores:")
-    print(runtimeDF)
+    if not any(x is None for x in memory_scores):
+        memoryDF = pd.DataFrame([vars(x) for x in memory_scores])
+        print('Memory scores:')
+        print(memoryDF)
+        if folder != "":
+            create_file(memoryDF, folder, "memory_scores")
 
 
 def load_data(args):
