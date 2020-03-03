@@ -1,9 +1,10 @@
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import Lasso, RidgeCV
 from sklearn.ensemble import RandomForestRegressor
-from Services.PreProcessing import normalize_X
+from Services.PreProcessing import normalize_X, remove_random_rows
 import Constants
 import numpy as np
+from sklearn.metrics import r2_score
 from Services.Plotting import plot_validation_curve
 
 
@@ -77,24 +78,36 @@ def predict_total_time(df):
     :param df:
     :return:
     """
-
-    # Prepare dataframe
     y = df['runtime']
     del df['runtime']
     X = df
     X = normalize_X(X)
 
-    # Select model
-    model = select_model()
+    X_train, X_test, y_train, y_test = train_test_split(df, y, test_size=0.1, random_state=1)
 
-    # Split and train model
-    X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
-    model.fit(X_train, y_train)
-    # Calculate cross validation
-    scores = []
 
-    for x in range(1, 11):
-        scores.append(cross_val_score(model, X, y, cv=5))
+
+    for i in range(0, 99, 10):
+
+        print(i)
+        rows = int(len(df.index) * i / 100)
+        df = remove_random_rows(df, rows)
+        print("1")
+        # Prepare dataframe
+
+
+        # Select model
+        model = select_model()
+
+        X_train, X_test, y_train, y_test = train_test_split(df, y, test_size=0.1, random_state=1)
+        model.fit(X_train, y_train)
+        y_test_hat = model.predict(X_test)
+        print(r2_score(y, y_test_hat))
+
+        scores = []
+
+        for x in range(1, 11):
+            scores.append(cross_val_score(model, X, y, cv=5))
 
     return model, np.mean(scores), np.var(scores)
 
@@ -104,8 +117,7 @@ def splitting_model(X, y):
     Using the train_test_split function twice, to generate a valid train, test and validation set.
     """
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=1)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=1)
-    return X_train, X_test, y_train, y_test, X_val, y_val
+    return X_train, X_test, y_train, y_test
 
 
 def select_model():

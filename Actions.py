@@ -4,7 +4,7 @@ from Entities.Evaluations import Score
 import numpy as np
 
 
-def calculate_memory(df, percent):
+def calculate_memory(df):
     """
 
     :param df: The dataframe
@@ -29,10 +29,7 @@ def calculate_memory(df, percent):
     return memoryScore
 
 
-def calculate_runtime(df, percent):
-    rows = int(len(df.index) * percent / 100)
-    df = remove_random_rows(df, rows)
-
+def calculate_runtime(df):
     if 'runtime' in df.columns:
         runtimeScore = Score(0, 0, 0, 0)
         model, crossScore, variance = predict_total_time(df)
