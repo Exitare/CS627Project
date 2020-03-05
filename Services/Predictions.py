@@ -1,11 +1,11 @@
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split, cross_val_score, KFold
 from sklearn.linear_model import Lasso, RidgeCV
 from sklearn.ensemble import RandomForestRegressor
 from Services.PreProcessing import normalize_X, remove_random_rows
 import Constants
 import numpy as np
+import pandas as pd
 from sklearn.metrics import r2_score
-from Services.Plotting import plot_validation_curve
 
 
 # Negative crossvalidation score
@@ -13,37 +13,6 @@ from Services.Plotting import plot_validation_curve
 
 # Why splitting twice
 # https://datascience.stackexchange.com/questions/15135/train-test-validation-set-splitting-in-sklearn
-
-
-def predict_cpu_usage(df):
-    """
-    Trains the model to predict the cpu usage
-    This function will be deprected in further version and is therefore not maintained anymore.
-    As galaxy is only setting the cpu count by a handwritten algorithm this is not useful to predict.
-    :param df:
-    :return:
-    """
-    print("CPU usage prediction started...")
-
-    # Prepare dataframe
-    y = df['processor_count']
-    del df['processor_count']
-    X = df
-    X = normalize_X(X)
-    print("Training model...")
-
-    model = select_model()
-    X_train, X_test, y_train, y_test, X_val, y_val = splitting_model(X, y)
-    model.fit(X_train, y_train)
-    y_test_hat = model.predict(X_test)
-
-    # print(f"CPU model test score is : {model.score(X_test, y_test)}")
-    # print(f"CPU model train score is : {model.score(X_train, y_train)}")
-    # print(f"Prediction: {y_test_hat[:5]}")
-
-    scores = cross_val_score(model, X, y, cv=5)
-    print(f"CPU Cross validation score is : {scores}")
-    print("")
 
 
 def predict_memory_usage(df, column_to_remove):
@@ -78,38 +47,34 @@ def predict_total_time(df):
     :param df:
     :return:
     """
+    model = select_model()
+
     y = df['runtime']
     del df['runtime']
     X = df
     X = normalize_X(X)
 
-    X_train, X_test, y_train, y_test = train_test_split(df, y, test_size=0.1, random_state=1)
+    kf = KFold(n_splits=5)
+    kf.get_n_splits(X)
 
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
 
+        for i in range(1, 99, 10):
+            print(i)
 
-    for i in range(0, 99, 10):
+            rows = int(len(X_train) * i / 100)
+            print(rows)
+            X_train = remove_random_rows(X_train, rows)
 
-        print(i)
-        rows = int(len(df.index) * i / 100)
-        df = remove_random_rows(df, rows)
-        print("1")
-        # Prepare dataframe
+            print("fitting")
+            model.fit(X_train, y_train)
 
+            y_test_hat = model.predict(X_test)
+            print(r2_score(y, y_test_hat))
 
-        # Select model
-        model = select_model()
-
-        X_train, X_test, y_train, y_test = train_test_split(df, y, test_size=0.1, random_state=1)
-        model.fit(X_train, y_train)
-        y_test_hat = model.predict(X_test)
-        print(r2_score(y, y_test_hat))
-
-        scores = []
-
-        for x in range(1, 11):
-            scores.append(cross_val_score(model, X, y, cv=5))
-
-    return model, np.mean(scores), np.var(scores)
+    return model
 
 
 def splitting_model(X, y):

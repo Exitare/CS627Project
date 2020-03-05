@@ -90,7 +90,12 @@ def remove_random_rows(df, amount):
     """
 
     """
-    drop_indices = np.random.choice(df.index, amount, replace=False)
-    return df.drop(drop_indices)
+
+    drop_indices = np.random.choice(len(df), amount, replace=False)
+
+    if len(drop_indices) == 0:
+        return df
+
+    return np.delete(df, drop_indices)
 
 
