@@ -56,33 +56,52 @@ def predict_total_time(df):
 
     kf = KFold(n_splits=5)
     kf.get_n_splits(X)
-
+    scores = pd.DataFrame(0, index=np.arange(5),
+                          columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '99'])
+    print(scores)
     for train_index, test_index in kf.split(X):
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
+        counter = 0
+        # print("Train Index: ", train_index, "\n")
+        # print("Test Index: ", test_index)
 
-        for i in range(1, 99, 10):
-            print(i)
+        r2scores = []
+        # Iterate from 0 to 101. Ends @ 100, reduce by 1
+        for i in range(0, 101, 10):
+            if i == 100:
+                i = 99
+            # Create a deep copy, to keep the original data set untouched
+            train_index_copy = train_index
 
-            rows = int(len(X_train) * i / 100)
-            print(rows)
-            X_train = remove_random_rows(X_train, rows)
+            source_len = len(train_index_copy)
 
-            print("fitting")
+            # Calculate amount of rows to be removed
+            rows = int(len(train_index_copy) * i / 100)
+
+            # Remove rows by random index
+            train_index_copy = remove_random_rows(train_index_copy, rows)
+            print(f"Removed {rows} rows, {len(train_index_copy)} indices left of {source_len}. {100 - i}% data left!")
+
+            X_train, X_test = X[train_index_copy], X[test_index]
+            y_train, y_test = y[train_index_copy], y[test_index]
+
+            # print(f"y_test contains {len(y_test)} rows")
+            # print(f"X_test contains {len(X_test)} rows")
+
+            # print(f"y_train contains {len(y_train)} rows")
+            # print(f"X_train contains {len(X_train)} rows")
+
             model.fit(X_train, y_train)
-
             y_test_hat = model.predict(X_test)
-            print(r2_score(y, y_test_hat))
+            r2scores.append(r2_score(y_test, y_test_hat))
 
+            print(f"R2 score is {r2_score(y_test, y_test_hat)}")
+
+        print(r2scores)
+        print(scores.iloc[counter, 1:])
+        scores.iloc[counter, 1:] = r2scores
+        counter += 1
+        print(scores)
     return model
-
-
-def splitting_model(X, y):
-    """
-    Using the train_test_split function twice, to generate a valid train, test and validation set.
-    """
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=1)
-    return X_train, X_test, y_train, y_test
 
 
 def select_model():

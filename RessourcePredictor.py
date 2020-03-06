@@ -27,19 +27,8 @@ def start():
     df = load_data(args)
     print("Predicting...")
     calculate_runtime(df)
-    # memory_scores = [calculate_memory(df, 0), calculate_memory(df, 10), calculate_memory(df, 20),
-    # calculate_memory(df, 30),
-    # calculate_memory(df, 40),
-    # calculate_memory(df, 50), calculate_memory(df, 60), calculate_memory(df, 70),
-    # calculate_memory(df, 80), calculate_memory(df, 90), calculate_memory(df, 99)]
 
-    # runtime_scores = [calculate_runtime(df, 0), calculate_runtime(df, 10), calculate_runtime(df, 20),
-    # calculate_runtime(df, 30),
-    # calculate_runtime(df, 40),
-    # calculate_runtime(df, 50), calculate_runtime(df, 60), calculate_runtime(df, 70),
-    # calculate_runtime(df, 80), calculate_runtime(df, 90), calculate_runtime(df, 99)]
-
-    folder = createFolder(args)
+    # folder = createFolder(args)
     #  if not any(x is None for x in runtime_scores):
     #       runtimeDF = pd.DataFrame([vars(x) for x in runtime_scores])
     #     print("Runtime scores:")
