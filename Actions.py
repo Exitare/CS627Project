@@ -1,5 +1,5 @@
 from Services.PreProcessing import remove_random_rows
-from Services.Predictions import predict_memory_usage, predict_total_time
+from Services.Predictions import predict_memory_usage, predict
 from Entities.Evaluations import Score
 import numpy as np
 
@@ -32,7 +32,7 @@ def calculate_memory(df):
 def calculate_runtime(df):
     if 'runtime' in df.columns:
         runtimeScore = Score(0, 0, 0, 0)
-        model, crossScore, variance = predict_total_time(df)
+        model, crossScore, variance = predict(df, 'runtime')
         runtimeScore.crossValidationScore = crossScore
         runtimeScore.variance = variance
         return runtimeScore

@@ -27,4 +27,4 @@ def createFolder(args):
 
 def get_file_name(path):
     head, tail = ntpath.split(path)
-    return tail.split('.')[0] or ntpath.basename(head)
+    return tail or ntpath.basename(head)

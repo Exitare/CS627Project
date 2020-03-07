@@ -4,9 +4,10 @@ import argparse
 import numpy as np
 from Services.PreProcessing import convert_factorial_to_numerical, remove_bad_columns, fill_na
 import Constants
-from Actions import calculate_memory, calculate_runtime
 from Services.File import create_file, createFolder
-from Services.Plotting import plot_variance
+from Services.Plotting import plot_box
+from Services.Predictions import predict
+import matplotlib.pyplot as plt
 
 
 # https://pbpython.com/categorical-encoding.html
@@ -23,27 +24,32 @@ def start():
     print(f"Using {Constants.SELECTED_ALGORITHM} model")
 
     # Load data
-
     df = load_data(args)
-    print("Predicting...")
-    calculate_runtime(df)
 
-    # folder = createFolder(args)
-    #  if not any(x is None for x in runtime_scores):
-    #       runtimeDF = pd.DataFrame([vars(x) for x in runtime_scores])
-    #     print("Runtime scores:")
-    #    print(runtimeDF)
-    #   plot_variance(runtimeDF.index, runtimeDF.iloc[:, 3], 'runtime', folder)
-    #  if folder != "":
-    #     create_file(runtimeDF, folder, "runtime_scores")
+    folder = createFolder(args)
+    if 'runtime' in df.columns:
+        print("Predicting runtime...")
+        scores = predict(df, 'runtime')
 
-    #  if not any(x is None for x in memory_scores):
-    #     memoryDF = pd.DataFrame([vars(x) for x in memory_scores])
-    #    print('Memory scores:')
-    #   print(memoryDF)
-    #  plot_variance( memoryDF.index, memoryDF.iloc[:, 3], 'memory', folder)
-    # if folder != "":
-    #    create_file(memoryDF, folder, "memory_scores")
+        if folder != "":
+            plot_box(scores, folder, "runtime")
+            create_file(scores, folder, "runtime")
+
+    print()
+
+    if 'memtotal' in df.columns:
+        print("Predicting memory...")
+        scores = predict(df, 'memtotal')
+        if folder != "":
+            plot_box(scores, folder, "memory")
+            create_file(scores, folder, "memory")
+
+    elif 'memory.max_usage_in_bytes' in df.columns:
+        print("Predicting memory...")
+        scores = predict(df, 'memory.max_usage_in_bytes')
+        if folder != "":
+            plot_box(scores, folder, "memory")
+            create_file(scores, folder, "memory")
 
 
 def load_data(args):
