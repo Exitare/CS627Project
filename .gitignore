@@ -4,4 +4,6 @@
 __pycache__/*
 __pycache__
 *.jpg
-*.csv
+Data/anonymized_memory/*
+Data/anonymized/*
+Results/*
