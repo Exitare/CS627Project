@@ -7,3 +7,4 @@ __pycache__
 Data/anonymized_memory/*
 Data/anonymized/*
 Results/*
+venv/*
