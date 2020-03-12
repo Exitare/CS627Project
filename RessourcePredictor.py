@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 from Services.PreProcessing import convert_factorial_to_numerical, remove_bad_columns, fill_na
 import Constants
-from Services.File import create_file, createFolder
+from Services.File import create_file, create_folder
 from Services.Plotting import plot_box
 from Services.Predictions import predict
 import matplotlib.pyplot as plt
@@ -26,7 +26,7 @@ def start():
     # Load data
     df = load_data(args)
 
-    folder = createFolder(args)
+    folder = create_folder(args)
     if 'runtime' in df.columns:
         print("Predicting runtime...")
         scores = predict(df, 'runtime')
