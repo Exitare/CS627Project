@@ -14,23 +14,40 @@ from sklearn.metrics import r2_score
 # Why splitting twice
 # https://datascience.stackexchange.com/questions/15135/train-test-validation-set-splitting-in-sklearn
 
-
 def predict(df, feature: str):
-    """
-    Trains the model to predict the total time
-    :param df:
-    :param feature:
-    :return:
-    """
-    model = select_model()
+    averages = []
+
+    scores = pd.DataFrame(0, index=np.arange(5),
+                          columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '99'])
 
     y = df[f'{feature}']
     del df[f'{feature}']
     X = df
     X = normalize_X(X)
 
+    for i in range(0, 5, 1):
+        averages.append(k_folds(X, y, feature))
+        iter_df = averages[i]
+        avg = []
+        for column in iter_df:
+            avg.append(iter_df[column].mean())
+        avg = np.asarray(avg)
+        scores.iloc[i] = avg
+
+    return scores
+
+
+def k_folds(X, y, feature: str):
+    """
+    Trains the model to predict the total time
+    :param df:
+    :param feature:
+    :return:
+    """
+
+    model = select_model()
+
     kf = KFold(n_splits=5)
-    kf.get_n_splits(X)
     scores = pd.DataFrame(0, index=np.arange(5),
                           columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '99'])
     counter = 0

@@ -30,7 +30,6 @@ def start():
     if 'runtime' in df.columns:
         print("Predicting runtime...")
         scores = predict(df, 'runtime')
-
         if folder != "":
             plot_box(scores, folder, "runtime")
             create_file(scores, folder, "runtime")
