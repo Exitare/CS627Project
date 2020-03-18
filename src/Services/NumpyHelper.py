@@ -1,0 +1,44 @@
+import numpy as np
+from Services import File
+import Constants
+
+
+def get_mean_per_column_per_df(df):
+    """
+    Returns the mean of every column of the given df
+    :param df:
+    :return:
+    """
+    try:
+        mean = []
+        for column in df:
+            mean.append(df[column].mean())
+
+        return np.asarray(mean)
+    except:
+        File.remove_folder(Constants.CURRENT_WORKING_DIRECTORY)
+
+
+def get_var_per_column_per_df(df):
+    var = []
+    for column in df:
+        var.append(df[column].var())
+
+    return np.asarray(var)
+
+
+def replace_column_with_array(df, column_id, array):
+    """
+    Replaces the given row id with the given array
+    :param df:
+    :param column_id:
+    :param array:
+    :return:
+    """
+    try:
+        array = np.asarray(array)
+        df.iloc[column_id] = array
+        return df
+
+    except:
+        File.remove_folder(Constants.CURRENT_WORKING_DIRECTORY)

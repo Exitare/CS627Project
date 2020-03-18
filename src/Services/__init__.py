@@ -1,1 +1,1 @@
-__all__ = ['PreProcessing', 'Plotting', 'Predictions', 'Statistics', 'File', 'Config']
+__all__ = ['PreProcessing', 'Plotting', 'Predictions', 'Statistics', 'File', 'Config', 'NumpyHelper']

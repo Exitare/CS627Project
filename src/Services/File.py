@@ -7,6 +7,7 @@ from Services.PreProcessing import convert_factorial_to_numerical, remove_bad_co
 import pandas as pd
 import Constants
 from pathlib import Path
+import shutil
 
 
 def create_csv_file(df, folder, name):
@@ -77,9 +78,10 @@ def create_evaluation_folder():
 
 def remove_folder(path):
     try:
-        os.rmdir(path)
-    except OSError:
+        shutil.rmtree(path)
+    except OSError as ex:
         print(f"Could not delete folder {path}")
+        print(ex)
 
 
 def create_directory(path):
