@@ -9,6 +9,10 @@ class Config:
     DATA_ROOT_DIRECTORY = ''
     DATA_RAW_DIRECTORY = ''
     DATA_RESULTS_DIRECTORY = ''
+    FILE_RUNTIME_MEAN_SUMMARY = ''
+    FILE_RUNTIME_VAR_SUMMARY = ''
+    FILE_MEMORY_MEAN_SUMMARY = ''
+    FILE_MEMORY_VAR_SUMMARY = ''
 
 
 def read_conf():
@@ -22,6 +26,13 @@ def read_conf():
         Config.DATA_ROOT_DIRECTORY = config['DATA']['root_directory']
         Config.DATA_RAW_DIRECTORY = config['DATA']['raw_directory']
         Config.DATA_RESULTS_DIRECTORY = config['DATA']['results_directory']
+
+        Config.FILE_RUNTIME_MEAN_SUMMARY = config['FILE']['runtime_mean_summary_name']
+        Config.FILE_RUNTIME_VAR_SUMMARY = config['FILE']['runtime_var_summary_name']
+        Config.FILE_MEMORY_MEAN_SUMMARY = config['FILE']['memory_mean_summary_name']
+        Config.FILE_MEMORY_VAR_SUMMARY = config['FILE']['memory_var_summary_name']
+
+        validate_config()
         return True
     except KeyError as ex:
         print(f"Error occurred for key: {ex}")
@@ -47,3 +58,34 @@ def reset_config():
             return True
         except FileNotFoundError as ex:
             return ex
+
+
+def validate_config():
+    print("Validation configuration")
+    if not Config.DATA_RESULTS_DIRECTORY:
+        print("Please specify a valid Results directory")
+        sys.exit()
+
+    if not Config.DATA_RAW_DIRECTORY:
+        print("Please specify a valid Raw data directory!")
+        sys.exit()
+
+    if not Config.DATA_ROOT_DIRECTORY:
+        print("Please specify a valid Root Directory!")
+        sys.exit()
+
+    if not Config.FILE_MEMORY_VAR_SUMMARY:
+        print(f"Please specify a valid name for FILE_MEMORY_VAR_SUMMARY ")
+        sys.exit()
+
+    if not Config.FILE_MEMORY_MEAN_SUMMARY:
+        print(f"Please specify a valid name for FILE_MEMORY_MEAN_SUMMARY")
+        sys.exit()
+
+    if not Config.FILE_RUNTIME_VAR_SUMMARY:
+        print(f"Please specify a valid name for FILE_RUNTIME_VAR_SUMMARY")
+        sys.exit()
+
+    if not Config.FILE_RUNTIME_MEAN_SUMMARY:
+        print(f"Please specify a valid name for FILE_RUNTIME_MEAN_SUMMARY")
+        sys.exit()
