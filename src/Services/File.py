@@ -2,8 +2,8 @@ import datetime
 import os
 import ntpath
 import sys
+from Services import PreProcessing, NumpyHelper
 from Services.Config import Config
-from Services.PreProcessing import convert_factorial_to_numerical, remove_bad_columns, fill_na
 import pandas as pd
 import Constants
 from pathlib import Path
@@ -135,9 +135,9 @@ def read_files(path: str):
             filename = os.fsdecode(file)
             if filename.endswith(".csv") or filename.endswith(".tsv"):
                 df = pd.read_csv(f"{Config.DATA_RAW_DIRECTORY}/{filename}")
-                df = fill_na(df)
-                df = remove_bad_columns(df)
-                df = convert_factorial_to_numerical(df)
+                df = PreProcessing.fill_na(df)
+                df = PreProcessing.remove_bad_columns(df)
+                df = PreProcessing.convert_factorial_to_numerical(df)
                 data_frames[filename] = df
                 continue
             else:
@@ -148,3 +148,21 @@ def read_files(path: str):
         print(ex)
         remove_folder(Constants.CURRENT_WORKING_DIRECTORY)
         sys.exit()
+
+
+def write_summary():
+    if not NumpyHelper.df_only_nan(Constants.RUNTIME_MEAN_REPORT):
+        create_csv_file(Constants.RUNTIME_MEAN_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
+                        Config.FILE_RUNTIME_MEAN_SUMMARY)
+
+    if not NumpyHelper.df_only_nan(Constants.RUNTIME_VAR_REPORT):
+        create_csv_file(Constants.RUNTIME_VAR_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
+                        Config.FILE_RUNTIME_VAR_SUMMARY)
+
+    if not NumpyHelper.df_only_nan(Constants.MEMORY_MEAN_REPORT):
+        create_csv_file(Constants.MEMORY_MEAN_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
+                        Config.FILE_MEMORY_MEAN_SUMMARY)
+
+    if not NumpyHelper.df_only_nan(Constants.MEMORY_VAR_REPORT):
+        create_csv_file(Constants.MEMORY_VAR_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
+                        Config.FILE_MEMORY_VAR_SUMMARY)

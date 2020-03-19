@@ -42,3 +42,7 @@ def replace_column_with_array(df, column_id, array):
 
     except:
         File.remove_folder(Constants.CURRENT_WORKING_DIRECTORY)
+
+
+def df_only_nan(df):
+    return df.isnull().values.all(axis=0).all()
