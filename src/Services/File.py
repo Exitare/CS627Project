@@ -41,7 +41,6 @@ def create_tool_folder(filename: str):
         print(ex)
         sys.exit()
     else:
-        print("Successfully created the directory %s " % path)
         Constants.CURRENT_EVALUATED_TOOL_DIRECTORY = path
         return path
 

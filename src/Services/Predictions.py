@@ -4,7 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score
-from Services import NumpyHelper, PreProcessing, File
+from Services import NumpyHelper, PreProcessing, File, Config
 import Constants
 import os
 
@@ -18,7 +18,7 @@ import os
 def predict(df, feature: str):
     averages = []
 
-    scores = pd.DataFrame(0, index=np.arange(5),
+    scores = pd.DataFrame(0, index=np.arange(Config.Config.REPETITIONS),
                           columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
                                    '95', '96', '97', '98', '99'])
 
@@ -27,8 +27,8 @@ def predict(df, feature: str):
     X = df
     X = PreProcessing.normalize_X(X)
 
-    for i in range(0, 5, 1):
-        print("Evaluation Folds")
+    for i in range(0, Config.Config.REPETITIONS, 1):
+        print(f"Started repetition # {i + 1}")
         averages.append(k_folds(X, y))
         scores.iloc[i] = NumpyHelper.get_mean_per_column_per_df(averages[i])
 
@@ -43,16 +43,15 @@ def k_folds(X, y):
     :return:
     """
     try:
-        model = RandomForestRegressor(n_estimators=12, random_state=1)
+        model = RandomForestRegressor(n_estimators=Config.Config.FOREST_ESTIMATORS, random_state=1)
 
-        kf = KFold(n_splits=5)
-        scores = pd.DataFrame(0, index=np.arange(5),
+        kf = KFold(n_splits=Config.Config.K_FOLDS)
+        scores = pd.DataFrame(0, index=np.arange(Config.Config.K_FOLDS),
                               columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93',
                                        '94',
                                        '95', '96', '97', '98', '99'])
         counter = 0
         for train_index, test_index in kf.split(X):
-            print(f"Evaluating Fold #{counter + 1}")
             r2scores = []
             # Iterate from 0 to 101. Ends @ 100, reduce by 1
             for i in range(0, 101, 1):
