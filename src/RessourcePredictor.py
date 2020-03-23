@@ -41,7 +41,7 @@ def start():
         try:
             Constants.EVALUATED_FILE_NAMES.append(filename)
 
-            print(f"Evaluation {filename}")
+            print(f"Evaluating {filename}")
             File.create_tool_folder(filename)
             if 'runtime' in df.columns:
                 print("Predicting runtime...")
@@ -72,7 +72,8 @@ def start():
 
         # Increase file index to replace the correct row in the previous made data set
         file_index += 1
-        File.write_summary()
+
+    File.write_summary()
 
 
 def handle_args():
