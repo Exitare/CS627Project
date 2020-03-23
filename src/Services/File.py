@@ -152,17 +152,21 @@ def read_files(path: str):
 
 def write_summary():
     if not NumpyHelper.df_only_nan(Constants.RUNTIME_MEAN_REPORT):
+        Constants.RUNTIME_MEAN_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
         create_csv_file(Constants.RUNTIME_MEAN_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
                         Config.FILE_RUNTIME_MEAN_SUMMARY)
 
     if not NumpyHelper.df_only_nan(Constants.RUNTIME_VAR_REPORT):
+        Constants.RUNTIME_VAR_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
         create_csv_file(Constants.RUNTIME_VAR_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
                         Config.FILE_RUNTIME_VAR_SUMMARY)
 
     if not NumpyHelper.df_only_nan(Constants.MEMORY_MEAN_REPORT):
+        Constants.MEMORY_MEAN_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
         create_csv_file(Constants.MEMORY_MEAN_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
                         Config.FILE_MEMORY_MEAN_SUMMARY)
 
     if not NumpyHelper.df_only_nan(Constants.MEMORY_VAR_REPORT):
+        Constants.MEMORY_VAR_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
         create_csv_file(Constants.MEMORY_VAR_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
                         Config.FILE_MEMORY_VAR_SUMMARY)

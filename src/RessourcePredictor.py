@@ -37,11 +37,9 @@ def start():
                                                         '91', '92', '93', '94', '95', '96', '97', '98', '99'])
 
     file_index = 0
-    file_names = []
     for filename, df in data_frames.items():
         try:
-            file_names.append(filename)
-            file_names.append(filename)
+            Constants.EVALUATED_FILE_NAMES.append(filename)
 
             print(f"Evaluation {filename}")
             File.create_tool_folder(filename)
