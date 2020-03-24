@@ -35,7 +35,7 @@ def create_tool_folder(filename: str):
         os.mkdir(path)
 
     except OSError as ex:
-        print("Creation of the tool directory %s failed" % path)
+        print("Creation of tool directory %s failed" % path)
         print("Stopping application")
         remove_folder(Constants.CURRENT_WORKING_DIRECTORY)
         print(ex)
@@ -67,7 +67,7 @@ def create_evaluation_folder():
         os.mkdir(path)
 
     except OSError as ex:
-        print("Creation of the directory %s failed" % path)
+        print("Creation of the evaluation directory %s failed" % path)
         print("Stopping application")
         print(ex)
         sys.exit()
@@ -89,9 +89,8 @@ def create_directory(path):
     :param path:
     :return:
     """
-    print(path)
     try:
-        os.mkdir(path)
+        Path(path).mkdir(parents=True, exist_ok=True)
 
     except OSError as ex:
         print(ex)
@@ -112,7 +111,7 @@ def check_folder_integrity():
 
     if not os.path.isdir(f"{Config.DATA_RAW_DIRECTORY}"):
         print("Raw data directory not found. Creating...")
-        create_directory(Config.DATA_ROOT_DIRECTORY)
+        create_directory(Config.DATA_RAW_DIRECTORY)
 
     if not os.path.isdir(f"{Config.DATA_RESULTS_DIRECTORY}"):
         print("Results data directory not found. Creating...")

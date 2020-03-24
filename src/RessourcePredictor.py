@@ -3,9 +3,7 @@ import pandas as pd
 import argparse
 import signal
 import sys
-from Services import File, Predictions, NumpyHelper
-from Services.Plotting import plot_box
-from Services import Config
+from Services import File, Predictions, NumpyHelper, Config, Plotting
 import Constants
 import numpy as np
 
@@ -36,6 +34,11 @@ def start():
                                                columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90',
                                                         '91', '92', '93', '94', '95', '96', '97', '98', '99'])
 
+    if len(data_frames) == 0:
+        print("No files found to evaluate. Stopping")
+        File.remove_folder(Constants.CURRENT_WORKING_DIRECTORY)
+        sys.exit()
+
     file_index = 0
     for filename, df in data_frames.items():
         try:
@@ -46,7 +49,7 @@ def start():
             if 'runtime' in df.columns:
                 print("Predicting runtime...")
                 scores = Predictions.predict(df, 'runtime')
-                plot_box(scores, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, "runtime")
+                Plotting.plot_box(scores, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, "runtime")
                 File.create_csv_file(scores, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, "runtime")
 
                 mean_over_file = NumpyHelper.get_mean_per_column_per_df(scores)
@@ -57,7 +60,7 @@ def start():
             if 'memory.max_usage_in_bytes' in df.columns:
                 print("Predicting memory...")
                 scores = Predictions.predict(df, 'memory.max_usage_in_bytes')
-                plot_box(scores, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, "memory")
+                Plotting.plot_box(scores, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, "memory")
                 File.create_csv_file(scores, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, "memory")
 
                 mean_over_file = NumpyHelper.get_mean_per_column_per_df(scores)
