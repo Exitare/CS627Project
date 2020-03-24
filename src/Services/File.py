@@ -32,7 +32,7 @@ def create_tool_folder(filename: str):
 
     path = Path(f"{Constants.CURRENT_WORKING_DIRECTORY}/{filename}")
     try:
-        os.mkdir(path)
+        Path(path).mkdir(parents=True, exist_ok=True)
 
     except OSError as ex:
         print("Creation of tool directory %s failed" % path)
@@ -64,7 +64,7 @@ def create_evaluation_folder():
     now = datetime.datetime.now()
     path = Path(f"{Config.DATA_RESULTS_DIRECTORY}/{now.strftime('%Y-%m-%d-%H-%M-%S')}")
     try:
-        os.mkdir(path)
+        Path(path).mkdir(parents=True, exist_ok=True)
 
     except OSError as ex:
         print("Creation of the evaluation directory %s failed" % path)
