@@ -10,6 +10,15 @@ from pathlib import Path
 import shutil
 
 
+def write_too_small_data_sets():
+    """
+    Creates a csv containing all files which does not have enough data
+    to generate reasonable predictions
+    """
+    df = pd.DataFrame(Constants.FILES_CONTAINING_NOT_ENOUGH_DATA, columns = "Filename")
+    df.to_csv(f"{Constants.CURRENT_WORKING_DIRECTORY}/Small_Data_Sets.csv")
+
+
 def create_csv_file(df, folder, name):
     """
     Writes a df to a given folder with the given name
@@ -151,20 +160,28 @@ def read_files(path: str):
 def write_summary():
     if not NumpyHelper.df_only_nan(Constants.RUNTIME_MEAN_REPORT):
         Constants.RUNTIME_MEAN_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
+        Constants.RUNTIME_MEAN_REPORT['row_count'] = Constants.EVALUATED_FILE_ROW_COUNTS
+        Constants.RUNTIME_MEAN_REPORT['parameter_count'] = Constants.EVALUATED_FILE_PARAMETER_COUNTS
         create_csv_file(Constants.RUNTIME_MEAN_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
                         Config.FILE_RUNTIME_MEAN_SUMMARY)
 
     if not NumpyHelper.df_only_nan(Constants.RUNTIME_VAR_REPORT):
         Constants.RUNTIME_VAR_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
+        Constants.RUNTIME_VAR_REPORT['row_count'] = Constants.EVALUATED_FILE_ROW_COUNTS
+        Constants.RUNTIME_VAR_REPORT['parameter_count'] = Constants.EVALUATED_FILE_PARAMETER_COUNTS
         create_csv_file(Constants.RUNTIME_VAR_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
                         Config.FILE_RUNTIME_VAR_SUMMARY)
 
     if not NumpyHelper.df_only_nan(Constants.MEMORY_MEAN_REPORT):
         Constants.MEMORY_MEAN_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
+        Constants.MEMORY_MEAN_REPORT['row_count'] = Constants.EVALUATED_FILE_ROW_COUNTS
+        Constants.MEMORY_MEAN_REPORT['parameter_count'] = Constants.EVALUATED_FILE_PARAMETER_COUNTS
         create_csv_file(Constants.MEMORY_MEAN_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
                         Config.FILE_MEMORY_MEAN_SUMMARY)
 
     if not NumpyHelper.df_only_nan(Constants.MEMORY_VAR_REPORT):
         Constants.MEMORY_VAR_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
+        Constants.MEMORY_VAR_REPORT['row_count'] = Constants.EVALUATED_FILE_ROW_COUNTS
+        Constants.MEMORY_VAR_REPORT['parameter_count'] = Constants.EVALUATED_FILE_PARAMETER_COUNTS
         create_csv_file(Constants.MEMORY_VAR_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
                         Config.FILE_MEMORY_VAR_SUMMARY)

@@ -1,19 +1,11 @@
 from sklearn.model_selection import KFold
-from sklearn.linear_model import Lasso, RidgeCV
 from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score
 from Services import NumpyHelper, PreProcessing, File, Config
 import Constants
-import os
 
-
-# Negative crossvalidation score
-# https://stackoverflow.com/questions/21443865/scikit-learn-cross-validation-negative-values-with-mean-squared-error
-
-# Why splitting twice
-# https://datascience.stackexchange.com/questions/15135/train-test-validation-set-splitting-in-sklearn
 
 def predict(df, feature: str):
     averages = []
@@ -38,8 +30,8 @@ def predict(df, feature: str):
 def k_folds(X, y):
     """
     Trains the model to predict the total time
-    :param df:
-    :param feature:
+    :param X:
+    :param y:
     :return:
     """
     try:
@@ -65,9 +57,12 @@ def k_folds(X, y):
             counter += 1
         return scores
 
-    except:
-        print("Failed to evaluate k-folds")
-        File.remove_folder(Constants.CURRENT_WORKING_DIRECTORY)
+    except BaseException as ex:
+        scores = pd.DataFrame(0, index=np.arange(Config.Config.K_FOLDS),
+                              columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93',
+                                       '94',
+                                       '95', '96', '97', '98', '99'])
+        return scores
 
 
 def calculate(model, i, X, y, train_index, test_index):

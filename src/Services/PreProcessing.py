@@ -23,8 +23,6 @@ def remove_bad_columns(df):
     :param df:
     :return:
     """
-
-    print("Removing columns...")
     columns = []
     if 'job_runner_name' in df.columns:
         columns.append('job_runner_name')
@@ -47,7 +45,6 @@ def convert_factorial_to_numerical(df):
     :param df:
     :return:
     """
-    print("Decoding categorical data columns...")
     columns = df.select_dtypes(exclude=['int', 'float']).columns
     le = preprocessing.LabelEncoder()
     for column in columns:

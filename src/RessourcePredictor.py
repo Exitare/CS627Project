@@ -3,7 +3,7 @@ import pandas as pd
 import argparse
 import signal
 import sys
-from Services import File, Predictions, NumpyHelper, Config, Plotting
+from Services import File, Predictions, NumpyHelper, Config, Plotting, PostProcessing
 import Constants
 import numpy as np
 
@@ -42,14 +42,17 @@ def start():
     file_index = 0
     for filename, df in data_frames.items():
         try:
+            Constants.CURRENT_EVALUATED_FILE = filename
             Constants.EVALUATED_FILE_NAMES.append(filename)
+            Constants.EVALUATED_FILE_PARAMETER_COUNTS.append(len(df.columns))
+            Constants.EVALUATED_FILE_ROW_COUNTS.append(len(df.index))
 
             print(f"Evaluating {filename}")
             File.create_tool_folder(filename)
             if 'runtime' in df.columns:
                 print("Predicting runtime...")
                 scores = Predictions.predict(df, 'runtime')
-                Plotting.plot_box(scores, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, "runtime")
+                Plotting.tool_evaluation(scores, "runtime")
                 File.create_csv_file(scores, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, "runtime")
 
                 mean_over_file = NumpyHelper.get_mean_per_column_per_df(scores)
@@ -60,7 +63,7 @@ def start():
             if 'memory.max_usage_in_bytes' in df.columns:
                 print("Predicting memory...")
                 scores = Predictions.predict(df, 'memory.max_usage_in_bytes')
-                Plotting.plot_box(scores, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, "memory")
+                Plotting.tool_evaluation(scores, "memory")
                 File.create_csv_file(scores, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, "memory")
 
                 mean_over_file = NumpyHelper.get_mean_per_column_per_df(scores)
@@ -76,7 +79,9 @@ def start():
         # Increase file index to replace the correct row in the previous made data set
         file_index += 1
 
+    Plotting.plot_summary()
     File.write_summary()
+    File.write_too_small_data_sets()
 
 
 def handle_args():
