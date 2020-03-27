@@ -81,7 +81,6 @@ def start():
 
     Plotting.plot_summary()
     File.write_summary()
-    File.write_too_small_data_sets()
 
 
 def handle_args():
