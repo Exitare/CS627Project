@@ -3,6 +3,7 @@ from Services import File
 import Constants
 
 
+# TODO: maybe use agg instead of this
 def get_mean_per_column_per_df(df):
     """
     Returns the mean of every column of the given df
