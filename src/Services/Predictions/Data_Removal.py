@@ -3,8 +3,7 @@ from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score
-from Services import NumpyHelper, PreProcessing, File, Config
-import Constants
+from Services import NumpyHelper, PreProcessing, Config
 
 
 def predict(df, feature: str):
@@ -99,4 +98,5 @@ def calculate(model, i, X, y, train_index, test_index):
 
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_test)
+    print(r2_score(y_test, y_test_hat))
     return r2_score(y_test, y_test_hat)

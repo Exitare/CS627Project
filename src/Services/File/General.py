@@ -1,35 +1,13 @@
+from pathlib import Path
+import shutil
+import RuntimeContants
 import datetime
 import os
 import ntpath
 import sys
-from Services import PreProcessing, NumpyHelper
+from Services import PreProcessing
 from Services.Config import Config
 import pandas as pd
-import Constants
-from pathlib import Path
-import shutil
-
-
-def write_too_small_data_sets():
-    """
-    Creates a csv containing all files which does not have enough data
-    to generate reasonable predictions
-    """
-    df = pd.DataFrame(Constants.FILES_CONTAINING_NOT_ENOUGH_DATA, columns = "Filename")
-    df.to_csv(f"{Constants.CURRENT_WORKING_DIRECTORY}/Small_Data_Sets.csv")
-
-
-def create_csv_file(df, folder, name):
-    """
-    Writes a df to a given folder with the given name
-    :param df:
-    :param folder:
-    :param name:
-    :return:
-    """
-    if folder != "":
-        path = os.path.join(folder, f"{name}.csv")
-        df.to_csv(path, index=True)
 
 
 def create_tool_folder(filename: str):
@@ -39,18 +17,18 @@ def create_tool_folder(filename: str):
     :return:
     """
 
-    path = Path(f"{Constants.CURRENT_WORKING_DIRECTORY}/{filename}")
+    path = Path(f"{RuntimeContants.CURRENT_WORKING_DIRECTORY}/{filename}")
     try:
         Path(path).mkdir(parents=True, exist_ok=True)
 
     except OSError as ex:
         print("Creation of tool directory %s failed" % path)
         print("Stopping application")
-        remove_folder(Constants.CURRENT_WORKING_DIRECTORY)
+        remove_folder(RuntimeContants.CURRENT_WORKING_DIRECTORY)
         print(ex)
         sys.exit()
     else:
-        Constants.CURRENT_EVALUATED_TOOL_DIRECTORY = path
+        RuntimeContants.CURRENT_EVALUATED_TOOL_DIRECTORY = path
         return path
 
 
@@ -81,7 +59,7 @@ def create_evaluation_folder():
         print(ex)
         sys.exit()
     else:
-        Constants.CURRENT_WORKING_DIRECTORY = path
+        RuntimeContants.CURRENT_WORKING_DIRECTORY = path
 
 
 def remove_folder(path):
@@ -113,6 +91,7 @@ def check_folder_integrity():
     Checks if the Data folder structure is up to date given the options from the config
     :return:
     """
+
     print("Checking data folder integrity...")
     if not os.path.isdir(f"{Config.DATA_ROOT_DIRECTORY}"):
         print("Raw data directory not found. Creating...")
@@ -153,35 +132,18 @@ def read_files(path: str):
         return data_frames
     except OSError as ex:
         print(ex)
-        remove_folder(Constants.CURRENT_WORKING_DIRECTORY)
+        remove_folder(RuntimeContants.CURRENT_WORKING_DIRECTORY)
         sys.exit()
 
 
-def write_summary():
-    if not NumpyHelper.df_only_nan(Constants.RUNTIME_MEAN_REPORT):
-        Constants.RUNTIME_MEAN_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
-        Constants.RUNTIME_MEAN_REPORT['row_count'] = Constants.EVALUATED_FILE_ROW_COUNTS
-        Constants.RUNTIME_MEAN_REPORT['parameter_count'] = Constants.EVALUATED_FILE_PARAMETER_COUNTS
-        create_csv_file(Constants.RUNTIME_MEAN_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
-                        Config.FILE_RUNTIME_MEAN_SUMMARY)
-
-    if not NumpyHelper.df_only_nan(Constants.RUNTIME_VAR_REPORT):
-        Constants.RUNTIME_VAR_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
-        Constants.RUNTIME_VAR_REPORT['row_count'] = Constants.EVALUATED_FILE_ROW_COUNTS
-        Constants.RUNTIME_VAR_REPORT['parameter_count'] = Constants.EVALUATED_FILE_PARAMETER_COUNTS
-        create_csv_file(Constants.RUNTIME_VAR_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
-                        Config.FILE_RUNTIME_VAR_SUMMARY)
-
-    if not NumpyHelper.df_only_nan(Constants.MEMORY_MEAN_REPORT):
-        Constants.MEMORY_MEAN_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
-        Constants.MEMORY_MEAN_REPORT['row_count'] = Constants.EVALUATED_FILE_ROW_COUNTS
-        Constants.MEMORY_MEAN_REPORT['parameter_count'] = Constants.EVALUATED_FILE_PARAMETER_COUNTS
-        create_csv_file(Constants.MEMORY_MEAN_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
-                        Config.FILE_MEMORY_MEAN_SUMMARY)
-
-    if not NumpyHelper.df_only_nan(Constants.MEMORY_VAR_REPORT):
-        Constants.MEMORY_VAR_REPORT['file'] = Constants.EVALUATED_FILE_NAMES
-        Constants.MEMORY_VAR_REPORT['row_count'] = Constants.EVALUATED_FILE_ROW_COUNTS
-        Constants.MEMORY_VAR_REPORT['parameter_count'] = Constants.EVALUATED_FILE_PARAMETER_COUNTS
-        create_csv_file(Constants.MEMORY_VAR_REPORT, Constants.CURRENT_WORKING_DIRECTORY,
-                        Config.FILE_MEMORY_VAR_SUMMARY)
+def create_csv_file(df, folder, name):
+    """
+    Writes a df to a given folder with the given name
+    :param df:
+    :param folder:
+    :param name:
+    :return:
+    """
+    if folder != "":
+        path = os.path.join(folder, f"{name}.csv")
+        df.to_csv(path, index=True)

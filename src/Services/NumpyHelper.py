@@ -1,6 +1,6 @@
 import numpy as np
 from Services import File
-import Constants
+import RuntimeContants
 
 
 # TODO: maybe use agg instead of this
@@ -17,7 +17,7 @@ def get_mean_per_column_per_df(df):
 
         return np.asarray(mean)
     except:
-        File.remove_folder(Constants.CURRENT_WORKING_DIRECTORY)
+        File.remove_folder(RuntimeContants.CURRENT_WORKING_DIRECTORY)
 
 
 def get_var_per_column_per_df(df):
@@ -42,7 +42,7 @@ def replace_column_with_array(df, column_id, array):
         return df
 
     except:
-        File.remove_folder(Constants.CURRENT_WORKING_DIRECTORY)
+        File.remove_folder(RuntimeContants.CURRENT_WORKING_DIRECTORY)
 
 
 def df_only_nan(df):

@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import Constants
+import RuntimeContants
 
 
 def plot(df, file_name):
@@ -16,6 +16,5 @@ def plot(df, file_name):
     ax.set_ylabel('Y Hat')
     plt.yscale('symlog')
     plt.xscale('symlog')
-    print(f"{Constants.CURRENT_EVALUATED_TOOL_DIRECTORY}/{file_name}")
-    plt.savefig(f"{Constants.CURRENT_EVALUATED_TOOL_DIRECTORY}/{file_name}.jpg", dpi=None, format='png')
+    plt.savefig(f"{RuntimeContants.CURRENT_EVALUATED_TOOL_DIRECTORY}/{file_name}.jpg", dpi=None, format='png')
     plt.close()

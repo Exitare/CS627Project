@@ -1,11 +1,13 @@
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
-from Services import Config, File
+from Services import Config
+from Services.File import General
 from Services.Plotting import Single_Plotting
 import pandas as pd
-import numpy as np
-import Constants
+import RuntimeContants
 import sys
+from sklearn.feature_selection import f_regression
+from sklearn.metrics import r2_score
 
 
 def compare_real_to_predicted_data(df):
@@ -27,11 +29,25 @@ def compare_real_to_predicted_data(df):
 
             model.fit(X_train, y_train)
             y_test_hat = model.predict(X_test)
+            y_train_hat = model.predict(X_train)
 
+            test_score = r2_score(y_test, y_test_hat)
+            train_score = r2_score(y_train, y_train_hat)
+
+            overFitting = False
+            if test_score < train_score:
+                overFitting = True
+
+            RuntimeContants.OVER_UNDER_FITTING = RuntimeContants.OVER_UNDER_FITTING.append(
+                {'File Name': f"{RuntimeContants.CURRENT_EVALUATED_FILE}", "Test Score": f"{test_score}",
+                 "Train Score": f"{train_score}", "Potential Over Fitting": f"{overFitting}"}, ignore_index=True)
+            print(RuntimeContants.OVER_UNDER_FITTING)
             value_comparison = value_comparison.assign(y=pd.Series(y_test))
             value_comparison = value_comparison.assign(y_test_hat=pd.Series(y_test_hat))
+            # Na values are set to 0
             value_comparison = value_comparison.fillna(0)
 
+            f_regression(X, y)
             Single_Plotting.plot(value_comparison, "y_vs_y_hat")
             # Plotting.plot(value_comparison, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, 'Value_Comparison_Runtime')
 
@@ -53,5 +69,5 @@ def compare_real_to_predicted_data(df):
 
     except BaseException as ex:
         print(ex)
-        File.remove_folder(Constants.CURRENT_WORKING_DIRECTORY)
+        General.remove_folder(RuntimeContants.CURRENT_WORKING_DIRECTORY)
         sys.exit()
