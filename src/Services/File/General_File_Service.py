@@ -1,11 +1,11 @@
 from pathlib import Path
 import shutil
-import RuntimeContants
 import datetime
 import os
 import ntpath
 import sys
 from Services import PreProcessing
+from RuntimeContants import Runtime_Folders, Runtime_Datasets
 from Services.Config import Config
 import pandas as pd
 
@@ -17,18 +17,18 @@ def create_tool_folder(filename: str):
     :return:
     """
 
-    path = Path(f"{RuntimeContants.CURRENT_WORKING_DIRECTORY}/{filename}")
+    path = Path(f"{Runtime_Folders.CURRENT_WORKING_DIRECTORY}/{filename}")
     try:
         Path(path).mkdir(parents=True, exist_ok=True)
 
     except OSError as ex:
         print("Creation of tool directory %s failed" % path)
         print("Stopping application")
-        remove_folder(RuntimeContants.CURRENT_WORKING_DIRECTORY)
+        remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
         print(ex)
         sys.exit()
     else:
-        RuntimeContants.CURRENT_EVALUATED_TOOL_DIRECTORY = path
+        Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY = path
         return path
 
 
@@ -47,7 +47,6 @@ def create_evaluation_folder():
     Creates the evaluation folder aka the root folder for each run of the application
     :return:
     """
-
     now = datetime.datetime.now()
     path = Path(f"{Config.DATA_RESULTS_DIRECTORY}/{now.strftime('%Y-%m-%d-%H-%M-%S')}")
     try:
@@ -59,7 +58,7 @@ def create_evaluation_folder():
         print(ex)
         sys.exit()
     else:
-        RuntimeContants.CURRENT_WORKING_DIRECTORY = path
+        Runtime_Folders.CURRENT_WORKING_DIRECTORY = path
 
 
 def remove_folder(path):
@@ -132,7 +131,7 @@ def read_files(path: str):
         return data_frames
     except OSError as ex:
         print(ex)
-        remove_folder(RuntimeContants.CURRENT_WORKING_DIRECTORY)
+        remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
         sys.exit()
 
 
