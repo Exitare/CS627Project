@@ -1,1 +1,1 @@
-__all__ = ['Data_Removal', 'Normal']
+__all__ = ['Data_Removal', 'Single_Predictions']

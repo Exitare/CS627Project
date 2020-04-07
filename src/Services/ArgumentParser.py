@@ -1,6 +1,7 @@
 from RuntimeContants import Runtime_Datasets
 import argparse
 
+
 def handle_args():
     """
     Parse the given arguments
@@ -12,3 +13,6 @@ def handle_args():
     parser.add_argument('--remove', dest='remove', action='store', required=False)
     args = parser.parse_args()
     Runtime_Datasets.COMMAND_LINE_ARGS = args
+
+    if (Runtime_Datasets.COMMAND_LINE_ARGS.remove):
+        print("Data removal active")

@@ -19,6 +19,8 @@ def predict(df, feature: str):
 
     for i in range(0, Config.Config.REPETITIONS, 1):
         print(f"Started repetition # {i + 1}")
+        print(k_folds(X, y).mean())
+        input()
         averages.append(k_folds(X, y))
         scores.iloc[i] = NumpyHelper.get_mean_per_column_per_df(averages[i])
 

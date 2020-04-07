@@ -21,6 +21,7 @@ def process_data_sets():
 
     for filename, df in Runtime_Datasets.RAW_FILE_DATA_SETS.items():
         try:
+            print(f"Evaluating {filename}")
             # Generate tool folder
             General_File_Service.create_tool_folder(filename)
 
@@ -30,13 +31,13 @@ def process_data_sets():
             Runtime_File_Data.EVALUATED_FILE_ROW_COUNT = len(df.index)
 
             # Working on full data set
-            Single_Predictions.compare_real_to_predicted_data(df)
+            # Single_Predictions.compare_real_to_predicted_data(df)
 
             if Runtime_Datasets.COMMAND_LINE_ARGS.remove:
-                remove_data(filename, df)
+                evaluate_data_set_by_removing_data(filename, df)
 
         except Exception as ex:
-            print("error occurred in start()")
+            print("error occurred in process_data_sets()")
             print(ex)
             General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
             sys.exit()
@@ -81,12 +82,13 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def remove_data(filename: str, df):
+def evaluate_data_set_by_removing_data(filename: str, df):
     try:
-        print(f"Evaluating {filename}")
         if 'runtime' in df.columns:
+            print("hi")
             print("Predicting runtime...")
             scores = Data_Removal.predict(df, 'runtime')
+            input()
             Plotting.tool_evaluation(scores, "runtime")
             General_File_Service.create_csv_file(scores, Runtime_Datasets.CURRENT_EVALUATED_TOOL_DIRECTORY, "runtime")
 
@@ -99,6 +101,7 @@ def remove_data(filename: str, df):
         if 'memory.max_usage_in_bytes' in df.columns:
             print("Predicting memory...")
             scores = Data_Removal.predict(df, 'memory.max_usage_in_bytes')
+            input()
             Plotting.tool_evaluation(scores, "memory")
             General_File_Service.create_csv_file(scores, Runtime_Datasets.CURRENT_EVALUATED_TOOL_DIRECTORY, "memory")
 
@@ -111,7 +114,7 @@ def remove_data(filename: str, df):
 
     except BaseException as ex:
         print(ex)
-        General_File_Service.remove_folder(Runtime_Datasets.CURRENT_WORKING_DIRECTORY)
+        General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
         sys.exit()
 
 
