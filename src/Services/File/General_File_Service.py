@@ -109,7 +109,7 @@ def check_folder_integrity():
 
 def read_files(path: str):
     """
-    Read all files and returns everything as list of dataframes
+    Read all files and returns everything as list of data frames
     :param path:
     :return:
     """
@@ -128,7 +128,7 @@ def read_files(path: str):
             else:
                 continue
 
-        return data_frames
+        Runtime_Datasets.RAW_FILE_DATA_SETS = data_frames
     except OSError as ex:
         print(ex)
         remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)

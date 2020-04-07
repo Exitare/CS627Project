@@ -1,5 +1,3 @@
-from sklearn import __version__
-import pandas as pd
 import argparse
 import signal
 import sys
@@ -7,60 +5,35 @@ from Services import NumpyHelper, Config, Plotting
 from Services.Predictions import Single_Predictions, Data_Removal
 from Services.File import General_File_Service, Data_Removal
 from RuntimeContants import Runtime_Datasets, Runtime_Folders, Runtime_File_Data
-import numpy as np
+from Services import ArgumentParser
 
 
-# https://pbpython.com/categorical-encoding.html
-
-def start():
+def process_data_sets():
     """
-    Start the application
+    Processes all data sets, read from the given folder
     :return:
     """
-    Config.read_conf()
-    General_File_Service.check_folder_integrity()
-    General_File_Service.create_evaluation_folder()
-    data_frames = General_File_Service.read_files(Config.Config.DATA_RAW_DIRECTORY)
 
-    Runtime_Datasets.RUNTIME_MEAN_REPORT = pd.DataFrame(np.nan, index=np.arange(len(data_frames)),
-                                                        columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
-                                                                 '90',
-                                                                 '91', '92', '93', '94', '95', '96', '97', '98', '99'])
-    Runtime_Datasets.RUNTIME_VAR_REPORT = pd.DataFrame(np.nan, index=np.arange(len(data_frames)),
-                                                       columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
-                                                                '90',
-                                                                '91', '92', '93', '94', '95', '96', '97', '98', '99'])
-
-    Runtime_Datasets.MEMORY_MEAN_REPORT = pd.DataFrame(np.nan, index=np.arange(len(data_frames)),
-                                                       columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
-                                                                '90',
-                                                                '91', '92', '93', '94', '95', '96', '97', '98', '99'])
-    Runtime_Datasets.MEMORY_VAR_REPORT = pd.DataFrame(np.nan, index=np.arange(len(data_frames)),
-                                                      columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
-                                                               '90',
-                                                               '91', '92', '93', '94', '95', '96', '97', '98', '99'])
-
-    if len(data_frames) == 0:
+    if len(Runtime_Datasets.RAW_FILE_DATA_SETS) == 0:
         print("No files found to evaluate. Stopping")
         General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
         sys.exit()
 
-    file_index = 0
-    for filename, df in data_frames.items():
+    for filename, df in Runtime_Datasets.RAW_FILE_DATA_SETS.items():
         try:
-            Runtime_File_Data.CURRENT_EVALUATED_FILE = filename
+            # Generate tool folder
+            General_File_Service.create_tool_folder(filename)
+
+            # Set important runtime file values
+            Runtime_File_Data.EVALUATED_FILE_NAME = filename
             Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT = len(df.columns)
             Runtime_File_Data.EVALUATED_FILE_ROW_COUNT = len(df.index)
 
-            Runtime_Datasets.EVALUATED_FILE_NAMES.append(filename)
-            Runtime_Datasets.EVALUATED_FILE_PARAMETER_COUNTS.append(len(df.columns))
-            Runtime_Datasets.EVALUATED_FILE_ROW_COUNTS.append(len(df.index))
-            General_File_Service.create_tool_folder(filename)
-
             # Working on full data set
             Single_Predictions.compare_real_to_predicted_data(df)
+
             if Runtime_Datasets.COMMAND_LINE_ARGS.remove:
-                remove_data(filename, df, file_index)
+                remove_data(filename, df)
 
         except Exception as ex:
             print("error occurred in start()")
@@ -68,9 +41,12 @@ def start():
             General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
             sys.exit()
 
-        # Increase file index to replace the correct row in the previous made data set
-        file_index += 1
 
+def generate_csv_file():
+    """
+    Writes all specified data sets
+    :return:
+    """
     General_File_Service.create_csv_file(Runtime_Datasets.OVER_UNDER_FITTING, Runtime_Folders.CURRENT_WORKING_DIRECTORY,
                                          "Over_Under_Fitting")
 
@@ -80,20 +56,23 @@ def start():
         Plotting.plot_group_by_parameter_count()
 
 
-def handle_args():
+def plot_data_sets():
     """
-    Parse the given arguments
+    Plots all specified data sets
     :return:
     """
-    parser = argparse.ArgumentParser(description='Get the impact of tool features on it\'s runtime.',
-                                     epilog='Accepts tsv and csv files')
-    parser.add_argument('--path', dest='path', action='store', required=False, choices=[0, 1], default=0)
-    parser.add_argument('--remove', dest='remove', action='store', required=False)
-    args = parser.parse_args()
-    Runtime_Datasets.COMMAND_LINE_ARGS = args
+    if Runtime_Datasets.COMMAND_LINE_ARGS.remove:
+        Plotting.plot_summary()
+        Plotting.plot_group_by_parameter_count()
 
 
 def signal_handler(sig, frame):
+    """
+    Handles a signal. Like pressing crtl +c
+    :param sig:
+    :param frame:
+    :return:
+    """
     print('Shutting down gracefully!')
     print("Deleting working directory")
     General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
@@ -102,7 +81,7 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def remove_data(filename: str, df, file_index: int):
+def remove_data(filename: str, df):
     try:
         print(f"Evaluating {filename}")
         if 'runtime' in df.columns:
@@ -113,6 +92,7 @@ def remove_data(filename: str, df, file_index: int):
 
             mean_over_file = NumpyHelper.get_mean_per_column_per_df(scores)
             var_over_file = NumpyHelper.get_var_per_column_per_df(scores)
+
             NumpyHelper.replace_column_with_array(Runtime_Datasets.RUNTIME_MEAN_REPORT, file_index, mean_over_file)
             NumpyHelper.replace_column_with_array(Runtime_Datasets.RUNTIME_VAR_REPORT, file_index, var_over_file)
 
@@ -124,6 +104,7 @@ def remove_data(filename: str, df, file_index: int):
 
             mean_over_file = NumpyHelper.get_mean_per_column_per_df(scores)
             var_over_file = NumpyHelper.get_var_per_column_per_df(scores)
+
             NumpyHelper.replace_column_with_array(Runtime_Datasets.MEMORY_MEAN_REPORT, file_index, mean_over_file)
             NumpyHelper.replace_column_with_array(Runtime_Datasets.MEMORY_VAR_REPORT, file_index, var_over_file)
 
@@ -137,6 +118,12 @@ def remove_data(filename: str, df, file_index: int):
 signal.signal(signal.SIGINT, signal_handler)
 
 if __name__ == '__main__':
-    handle_args()
-    start()
+    ArgumentParser.handle_args()
+    Config.read_conf()
+    General_File_Service.check_folder_integrity()
+    General_File_Service.create_evaluation_folder()
+    General_File_Service.read_files(Config.Config.DATA_RAW_DIRECTORY)
+    process_data_sets()
+    generate_csv_file()
+    plot_data_sets()
     exit(0)

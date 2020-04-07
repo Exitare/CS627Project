@@ -52,7 +52,7 @@ def predict_runtime(df):
         overFitting = True
 
     Runtime_Datasets.OVER_UNDER_FITTING = Runtime_Datasets.OVER_UNDER_FITTING.append(
-        {'File Name': Runtime_File_Data.CURRENT_EVALUATED_FILE, "Test Score": test_score,
+        {'File Name': Runtime_File_Data.EVALUATED_FILE_NAME, "Test Score": test_score,
          "Train Score": train_score, "Potential Over Fitting": overFitting,
          "Row Count": Runtime_File_Data.EVALUATED_FILE_ROW_COUNT,
          "Parameter Count": Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT}, ignore_index=True)
@@ -80,4 +80,3 @@ def predict_memory(df):
 
     value_comparison.iloc['y'] = X_test
     value_comparison.iloc['y_test_hat'] = y_test_hat
-    # Plotting.plot(value_comparison, Constants.CURRENT_EVALUATED_TOOL_DIRECTORY, 'Value_Comparison_Memory')

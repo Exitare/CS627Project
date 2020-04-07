@@ -9,8 +9,7 @@ from Services import NumpyHelper, PreProcessing, Config
 def predict(df, feature: str):
     averages = []
 
-    scores = pd.DataFrame(0, index=np.arange(Config.Config.REPETITIONS),
-                          columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
+    scores = pd.DataFrame(columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
                                    '95', '96', '97', '98', '99'])
 
     y = df[f'{feature}']
