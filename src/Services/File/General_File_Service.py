@@ -5,9 +5,10 @@ import os
 import ntpath
 import sys
 from Services import PreProcessing
-from RuntimeContants import Runtime_Folders, Runtime_Datasets
+from RuntimeContants import Runtime_Folders, Runtime_Datasets, Runtime_File_Data
 from Services.Config import Config
 import pandas as pd
+import numpy as np
 
 
 def create_tool_folder(filename: str):
@@ -107,28 +108,43 @@ def check_folder_integrity():
     print("Data folder checked and ready!")
 
 
-def read_files(path: str):
+def get_all_file_paths(path: str):
     """
-    Read all files and returns everything as list of data frames
+    Iterates through the folder and store every file path.
     :param path:
     :return:
     """
     try:
+        print("Loading files")
         directory = os.fsencode(path)
-        data_frames = dict()
         for file in os.listdir(directory):
             filename = os.fsdecode(file)
             if filename.endswith(".csv") or filename.endswith(".tsv"):
-                df = pd.read_csv(f"{Config.DATA_RAW_DIRECTORY}/{filename}")
-                df = PreProcessing.fill_na(df)
-                df = PreProcessing.remove_bad_columns(df)
-                df = PreProcessing.convert_factorial_to_numerical(df)
-                data_frames[filename] = df
+                Runtime_Datasets.RAW_FILE_PATHS.append(filename)
                 continue
             else:
                 continue
 
-        Runtime_Datasets.RAW_FILE_DATA_SETS = data_frames
+    except OSError as ex:
+        print(ex)
+        remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
+        sys.exit()
+
+
+def read_file(path: str):
+    """
+    Reads the file located by the given path
+    :param path:
+    :return:
+    """
+    try:
+        df = pd.read_csv(f"{Config.DATA_RAW_DIRECTORY}/{path}")
+        df.replace([np.inf, -np.inf], np.nan)
+        df[df == np.inf] = np.nan
+        df = PreProcessing.fill_na(df)
+        df = PreProcessing.remove_bad_columns(df)
+        df = PreProcessing.convert_factorial_to_numerical(df)
+        Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET = df
     except OSError as ex:
         print(ex)
         remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)

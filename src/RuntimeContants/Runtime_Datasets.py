@@ -1,7 +1,7 @@
 import pandas as pd
 
 # All data sets from the folder
-RAW_FILE_DATA_SETS = []
+RAW_FILE_PATHS = []
 
 # Data Removal
 RUNTIME_MEAN_REPORT = pd.DataFrame(columns=['File', '0', '10', '20', '30', '40', '50', '60', '70', '80',
@@ -20,7 +20,8 @@ MEMORY_VAR_REPORT = pd.DataFrame(columns=['File', '0', '10', '20', '30', '40', '
 EVALUATED_FILE_PREDICTED_VALUES = pd.DataFrame(columns=['y', 'y_hat'])
 
 OVER_UNDER_FITTING = pd.DataFrame(
-    columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Row Count', 'Parameter Count'])
+    columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
+             'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
 
 EVALUATED_FILE_NAMES = []
 # Backwards compatibility

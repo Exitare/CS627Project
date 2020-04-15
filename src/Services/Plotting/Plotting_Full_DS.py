@@ -18,3 +18,4 @@ def plot(df, file_name):
     plt.xscale('symlog')
     plt.savefig(f"{Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY}/{file_name}.jpg", dpi=None, format='png')
     plt.close()
+    plt.close('all')

@@ -2,12 +2,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from Services import Config
 from Services.File import General_File_Service
-from Services.Plotting import Single_Plotting
+from Services.Plotting import Plotting_Full_DS
 import pandas as pd
 from RuntimeContants import Runtime_Folders, Runtime_Datasets, Runtime_File_Data
 import sys
 from sklearn.feature_selection import f_regression
 from sklearn.metrics import r2_score
+from Services import PreProcessing
 
 
 def compare_real_to_predicted_data(df):
@@ -34,10 +35,36 @@ def predict_runtime(df):
     value_comparison = pd.DataFrame(columns=['y', 'y_test_hat'])
 
     model = RandomForestRegressor(n_estimators=Config.Config.FOREST_ESTIMATORS, random_state=1)
+    # create a copy of the data set
     copy = df
     y = copy['runtime']
     del copy['runtime']
     X = copy
+
+    temp_len = len(X)
+
+    X_indexes = (df != 0).any(axis=1)
+    X = X.loc[X_indexes]
+    y = y.loc[X_indexes]
+
+    if temp_len != len(X):
+        print(copy)
+        print(f"Removed {temp_len - len(X)} rows. Source had {temp_len}")
+
+    # print(X)
+    if len(X.index) == 0:
+        General_File_Service.remove_folder(Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY)
+        return
+
+    X = PreProcessing.normalize_X(X)
+    X = PreProcessing.variance_selection(X)
+
+    # Check if x is valid or not
+    if type(X) == int:
+        if X == 0:
+            General_File_Service.remove_folder(Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY)
+            return
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
 
     model.fit(X_train, y_train)
@@ -54,16 +81,17 @@ def predict_runtime(df):
     Runtime_Datasets.OVER_UNDER_FITTING = Runtime_Datasets.OVER_UNDER_FITTING.append(
         {'File Name': Runtime_File_Data.EVALUATED_FILE_NAME, "Test Score": test_score,
          "Train Score": train_score, "Potential Over Fitting": overFitting,
-         "Row Count": Runtime_File_Data.EVALUATED_FILE_ROW_COUNT,
-         "Parameter Count": Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT}, ignore_index=True)
+         "Initial Row Count": Runtime_File_Data.EVALUATED_FILE_ROW_COUNT,
+         "Initial Feature Count": Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT, "Processed Row Count": len(X),
+         "Processed Feature Count": X.shape[1]}, ignore_index=True)
 
     value_comparison = value_comparison.assign(y=pd.Series(y_test))
     value_comparison = value_comparison.assign(y_test_hat=pd.Series(y_test_hat))
-    # Na values are set to 0
-    value_comparison = value_comparison.fillna(0)
 
-    f_regression(X, y)
-    Single_Plotting.plot(value_comparison, "y_vs_y_hat")
+    #f_regression(X, y)
+
+    # Plot y vs y hat plot
+    Plotting_Full_DS.plot(value_comparison, "y_vs_y_hat")
 
 
 def predict_memory(df):
@@ -74,6 +102,16 @@ def predict_memory(df):
     y = copy['memory.max_usage_in_bytes']
     del copy['memory.max_usage_in_bytes']
     X = copy
+
+    print(X)
+    X = PreProcessing.normalize_X(X)
+    print("Norm")
+    print(X)
+
+    X = PreProcessing.feature_selection(X)
+    print("Feature")
+    print(X)
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
     model.fit(X_train, y_train)
     y_test_hat = model.predict(X_test)

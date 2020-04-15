@@ -1,4 +1,5 @@
 from sklearn import preprocessing
+from sklearn.feature_selection import VarianceThreshold
 import numpy as np
 import pandas as pd
 
@@ -9,12 +10,23 @@ np.random.seed(10)
 # https://chrisalbon.com/machine_learning/preprocessing_structured_data/convert_pandas_categorical_column_into_integers_for_scikit-learn/
 # https://stackoverflow.com/questions/51741605/standardize-dataset-containing-too-large-values Scaler
 
+def variance_selection(X):
+    try:
+        selector = VarianceThreshold()
+        X = selector.fit_transform(X)
+        return X
+
+    except ValueError:
+        return 0
+
+
 def normalize_X(X):
     """
     Standard Scaler to normalize the data using z-scores
     """
     scaler = preprocessing.StandardScaler()
-    return scaler.fit_transform(X)
+    X = scaler.fit_transform(X)
+    return X
 
 
 def remove_bad_columns(df):
@@ -32,6 +44,9 @@ def remove_bad_columns(df):
 
     if 'destination_id' in df.columns:
         columns.append('destination_id')
+
+    if 'input_file' in df.columns:
+        columns.append('input_file')
 
     for column in columns:
         del df[column]
@@ -94,5 +109,3 @@ def remove_random_rows(df, amount):
         return df
 
     return np.delete(df, drop_indices)
-
-
