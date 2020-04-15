@@ -2,8 +2,7 @@ import argparse
 import signal
 import sys
 from Services import NumpyHelper, Config
-from Services.Plotting import Plotting_Full_DS, Plotting_Data_Removal
-from Services.Predictions import Single_Predictions, Data_Removal
+from Services.Predictions import Single_Predictions, Predict_Data_Removal
 from Services.File import General_File_Service, Data_Removal
 from RuntimeContants import Runtime_Datasets, Runtime_Folders, Runtime_File_Data
 from Services import ArgumentParser
@@ -41,12 +40,12 @@ def process_data_sets():
                     continue
 
             # Working on full data set
-            Single_Predictions.compare_real_to_predicted_data(Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET)
+            Single_Predictions.compare_real_to_predicted_data()
 
             # Remove data by percentage
             if Runtime_Datasets.COMMAND_LINE_ARGS.remove:
                 print("Removing data by percentage")
-                evaluate_data_set_by_removing_data(filename, Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET)
+                Predict_Data_Removal()
 
         except Exception as ex:
             print("error occurred in process_data_sets()")
@@ -60,10 +59,12 @@ def generate_csv_file():
     Writes all specified data sets
     :return:
     """
-    General_File_Service.create_csv_file(Runtime_Datasets.OVER_UNDER_FITTING, Runtime_Folders.CURRENT_WORKING_DIRECTORY,
-                                         "Over_Under_Fitting")
-
-
+    General_File_Service.create_csv_file(Runtime_Datasets.GENERAL_INFORMATION_RUNTIME,
+                                         Runtime_Folders.CURRENT_WORKING_DIRECTORY,
+                                         "General_Information_Runtime")
+    General_File_Service.create_csv_file(Runtime_Datasets.GENERAL_INFORMATION_MEMORY,
+                                         Runtime_Folders.CURRENT_WORKING_DIRECTORY,
+                                         "General_Information_Memory")
 
 
 def signal_handler(sig, frame):
@@ -81,40 +82,6 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def evaluate_data_set_by_removing_data(filename: str, df):
-    try:
-        if 'runtime' in df.columns:
-            print("Predicting runtime...")
-            scores = Data_Removal.predict(df, 'runtime')
-            input()
-            Plotting_Data_Removal.tool_evaluation(scores, "runtime")
-            General_File_Service.create_csv_file(scores, Runtime_Datasets.CURRENT_EVALUATED_TOOL_DIRECTORY, "runtime")
-
-            mean_over_file = NumpyHelper.get_mean_per_column_per_df(scores)
-            var_over_file = NumpyHelper.get_var_per_column_per_df(scores)
-
-            NumpyHelper.replace_column_with_array(Runtime_Datasets.RUNTIME_MEAN_REPORT, file_index, mean_over_file)
-            NumpyHelper.replace_column_with_array(Runtime_Datasets.RUNTIME_VAR_REPORT, file_index, var_over_file)
-
-        if 'memory.max_usage_in_bytes' in df.columns:
-            print("Predicting memory...")
-            scores = Data_Removal.predict(df, 'memory.max_usage_in_bytes')
-            input()
-            Plotting_Data_Removal.tool_evaluation(scores, "memory")
-            General_File_Service.create_csv_file(scores, Runtime_Datasets.CURRENT_EVALUATED_TOOL_DIRECTORY, "memory")
-
-            mean_over_file = NumpyHelper.get_mean_per_column_per_df(scores)
-            var_over_file = NumpyHelper.get_var_per_column_per_df(scores)
-
-            NumpyHelper.replace_column_with_array(Runtime_Datasets.MEMORY_MEAN_REPORT, file_index, mean_over_file)
-            NumpyHelper.replace_column_with_array(Runtime_Datasets.MEMORY_VAR_REPORT, file_index, var_over_file)
-
-    except BaseException as ex:
-        print(ex)
-        General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
-        sys.exit()
-
-
 signal.signal(signal.SIGINT, signal_handler)
 
 if __name__ == '__main__':
@@ -125,6 +92,6 @@ if __name__ == '__main__':
     General_File_Service.get_all_file_paths(Config.Config.DATA_RAW_DIRECTORY)
     process_data_sets()
     generate_csv_file()
-    #plot_data_sets()
+    # plot_data_sets()
     print("Done")
     exit(0)

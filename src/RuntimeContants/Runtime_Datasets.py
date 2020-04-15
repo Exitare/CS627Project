@@ -19,7 +19,11 @@ MEMORY_VAR_REPORT = pd.DataFrame(columns=['File', '0', '10', '20', '30', '40', '
 # Predictions vs Real
 EVALUATED_FILE_PREDICTED_VALUES = pd.DataFrame(columns=['y', 'y_hat'])
 
-OVER_UNDER_FITTING = pd.DataFrame(
+GENERAL_INFORMATION_RUNTIME = pd.DataFrame(
+    columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
+             'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
+
+GENERAL_INFORMATION_MEMORY = pd.DataFrame(
     columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
              'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
 

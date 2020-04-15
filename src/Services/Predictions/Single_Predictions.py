@@ -11,18 +11,20 @@ from sklearn.metrics import r2_score
 from Services import PreProcessing
 
 
-def compare_real_to_predicted_data(df):
+def compare_real_to_predicted_data():
     """
     Creates a plot which contains the real data compared to the predicted values
-    :param df:
+
     :return:
     """
     try:
+
+        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET
         if 'runtime' in df.columns:
-            predict_runtime(df)
+            predict(df, 'runtime')
 
         if 'memory.max_usage_in_bytes' in df.columns:
-            predict_memory(df)
+            predict(df, 'max_usage_in_bytes')
 
     except BaseException as ex:
         print("Error in compare_real_to_predicted_data")
@@ -31,24 +33,23 @@ def compare_real_to_predicted_data(df):
         sys.exit()
 
 
-def predict_runtime(df):
+def predict(df, feature: str):
     value_comparison = pd.DataFrame(columns=['y', 'y_test_hat'])
 
     model = RandomForestRegressor(n_estimators=Config.Config.FOREST_ESTIMATORS, random_state=1)
-    # create a copy of the data set
-    copy = df
-    y = copy['runtime']
-    del copy['runtime']
-    X = copy
+    # create a copy of the data set, because the df should be reused in other
+    y = df[f'{feature}']
+    del df[f'{feature}']
+    X = df
 
     temp_len = len(X)
 
-    X_indexes = (df != 0).any(axis=1)
+    X_indexes = (X != 0).any(axis=1)
     X = X.loc[X_indexes]
     y = y.loc[X_indexes]
 
     if temp_len != len(X):
-        print(copy)
+        print(df)
         print(f"Removed {temp_len - len(X)} rows. Source had {temp_len}")
 
     # print(X)
@@ -78,43 +79,27 @@ def predict_runtime(df):
     if train_score > test_score * 2:
         overFitting = True
 
-    Runtime_Datasets.OVER_UNDER_FITTING = Runtime_Datasets.OVER_UNDER_FITTING.append(
-        {'File Name': Runtime_File_Data.EVALUATED_FILE_NAME, "Test Score": test_score,
-         "Train Score": train_score, "Potential Over Fitting": overFitting,
-         "Initial Row Count": Runtime_File_Data.EVALUATED_FILE_ROW_COUNT,
-         "Initial Feature Count": Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT, "Processed Row Count": len(X),
-         "Processed Feature Count": X.shape[1]}, ignore_index=True)
+    # TODO: Hardcoded hack, just be dynamic
+    if feature == 'runtime':
+        Runtime_Datasets.GENERAL_INFORMATION_RUNTIME = Runtime_Datasets.GENERAL_INFORMATION_RUNTIME.append(
+            {'File Name': Runtime_File_Data.EVALUATED_FILE_NAME, "Test Score": test_score,
+             "Train Score": train_score, "Potential Over Fitting": overFitting,
+             "Initial Row Count": Runtime_File_Data.EVALUATED_FILE_ROW_COUNT,
+             "Initial Feature Count": Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT, "Processed Row Count": len(X),
+             "Processed Feature Count": X.shape[1]}, ignore_index=True)
+
+    if feature == 'memory.max_usage_in_bytes':
+        Runtime_Datasets.GENERAL_INFORMATION_MEMORY = Runtime_Datasets.GENERAL_INFORMATION_MEMORY.append(
+            {'File Name': Runtime_File_Data.EVALUATED_FILE_NAME, "Test Score": test_score,
+             "Train Score": train_score, "Potential Over Fitting": overFitting,
+             "Initial Row Count": Runtime_File_Data.EVALUATED_FILE_ROW_COUNT,
+             "Initial Feature Count": Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT, "Processed Row Count": len(X),
+             "Processed Feature Count": X.shape[1]}, ignore_index=True)
 
     value_comparison = value_comparison.assign(y=pd.Series(y_test))
     value_comparison = value_comparison.assign(y_test_hat=pd.Series(y_test_hat))
 
-    #f_regression(X, y)
+    # f_regression(X, y)
 
     # Plot y vs y hat plot
-    Plotting_Full_DS.plot(value_comparison, "y_vs_y_hat")
-
-
-def predict_memory(df):
-    value_comparison = pd.DataFrame(columns=['y', 'y_test_hat'])
-
-    model = RandomForestRegressor(n_estimators=Config.Config.FOREST_ESTIMATORS, random_state=1)
-    copy = df
-    y = copy['memory.max_usage_in_bytes']
-    del copy['memory.max_usage_in_bytes']
-    X = copy
-
-    print(X)
-    X = PreProcessing.normalize_X(X)
-    print("Norm")
-    print(X)
-
-    X = PreProcessing.feature_selection(X)
-    print("Feature")
-    print(X)
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
-    model.fit(X_train, y_train)
-    y_test_hat = model.predict(X_test)
-
-    value_comparison.iloc['y'] = X_test
-    value_comparison.iloc['y_test_hat'] = y_test_hat
+    Plotting_Full_DS.plot(value_comparison, f"{feature}_y_vs_y_hat")

@@ -4,6 +4,38 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score
 from Services import NumpyHelper, PreProcessing, Config
+from RuntimeContants import Runtime_File_Data, Runtime_Datasets, Runtime_Folders
+from Services.Plotting import Plotting_Data_Removal
+from Services.File import General_File_Service
+import sys
+
+
+def removal_helper():
+    """
+    Helper for managing all task related to the data removal, prediction etc
+    :return:
+    """
+    try:
+        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET
+        if 'runtime' in df.columns:
+            print("Predicting runtime...")
+            scores = predict(df, 'runtime')
+            input()
+            Plotting_Data_Removal.tool_evaluation(scores, "runtime")
+            General_File_Service.create_csv_file(scores, Runtime_Datasets.CURRENT_EVALUATED_TOOL_DIRECTORY, "runtime")
+
+        if 'memory.max_usage_in_bytes' in df.columns:
+            print("Predicting memory...")
+            scores = predict(df, 'memory.max_usage_in_bytes')
+            input()
+            Plotting_Data_Removal.tool_evaluation(scores, "memory")
+            General_File_Service.create_csv_file(scores, Runtime_Datasets.CURRENT_EVALUATED_TOOL_DIRECTORY, "memory")
+
+
+    except BaseException as ex:
+        print(ex)
+        General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
+        sys.exit()
 
 
 def predict(df, feature: str):

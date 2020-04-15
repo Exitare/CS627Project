@@ -160,5 +160,8 @@ def create_csv_file(df, folder, name):
     :return:
     """
     if folder != "":
+        if df.empty:
+            return
+
         path = os.path.join(folder, f"{name}.csv")
         df.to_csv(path, index=True)
