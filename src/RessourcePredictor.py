@@ -1,7 +1,7 @@
 import argparse
 import signal
 import sys
-from Services import NumpyHelper, Config
+from Services import Config
 from Services.Predictions import Single_Predictions, Predict_Data_Removal
 from Services.File import General_File_Service, Data_Removal
 from RuntimeContants import Runtime_Datasets, Runtime_Folders, Runtime_File_Data
@@ -40,12 +40,13 @@ def process_data_sets():
                     continue
 
             # Working on full data set
+            print("Evaluation full data set")
             Single_Predictions.compare_real_to_predicted_data()
 
             # Remove data by percentage
             if Runtime_Datasets.COMMAND_LINE_ARGS.remove:
                 print("Removing data by percentage")
-                Predict_Data_Removal()
+                Predict_Data_Removal.removal_helper()
 
         except Exception as ex:
             print("error occurred in process_data_sets()")
@@ -54,7 +55,7 @@ def process_data_sets():
             sys.exit()
 
 
-def generate_csv_file():
+def generate_csv_files():
     """
     Writes all specified data sets
     :return:
@@ -91,7 +92,7 @@ if __name__ == '__main__':
     General_File_Service.create_evaluation_folder()
     General_File_Service.get_all_file_paths(Config.Config.DATA_RAW_DIRECTORY)
     process_data_sets()
-    generate_csv_file()
+    generate_csv_files()
     # plot_data_sets()
     print("Done")
     exit(0)

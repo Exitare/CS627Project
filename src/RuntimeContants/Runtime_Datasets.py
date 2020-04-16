@@ -16,6 +16,10 @@ MEMORY_MEAN_REPORT = pd.DataFrame(columns=['File', '0', '10', '20', '30', '40', 
 MEMORY_VAR_REPORT = pd.DataFrame(columns=['File', '0', '10', '20', '30', '40', '50', '60', '70', '80',
                                           '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', 'Rows',
                                           'Features'])
+K_FOLD_FINAL_SCORES = pd.DataFrame(columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
+                                            '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', 'Rows',
+                                            'Features'])
+
 # Predictions vs Real
 EVALUATED_FILE_PREDICTED_VALUES = pd.DataFrame(columns=['y', 'y_hat'])
 

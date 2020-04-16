@@ -3,7 +3,7 @@ from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score
-from Services import NumpyHelper, PreProcessing, Config
+from Services import PreProcessing, Config
 from RuntimeContants import Runtime_File_Data, Runtime_Datasets, Runtime_Folders
 from Services.Plotting import Plotting_Data_Removal
 from Services.File import General_File_Service
@@ -16,20 +16,21 @@ def removal_helper():
     :return:
     """
     try:
-        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET
+        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.copy()
         if 'runtime' in df.columns:
             print("Predicting runtime...")
             scores = predict(df, 'runtime')
-            input()
             Plotting_Data_Removal.tool_evaluation(scores, "runtime")
-            General_File_Service.create_csv_file(scores, Runtime_Datasets.CURRENT_EVALUATED_TOOL_DIRECTORY, "runtime")
+            General_File_Service.create_csv_file(scores, Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY,
+                                                 "data_removal_runtime_evaluation")
 
+        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.copy()
         if 'memory.max_usage_in_bytes' in df.columns:
             print("Predicting memory...")
             scores = predict(df, 'memory.max_usage_in_bytes')
-            input()
             Plotting_Data_Removal.tool_evaluation(scores, "memory")
-            General_File_Service.create_csv_file(scores, Runtime_Datasets.CURRENT_EVALUATED_TOOL_DIRECTORY, "memory")
+            General_File_Service.create_csv_file(scores, Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY,
+                                                 "data_removal_memory_evaluation")
 
 
     except BaseException as ex:
@@ -39,10 +40,13 @@ def removal_helper():
 
 
 def predict(df, feature: str):
-    averages = []
+    averages_per_repetition = pd.DataFrame(
+        columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
+                 '95', '96', '97', '98', '99'])
 
-    scores = pd.DataFrame(columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
-                                   '95', '96', '97', '98', '99'])
+    final_scores = pd.DataFrame(
+        columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
+                 '95', '96', '97', '98', '99'])
 
     y = df[f'{feature}']
     del df[f'{feature}']
@@ -51,12 +55,10 @@ def predict(df, feature: str):
 
     for i in range(0, Config.Config.REPETITIONS, 1):
         print(f"Started repetition # {i + 1}")
-        print(k_folds(X, y).mean())
-        input()
-        averages.append(k_folds(X, y))
-        scores.iloc[i] = NumpyHelper.get_mean_per_column_per_df(averages[i])
+        averages_per_repetition = averages_per_repetition.append(k_folds(X, y))
+        final_scores = final_scores.append(averages_per_repetition.mean(), ignore_index=True)
 
-    return scores
+    return final_scores
 
 
 def k_folds(X, y):
@@ -70,8 +72,7 @@ def k_folds(X, y):
         model = RandomForestRegressor(n_estimators=Config.Config.FOREST_ESTIMATORS, random_state=1)
 
         kf = KFold(n_splits=Config.Config.K_FOLDS)
-        scores = pd.DataFrame(0, index=np.arange(Config.Config.K_FOLDS),
-                              columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93',
+        scores = pd.DataFrame(columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93',
                                        '94',
                                        '95', '96', '97', '98', '99'])
         counter = 0
@@ -81,15 +82,22 @@ def k_folds(X, y):
             for i in range(0, 101, 1):
                 if i <= 90 and i % 10 == 0:
                     r2scores.append(calculate(model, i, X, y, train_index, test_index))
-
                 if 99 >= i > 90:
                     r2scores.append(calculate(model, i, X, y, train_index, test_index))
 
-            NumpyHelper.replace_column_with_array(scores, counter, r2scores)
+            scores = scores.append(
+                {'0': r2scores[0], '10': r2scores[1], '20': r2scores[2], '30': r2scores[3], '40': r2scores[4],
+                 '50': r2scores[5], '60': r2scores[6], '70': r2scores[7], '80': r2scores[8],
+                 '90': r2scores[9], '91': r2scores[10], '92': r2scores[11], '93': r2scores[12],
+                 '94': r2scores[13], '95': r2scores[14], '96': r2scores[15], '97': r2scores[16],
+                 '98': r2scores[17], '99': r2scores[18]}, ignore_index=True)
+
             counter += 1
+
         return scores
 
     except BaseException as ex:
+        print(ex)
         scores = pd.DataFrame(0, index=np.arange(Config.Config.K_FOLDS),
                               columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93',
                                        '94',

@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-from Services import NumpyHelper
 import numpy as np
 from RuntimeContants import Runtime_Datasets, Runtime_Folders
 
@@ -21,17 +20,17 @@ def tool_evaluation(df, action):
 
 
 def plot_summary():
-    if not NumpyHelper.df_only_nan(Runtime_Datasets.RUNTIME_MEAN_REPORT):
-        plot(Runtime_Datasets.RUNTIME_MEAN_REPORT, Runtime_Datasets.CURRENT_WORKING_DIRECTORY,
+    if not Runtime_Datasets.RUNTIME_MEAN_REPORT.empty:
+        plot(Runtime_Datasets.RUNTIME_MEAN_REPORT, Runtime_Folders.CURRENT_WORKING_DIRECTORY,
              "Average_Runtime_Mean_Report")
-    if not NumpyHelper.df_only_nan(Runtime_Datasets.RUNTIME_VAR_REPORT):
-        plot(Runtime_Datasets.RUNTIME_VAR_REPORT, Runtime_Datasets.CURRENT_WORKING_DIRECTORY,
+    if not Runtime_Datasets.RUNTIME_VAR_REPORT.empty:
+        plot(Runtime_Datasets.RUNTIME_VAR_REPORT, Runtime_Folders.CURRENT_WORKING_DIRECTORY,
              "Average_Runtime_Var_Report")
-    if not NumpyHelper.df_only_nan(Runtime_Datasets.MEMORY_MEAN_REPORT):
-        plot(Runtime_Datasets.MEMORY_MEAN_REPORT, Runtime_Datasets.CURRENT_WORKING_DIRECTORY,
+    if not Runtime_Datasets.MEMORY_MEAN_REPORT.empty:
+        plot(Runtime_Datasets.MEMORY_MEAN_REPORT, Runtime_Folders.CURRENT_WORKING_DIRECTORY,
              "Average_Memory_Mean_Report")
-    if not NumpyHelper.df_only_nan(Runtime_Datasets.MEMORY_VAR_REPORT):
-        plot(Runtime_Datasets.MEMORY_VAR_REPORT, Runtime_Datasets.CURRENT_WORKING_DIRECTORY,
+    if not Runtime_Datasets.MEMORY_VAR_REPORT.empty:
+        plot(Runtime_Datasets.MEMORY_VAR_REPORT, Runtime_Folders.CURRENT_WORKING_DIRECTORY,
              "Average_Memory_Var_Report")
 
 
@@ -63,19 +62,19 @@ def plot_group_by(df, path, file_name, group_by):
 
 
 def plot_group_by_parameter_count():
-    if not NumpyHelper.df_only_nan(Runtime_Datasets.RUNTIME_MEAN_REPORT):
-        plot_group_by(Runtime_Datasets.RUNTIME_MEAN_REPORT, Runtime_Datasets.CURRENT_WORKING_DIRECTORY,
+    if not Runtime_Datasets.RUNTIME_MEAN_REPORT.empty:
+        plot_group_by(Runtime_Datasets.RUNTIME_MEAN_REPORT, Runtime_Folders.CURRENT_WORKING_DIRECTORY,
                       "Average_Runtime_Mean_Report_Grouped_By_Parameter_Count",
                       "parameter_count")
-    if not NumpyHelper.df_only_nan(Runtime_Datasets.RUNTIME_VAR_REPORT):
-        plot_group_by(Runtime_Datasets.RUNTIME_VAR_REPORT, Runtime_Datasets.CURRENT_WORKING_DIRECTORY,
+    if not Runtime_Datasets.RUNTIME_VAR_REPORT.empty:
+        plot_group_by(Runtime_Datasets.RUNTIME_VAR_REPORT, Runtime_Folders.CURRENT_WORKING_DIRECTORY,
                       "Average_Runtime_Var_Report_Grouped_By_Parameter_Count",
                       "parameter_count")
-    if not NumpyHelper.df_only_nan(Runtime_Datasets.MEMORY_MEAN_REPORT):
-        plot_group_by(Runtime_Datasets.MEMORY_MEAN_REPORT, Runtime_Datasets.CURRENT_WORKING_DIRECTORY,
+    if not Runtime_Datasets.MEMORY_MEAN_REPORT.empty:
+        plot_group_by(Runtime_Datasets.MEMORY_MEAN_REPORT, Runtime_Folders.CURRENT_WORKING_DIRECTORY,
                       "Average_Memory_Mean_Report_Grouped_By_Parameter_Count",
                       "parameter_count")
-    if not NumpyHelper.df_only_nan(Runtime_Datasets.MEMORY_VAR_REPORT):
-        plot_group_by(Runtime_Datasets.MEMORY_VAR_REPORT, Runtime_Datasets.CURRENT_WORKING_DIRECTORY,
+    if not Runtime_Datasets.MEMORY_VAR_REPORT.empty:
+        plot_group_by(Runtime_Datasets.MEMORY_VAR_REPORT, Runtime_Folders.CURRENT_WORKING_DIRECTORY,
                       "Average_Memory_Var_Report_Grouped_By_Parameter_Count",
                       "parameter_count")

@@ -18,8 +18,8 @@ def compare_real_to_predicted_data():
     :return:
     """
     try:
-
-        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET
+        # create a copy of the data set, because the df should be reused in other parts of the application
+        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.copy()
         if 'runtime' in df.columns:
             predict(df, 'runtime')
 
@@ -37,7 +37,7 @@ def predict(df, feature: str):
     value_comparison = pd.DataFrame(columns=['y', 'y_test_hat'])
 
     model = RandomForestRegressor(n_estimators=Config.Config.FOREST_ESTIMATORS, random_state=1)
-    # create a copy of the data set, because the df should be reused in other
+
     y = df[f'{feature}']
     del df[f'{feature}']
     X = df
