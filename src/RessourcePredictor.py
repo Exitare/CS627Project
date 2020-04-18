@@ -3,8 +3,9 @@ import signal
 import sys
 from Services import Config
 from Services.Predictions import Single_Predictions, Predict_Data_Removal
-from Services.File import General_File_Service, Data_Removal
+from Services.File import General_File_Service
 from RuntimeContants import Runtime_Datasets, Runtime_Folders, Runtime_File_Data
+from Services.Plotting import Plotting_Data_Removal
 from Services import ArgumentParser
 import numpy as np
 
@@ -31,7 +32,8 @@ def process_data_sets():
             Runtime_File_Data.EVALUATED_FILE_NAME = filename
             # Reduce len of columns by one, because y value is included
             Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT = len(
-                Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.columns) - 1
+                Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.columns)
+            Runtime_File_Data.EVALUATED_FILE_FEATURE_COUNT = Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT - 1
             Runtime_File_Data.EVALUATED_FILE_ROW_COUNT = len(Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.index)
 
             # Test for infinite values
@@ -60,12 +62,42 @@ def generate_csv_files():
     Writes all specified data sets
     :return:
     """
-    General_File_Service.create_csv_file(Runtime_Datasets.GENERAL_INFORMATION_RUNTIME,
+    # Write general information about the data set
+    General_File_Service.create_csv_file(Runtime_File_Data.EVALUATED_FILE_RUNTIME_INFORMATION,
                                          Runtime_Folders.CURRENT_WORKING_DIRECTORY,
                                          "General_Information_Runtime")
-    General_File_Service.create_csv_file(Runtime_Datasets.GENERAL_INFORMATION_MEMORY,
+    General_File_Service.create_csv_file(Runtime_File_Data.EVALUATED_FILE_MEMORY_INFORMATION,
                                          Runtime_Folders.CURRENT_WORKING_DIRECTORY,
                                          "General_Information_Memory")
+    # Write general information for a specific tool , non modified
+    General_File_Service.create_csv_file(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION,
+                                         Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY,
+                                         "data_removal_runtime_evaluation")
+    General_File_Service.create_csv_file(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_MEMORY_INFORMATION,
+                                         Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY,
+                                         "data_removal_memory_evaluation")
+
+    # Write the mean and var reports for all files
+    General_File_Service.create_csv_file(Runtime_Datasets.RUNTIME_VAR_REPORT,
+                                         Runtime_Folders.CURRENT_WORKING_DIRECTORY,
+                                         Config.Config.FILE_RUNTIME_VAR_SUMMARY)
+
+    General_File_Service.create_csv_file(Runtime_Datasets.RUNTIME_MEAN_REPORT,
+                                         Runtime_Folders.CURRENT_WORKING_DIRECTORY,
+                                         Config.Config.FILE_RUNTIME_MEAN_SUMMARY)
+
+    General_File_Service.create_csv_file(Runtime_Datasets.MEMORY_MEAN_REPORT,
+                                         Runtime_Folders.CURRENT_WORKING_DIRECTORY,
+                                         Config.Config.FILE_MEMORY_MEAN_SUMMARY)
+
+    General_File_Service.create_csv_file(Runtime_Datasets.MEMORY_VAR_REPORT,
+                                         Runtime_Folders.CURRENT_WORKING_DIRECTORY,
+                                         Config.Config.FILE_MEMORY_VAR_SUMMARY)
+
+
+def plot_data_sets():
+    Plotting_Data_Removal.tool_evaluation(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION, "runtime")
+    Plotting_Data_Removal.tool_evaluation(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_MEMORY_INFORMATION, "memory")
 
 
 def signal_handler(sig, frame):
@@ -93,6 +125,6 @@ if __name__ == '__main__':
     General_File_Service.get_all_file_paths(Config.Config.DATA_RAW_DIRECTORY)
     process_data_sets()
     generate_csv_files()
-    # plot_data_sets()
+    plot_data_sets()
     print("Done")
     exit(0)

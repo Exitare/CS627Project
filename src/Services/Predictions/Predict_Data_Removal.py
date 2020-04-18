@@ -19,18 +19,33 @@ def removal_helper():
         df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.copy()
         if 'runtime' in df.columns:
             print("Predicting runtime...")
-            scores = predict(df, 'runtime')
-            Plotting_Data_Removal.tool_evaluation(scores, "runtime")
-            General_File_Service.create_csv_file(scores, Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY,
-                                                 "data_removal_runtime_evaluation")
+            Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION = predict(df, 'runtime')
+
+            mean_runtime = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION.mean())
+            var_runtime = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION.var())
+
+            mean_runtime['File'] = Runtime_File_Data.EVALUATED_FILE_NAME
+            var_runtime['File'] = Runtime_File_Data.EVALUATED_FILE_NAME
+
+            Runtime_Datasets.RUNTIME_MEAN_REPORT = Runtime_Datasets.RUNTIME_MEAN_REPORT.append(mean_runtime,
+                                                                                               ignore_index=True)
+            Runtime_Datasets.RUNTIME_VAR_REPORT = Runtime_Datasets.RUNTIME_VAR_REPORT.append(var_runtime,
+                                                                                             ignore_index=True)
 
         df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.copy()
         if 'memory.max_usage_in_bytes' in df.columns:
             print("Predicting memory...")
-            scores = predict(df, 'memory.max_usage_in_bytes')
-            Plotting_Data_Removal.tool_evaluation(scores, "memory")
-            General_File_Service.create_csv_file(scores, Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY,
-                                                 "data_removal_memory_evaluation")
+            Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_MEMORY_INFORMATION = predict(df, 'memory.max_usage_in_bytes')
+            mean_memory = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION.mean())
+            var_memory = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION.var())
+
+            mean_memory['File'] = Runtime_File_Data.EVALUATED_FILE_NAME
+            var_memory['File'] = Runtime_File_Data.EVALUATED_FILE_NAME
+
+            Runtime_Datasets.RUNTIME_MEAN_REPORT = Runtime_Datasets.RUNTIME_MEAN_REPORT.append(mean_memory,
+                                                                                               ignore_index=True)
+            Runtime_Datasets.RUNTIME_VAR_REPORT = Runtime_Datasets.RUNTIME_VAR_REPORT.append(var_memory,
+                                                                                             ignore_index=True)
 
 
     except BaseException as ex:
@@ -40,13 +55,11 @@ def removal_helper():
 
 
 def predict(df, feature: str):
-    averages_per_repetition = pd.DataFrame(
-        columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
-                 '95', '96', '97', '98', '99'])
+    averages_per_repetition = pd.Series()
 
-    final_scores = pd.DataFrame(
+    final_evaluation = pd.DataFrame(
         columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
-                 '95', '96', '97', '98', '99'])
+                 '95', '96', '97', '98', '99', 'Rows', 'Features'])
 
     y = df[f'{feature}']
     del df[f'{feature}']
@@ -55,10 +68,15 @@ def predict(df, feature: str):
 
     for i in range(0, Config.Config.REPETITIONS, 1):
         print(f"Started repetition # {i + 1}")
-        averages_per_repetition = averages_per_repetition.append(k_folds(X, y))
-        final_scores = final_scores.append(averages_per_repetition.mean(), ignore_index=True)
+        averages_per_repetition = averages_per_repetition.append(k_folds(X, y)).mean()
 
-    return final_scores
+        averages_per_repetition = averages_per_repetition.dropna()
+        averages_per_repetition['Rows'] = Runtime_File_Data.EVALUATED_FILE_ROW_COUNT
+        averages_per_repetition['Features'] = int(Runtime_File_Data.EVALUATED_FILE_FEATURE_COUNT)
+        final_evaluation = final_evaluation.append(averages_per_repetition, ignore_index=True)
+
+    final_evaluation.drop(final_evaluation.columns[len(final_evaluation.columns) - 1], axis=1, inplace=True)
+    return final_evaluation
 
 
 def k_folds(X, y):
@@ -72,9 +90,9 @@ def k_folds(X, y):
         model = RandomForestRegressor(n_estimators=Config.Config.FOREST_ESTIMATORS, random_state=1)
 
         kf = KFold(n_splits=Config.Config.K_FOLDS)
-        scores = pd.DataFrame(columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93',
-                                       '94',
-                                       '95', '96', '97', '98', '99'])
+        k_fold_scores = pd.DataFrame(
+            columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
+                     '95', '96', '97', '98', '99'])
         counter = 0
         for train_index, test_index in kf.split(X):
             r2scores = []
@@ -85,7 +103,7 @@ def k_folds(X, y):
                 if 99 >= i > 90:
                     r2scores.append(calculate(model, i, X, y, train_index, test_index))
 
-            scores = scores.append(
+            k_fold_scores = k_fold_scores.append(
                 {'0': r2scores[0], '10': r2scores[1], '20': r2scores[2], '30': r2scores[3], '40': r2scores[4],
                  '50': r2scores[5], '60': r2scores[6], '70': r2scores[7], '80': r2scores[8],
                  '90': r2scores[9], '91': r2scores[10], '92': r2scores[11], '93': r2scores[12],
@@ -94,15 +112,16 @@ def k_folds(X, y):
 
             counter += 1
 
-        return scores
+        return k_fold_scores
 
     except BaseException as ex:
         print(ex)
-        scores = pd.DataFrame(0, index=np.arange(Config.Config.K_FOLDS),
-                              columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93',
-                                       '94',
-                                       '95', '96', '97', '98', '99'])
-        return scores
+        k_fold_scores = pd.DataFrame(0, index=np.arange(Config.Config.K_FOLDS),
+                                     columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92',
+                                              '93',
+                                              '94',
+                                              '95', '96', '97', '98', '99'])
+        return k_fold_scores
 
 
 def calculate(model, i, X, y, train_index, test_index):

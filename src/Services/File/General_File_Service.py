@@ -161,6 +161,7 @@ def create_csv_file(df, folder, name):
     """
     if folder != "":
         if df.empty:
+            print("Data set is empty")
             return
 
         path = os.path.join(folder, f"{name}.csv")

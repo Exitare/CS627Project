@@ -23,6 +23,7 @@ def compare_real_to_predicted_data():
         if 'runtime' in df.columns:
             predict(df, 'runtime')
 
+        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.copy()
         if 'memory.max_usage_in_bytes' in df.columns:
             predict(df, 'max_usage_in_bytes')
 
@@ -81,7 +82,7 @@ def predict(df, feature: str):
 
     # TODO: Hardcoded hack, just be dynamic
     if feature == 'runtime':
-        Runtime_Datasets.GENERAL_INFORMATION_RUNTIME = Runtime_Datasets.GENERAL_INFORMATION_RUNTIME.append(
+        Runtime_File_Data.EVALUATED_FILE_RUNTIME_INFORMATION = Runtime_File_Data.EVALUATED_FILE_RUNTIME_INFORMATION.append(
             {'File Name': Runtime_File_Data.EVALUATED_FILE_NAME, "Test Score": test_score,
              "Train Score": train_score, "Potential Over Fitting": overFitting,
              "Initial Row Count": Runtime_File_Data.EVALUATED_FILE_ROW_COUNT,
@@ -89,7 +90,7 @@ def predict(df, feature: str):
              "Processed Feature Count": X.shape[1]}, ignore_index=True)
 
     if feature == 'memory.max_usage_in_bytes':
-        Runtime_Datasets.GENERAL_INFORMATION_MEMORY = Runtime_Datasets.GENERAL_INFORMATION_MEMORY.append(
+        Runtime_File_Data.EVALUATED_FILE_MEMORY_INFORMATION = Runtime_File_Data.EVALUATED_FILE_MEMORY_INFORMATION.append(
             {'File Name': Runtime_File_Data.EVALUATED_FILE_NAME, "Test Score": test_score,
              "Train Score": train_score, "Potential Over Fitting": overFitting,
              "Initial Row Count": Runtime_File_Data.EVALUATED_FILE_ROW_COUNT,
