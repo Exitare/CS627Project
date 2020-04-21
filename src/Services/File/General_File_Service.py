@@ -1,8 +1,8 @@
 from pathlib import Path
 import shutil
 import datetime
-import os
 import ntpath
+import os
 import sys
 from Services import PreProcessing
 from RuntimeContants import Runtime_Folders, Runtime_Datasets, Runtime_File_Data
@@ -92,16 +92,20 @@ def check_folder_integrity():
     :return:
     """
 
+    data_root = Path(Config.DATA_ROOT_DIRECTORY)
+    data_raw = Path(Config.DATA_RAW_DIRECTORY)
+    data_results = Path(Config.DATA_RESULTS_DIRECTORY)
+
     print("Checking data folder integrity...")
-    if not os.path.isdir(f"{Config.DATA_ROOT_DIRECTORY}"):
+    if not data_root.is_dir():
         print("Raw data directory not found. Creating...")
         create_directory(Config.DATA_ROOT_DIRECTORY)
 
-    if not os.path.isdir(f"{Config.DATA_RAW_DIRECTORY}"):
+    if not data_raw.is_dir():
         print("Raw data directory not found. Creating...")
         create_directory(Config.DATA_RAW_DIRECTORY)
 
-    if not os.path.isdir(f"{Config.DATA_RESULTS_DIRECTORY}"):
+    if not data_results.is_dir():
         print("Results data directory not found. Creating...")
         create_directory(Config.DATA_RESULTS_DIRECTORY)
 
@@ -116,7 +120,7 @@ def get_all_file_paths(path: str):
     """
     try:
         print("Loading files")
-        directory = os.fsencode(path)
+        directory = Path(path)
         for file in os.listdir(directory):
             filename = os.fsdecode(file)
             if filename.endswith(".csv") or filename.endswith(".tsv"):
