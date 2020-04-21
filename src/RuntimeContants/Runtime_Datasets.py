@@ -20,6 +20,8 @@ K_FOLD_FINAL_SCORES = pd.DataFrame(columns=['File', '0', '10', '20', '30', '40',
                                             '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', 'Rows',
                                             'Features'])
 
+EXCLUDED_FILES = pd.DataFrame(columns=['File', 'Rows'])
+
 EVALUATED_FILE_NAMES = []
 # Backwards compatibility
 EVALUATED_FILES_ROW_COUNTS = []

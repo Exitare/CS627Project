@@ -50,11 +50,12 @@ def predict(df, feature: str):
     y = y.loc[X_indexes]
 
     if temp_len != len(X):
-        print(df)
         print(f"Removed {temp_len - len(X)} rows. Source had {temp_len}")
 
     # print(X)
     if len(X.index) == 0:
+        print("Data set length is 0. Skipping")
+        Runtime_File_Data.EVALUATED_FILE_NO_USEFUL_INFORMATION = True
         General_File_Service.remove_folder(Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY)
         return
 
@@ -64,6 +65,8 @@ def predict(df, feature: str):
     # Check if x is valid or not
     if type(X) == int:
         if X == 0:
+            print("Data set did not pass the variance selection check.")
+            Runtime_File_Data.EVALUATED_FILE_NO_USEFUL_INFORMATION = True
             General_File_Service.remove_folder(Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY)
             return
 
@@ -80,7 +83,6 @@ def predict(df, feature: str):
     if train_score > test_score * 2:
         overFitting = True
 
-    # TODO: Hardcoded hack, just be dynamic
     if feature == 'runtime':
         Runtime_File_Data.EVALUATED_FILE_RUNTIME_INFORMATION = Runtime_File_Data.EVALUATED_FILE_RUNTIME_INFORMATION.append(
             {'File Name': Runtime_File_Data.EVALUATED_FILE_NAME, "Test Score": test_score,

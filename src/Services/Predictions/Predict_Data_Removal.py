@@ -17,6 +17,8 @@ def removal_helper():
     """
     try:
         df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.copy()
+        print(len(df.index))
+        input()
         if 'runtime' in df.columns:
             print("Predicting runtime...")
             Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION = predict(df, 'runtime')
@@ -36,8 +38,8 @@ def removal_helper():
         if 'memory.max_usage_in_bytes' in df.columns:
             print("Predicting memory...")
             Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_MEMORY_INFORMATION = predict(df, 'memory.max_usage_in_bytes')
-            mean_memory = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION.mean())
-            var_memory = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION.var())
+            mean_memory = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_MEMORY_INFORMATION.mean())
+            var_memory = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_MEMORY_INFORMATION.var())
 
             mean_memory['File'] = Runtime_File_Data.EVALUATED_FILE_NAME
             var_memory['File'] = Runtime_File_Data.EVALUATED_FILE_NAME
@@ -46,7 +48,6 @@ def removal_helper():
                                                                                                ignore_index=True)
             Runtime_Datasets.RUNTIME_VAR_REPORT = Runtime_Datasets.RUNTIME_VAR_REPORT.append(var_memory,
                                                                                              ignore_index=True)
-
 
     except BaseException as ex:
         print(ex)

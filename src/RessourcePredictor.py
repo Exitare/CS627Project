@@ -27,7 +27,7 @@ def process_data_sets():
             # Generate tool folder
             General_File_Service.read_file(filename)
             General_File_Service.create_tool_folder(filename)
-
+            Runtime_File_Data.EVALUATED_FILE_NO_USEFUL_INFORMATION = False
             # Set important runtime file values
             Runtime_File_Data.EVALUATED_FILE_NAME = filename
             # Reduce len of columns by one, because y value is included
@@ -41,14 +41,27 @@ def process_data_sets():
                 if Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET[column].any() > np.iinfo('i').max:
                     continue
 
+            # Check if dataset row count is equal or greater compared to the treshold set in the config
+            if Runtime_File_Data.EVALUATED_FILE_ROW_COUNT < Config.Config.MINIMUM_ROW_COUNT:
+                print("Data set has insufficient row count and will be ignored. ")
+                Runtime_Datasets.EXCLUDED_FILES = Runtime_Datasets.EXCLUDED_FILES.append(
+                    {'File': filename, 'Rows': Runtime_File_Data.EVALUATED_FILE_ROW_COUNT}, ignore_index=True)
+                continue
+
             # Working on full data set
             print("Evaluation full data set")
             Single_Predictions.compare_real_to_predicted_data()
 
             # Remove data by percentage
             if Runtime_Datasets.COMMAND_LINE_ARGS.remove:
+                if Runtime_File_Data.EVALUATED_FILE_NO_USEFUL_INFORMATION:
+                    print(
+                        f"File {Runtime_File_Data.EVALUATED_FILE_NAME} does not contain useful information. Skipping...")
+                    continue
                 print("Removing data by percentage")
                 Predict_Data_Removal.removal_helper()
+
+            generate_file_report_files()
 
         except Exception as ex:
             print("error occurred in process_data_sets()")
@@ -57,11 +70,7 @@ def process_data_sets():
             sys.exit()
 
 
-def generate_csv_files():
-    """
-    Writes all specified data sets
-    :return:
-    """
+def generate_file_report_files():
     # Write general information about the data set
     General_File_Service.create_csv_file(Runtime_File_Data.EVALUATED_FILE_RUNTIME_INFORMATION,
                                          Runtime_Folders.CURRENT_WORKING_DIRECTORY,
@@ -76,6 +85,13 @@ def generate_csv_files():
     General_File_Service.create_csv_file(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_MEMORY_INFORMATION,
                                          Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY,
                                          "data_removal_memory_evaluation")
+
+
+def generate_generate_report_files():
+    """
+    Writes all specified data sets
+    :return:
+    """
 
     # Write the mean and var reports for all files
     General_File_Service.create_csv_file(Runtime_Datasets.RUNTIME_VAR_REPORT,
@@ -93,6 +109,9 @@ def generate_csv_files():
     General_File_Service.create_csv_file(Runtime_Datasets.MEMORY_VAR_REPORT,
                                          Runtime_Folders.CURRENT_WORKING_DIRECTORY,
                                          Config.Config.FILE_MEMORY_VAR_SUMMARY)
+
+    General_File_Service.create_csv_file(Runtime_Datasets.EXCLUDED_FILES, Runtime_Folders.CURRENT_WORKING_DIRECTORY,
+                                         Config.Config.FILE_EXCLUDED_FILES)
 
 
 def plot_data_sets():
@@ -124,7 +143,7 @@ if __name__ == '__main__':
     General_File_Service.create_evaluation_folder()
     General_File_Service.get_all_file_paths(Config.Config.DATA_RAW_DIRECTORY)
     process_data_sets()
-    generate_csv_files()
+    generate_generate_report_files()
     plot_data_sets()
     print("Done")
     exit(0)
