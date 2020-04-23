@@ -9,6 +9,7 @@ from RuntimeContants import Runtime_Folders, Runtime_Datasets, Runtime_File_Data
 from Services.Config import Config
 import pandas as pd
 import numpy as np
+from collections import defaultdict
 
 
 def create_tool_folder(filename: str):
@@ -143,11 +144,6 @@ def read_file(path: str):
     """
     try:
         df = pd.read_csv(f"{Config.DATA_RAW_DIRECTORY}/{path}")
-        df.replace([np.inf, -np.inf], np.nan)
-        df[df == np.inf] = np.nan
-        df = PreProcessing.fill_na(df)
-        df = PreProcessing.remove_bad_columns(df)
-        df = PreProcessing.convert_factorial_to_numerical(df)
         Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET = df
     except OSError as ex:
         print(ex)
@@ -169,3 +165,13 @@ def create_csv_file(df, folder, name):
 
         path = os.path.join(folder, f"{name}.csv")
         df.to_csv(path, index=True)
+
+
+def get_similar_files():
+    similar_files = defaultdict(list)
+    for path in Runtime_Datasets.RAW_FILE_PATHS:
+        filename = get_file_name(path)
+        filename = filename.rsplit('_', 1)[0]
+        similar_files[filename].append(path)
+
+    Runtime_Datasets.RAW_SIMILAR_FILES = similar_files

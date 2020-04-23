@@ -1,7 +1,9 @@
 import pandas as pd
+from collections import defaultdict
 
 # All data sets from the folder
 RAW_FILE_PATHS = []
+RAW_SIMILAR_FILES = defaultdict(list)
 
 # Data Removal
 RUNTIME_MEAN_REPORT = pd.DataFrame(columns=['File', '0', '10', '20', '30', '40', '50', '60', '70', '80',

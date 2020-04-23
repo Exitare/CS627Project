@@ -16,9 +16,7 @@ def removal_helper():
     :return:
     """
     try:
-        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.copy()
-        print(len(df.index))
-        input()
+        df = Runtime_File_Data.EVALUATED_FILE_PREPROCESSED_DATA_SET.copy()
         if 'runtime' in df.columns:
             print("Predicting runtime...")
             Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION = predict(df, 'runtime')
@@ -34,7 +32,7 @@ def removal_helper():
             Runtime_Datasets.RUNTIME_VAR_REPORT = Runtime_Datasets.RUNTIME_VAR_REPORT.append(var_runtime,
                                                                                              ignore_index=True)
 
-        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.copy()
+        df = Runtime_File_Data.EVALUATED_FILE_PREPROCESSED_DATA_SET.copy()
         if 'memory.max_usage_in_bytes' in df.columns:
             print("Predicting memory...")
             Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_MEMORY_INFORMATION = predict(df, 'memory.max_usage_in_bytes')

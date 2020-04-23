@@ -19,11 +19,11 @@ def compare_real_to_predicted_data():
     """
     try:
         # create a copy of the data set, because the df should be reused in other parts of the application
-        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.copy()
+        df = Runtime_File_Data.EVALUATED_FILE_PREPROCESSED_DATA_SET.copy()
         if 'runtime' in df.columns:
             predict(df, 'runtime')
 
-        df = Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.copy()
+        df = Runtime_File_Data.EVALUATED_FILE_PREPROCESSED_DATA_SET.copy()
         if 'memory.max_usage_in_bytes' in df.columns:
             predict(df, 'max_usage_in_bytes')
 

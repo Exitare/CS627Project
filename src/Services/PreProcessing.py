@@ -1,7 +1,8 @@
 from sklearn import preprocessing
 from sklearn.feature_selection import VarianceThreshold
 import numpy as np
-import pandas as pd
+from Services import PreProcessing
+from RuntimeContants import Runtime_File_Data
 
 np.random.seed(10)
 
@@ -10,7 +11,26 @@ np.random.seed(10)
 # https://chrisalbon.com/machine_learning/preprocessing_structured_data/convert_pandas_categorical_column_into_integers_for_scikit-learn/
 # https://stackoverflow.com/questions/51741605/standardize-dataset-containing-too-large-values Scaler
 
+def pre_process_data_set(df):
+    """
+    Prepare the dataset, by filling na, remove bad columns and convert factorial to numerical columns
+    :param df:
+    :return:
+    """
+    df.replace([np.inf, -np.inf], np.nan)
+    df[df == np.inf] = np.nan
+    df = PreProcessing.fill_na(df)
+    df = PreProcessing.remove_bad_columns(df)
+    df = PreProcessing.convert_factorial_to_numerical(df)
+    Runtime_File_Data.EVALUATED_FILE_PREPROCESSED_DATA_SET = df
+
+
 def variance_selection(X):
+    """
+    Transforms and selects features that are above a certain threshold
+    :param X:
+    :return:
+    """
     try:
         selector = VarianceThreshold()
         X = selector.fit_transform(X)

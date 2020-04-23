@@ -1,13 +1,15 @@
 import argparse
 import signal
 import sys
-from Services import Config
+from Services import Config, PreProcessing
 from Services.Predictions import Single_Predictions, Predict_Data_Removal
 from Services.File import General_File_Service
 from RuntimeContants import Runtime_Datasets, Runtime_Folders, Runtime_File_Data
 from Services.Plotting import Plotting_Data_Removal
 from Services import ArgumentParser
 import numpy as np
+import pandas as pd
+from Services import Misc
 
 
 def process_data_sets():
@@ -21,24 +23,57 @@ def process_data_sets():
         General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
         sys.exit()
 
+    # Get similar files in directory
+    General_File_Service.get_similar_files()
+
+    # merged file prediction
+    for file, paths in Runtime_Datasets.RAW_SIMILAR_FILES.items():
+        data_frames = []
+
+        for filename in paths:
+            General_File_Service.read_file(filename)
+            data_frames.append(Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET)
+
+        merged_df = pd.concat(data_frames)
+        print(f"Evaluating {file}")
+        Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET = merged_df
+        General_File_Service.create_tool_folder(file)
+        PreProcessing.pre_process_data_set(Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET)
+        Misc.set_general_file_data(file)
+
+        if Runtime_File_Data.EVALUATED_FILE_ROW_COUNT < Config.Config.MINIMUM_ROW_COUNT:
+            print(f"Data set {file} has insufficient row count and will be ignored. ")
+            Runtime_Datasets.EXCLUDED_FILES = Runtime_Datasets.EXCLUDED_FILES.append(
+                {'File': file, 'Rows': Runtime_File_Data.EVALUATED_FILE_ROW_COUNT}, ignore_index=True)
+            continue
+
+        Single_Predictions.compare_real_to_predicted_data()
+
+        if Runtime_Datasets.COMMAND_LINE_ARGS.remove:
+            if Runtime_File_Data.EVALUATED_FILE_NO_USEFUL_INFORMATION:
+                print(
+                    f"File {Runtime_File_Data.EVALUATED_FILE_NAME} does not contain useful information. Skipping...")
+                continue
+            print("Removing data by percentage")
+            Predict_Data_Removal.removal_helper()
+
+        generate_file_report_files()
+
+    # Single file prediction
     for filename in Runtime_Datasets.RAW_FILE_PATHS:
         try:
             print(f"Evaluating {filename}")
             # Generate tool folder
-            General_File_Service.read_file(filename)
             General_File_Service.create_tool_folder(filename)
-            Runtime_File_Data.EVALUATED_FILE_NO_USEFUL_INFORMATION = False
-            # Set important runtime file values
-            Runtime_File_Data.EVALUATED_FILE_NAME = filename
-            # Reduce len of columns by one, because y value is included
-            Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT = len(
-                Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.columns)
-            Runtime_File_Data.EVALUATED_FILE_FEATURE_COUNT = Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT - 1
-            Runtime_File_Data.EVALUATED_FILE_ROW_COUNT = len(Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET.index)
+            # Load the data set
+            General_File_Service.read_file(filename)
+            # Pre process the df
+            PreProcessing.pre_process_data_set(Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET)
+            Misc.set_general_file_data(filename)
 
             # Test for infinite values
-            for column in Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET:
-                if Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET[column].any() > np.iinfo('i').max:
+            for column in Runtime_File_Data.EVALUATED_FILE_PREPROCESSED_DATA_SET:
+                if Runtime_File_Data.EVALUATED_FILE_PREPROCESSED_DATA_SET[column].any() > np.iinfo('i').max:
                     continue
 
             # Check if dataset row count is equal or greater compared to the treshold set in the config
