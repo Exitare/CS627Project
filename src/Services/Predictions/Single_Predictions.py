@@ -25,7 +25,7 @@ def compare_real_to_predicted_data():
 
         df = Runtime_File_Data.EVALUATED_FILE_PREPROCESSED_DATA_SET.copy()
         if 'memory.max_usage_in_bytes' in df.columns:
-            predict(df, 'max_usage_in_bytes')
+            predict(df, 'memory.max_usage_in_bytes')
 
     except BaseException as ex:
         print("Error in compare_real_to_predicted_data")
