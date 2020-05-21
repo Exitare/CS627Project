@@ -3,7 +3,7 @@ import signal
 import sys
 from Services import Config, PreProcessing
 from Services.Predictions import Single_Predictions, Predict_Data_Removal
-from Services.File import General_File_Service
+from Services.FileSystem import FileManagement, FolderManagement
 from RuntimeContants import Runtime_Datasets, Runtime_Folders, Runtime_File_Data
 from Services.Plotting import Plotting_Data_Removal
 from Services import ArgumentParser
@@ -20,14 +20,14 @@ def process_data_sets():
 
     if len(Runtime_Datasets.RAW_FILE_PATHS) == 0:
         print("No files found to evaluate. Stopping")
-        General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
+        FolderManagement.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
         sys.exit()
 
     # Get similar files in directory
-    General_File_Service.get_similar_files()
 
     # merged file prediction
     for file, path in Runtime_Datasets.RAW_SIMILAR_FILES.items():
+        input()
         data_frames = []
 
         for filename in path:
@@ -47,7 +47,7 @@ def process_data_sets():
 
             Runtime_Datasets.EXCLUDED_FILES = Runtime_Datasets.EXCLUDED_FILES.append(
                 {'File': file, 'Rows': Runtime_File_Data.EVALUATED_FILE_ROW_COUNT}, ignore_index=True)
-            General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
+            FolderManagement.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
             continue
 
         Single_Predictions.compare_real_to_predicted_data()
@@ -84,7 +84,7 @@ def process_data_sets():
                 if Runtime_Datasets.COMMAND_LINE_ARGS.verbose:
                     print(f"Data set {filename} has insufficient row count and will be ignored. ")
 
-                General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
+                FolderManagement.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
                 Runtime_Datasets.EXCLUDED_FILES = Runtime_Datasets.EXCLUDED_FILES.append(
                     {'File': filename, 'Rows': Runtime_File_Data.EVALUATED_FILE_ROW_COUNT}, ignore_index=True)
                 continue
@@ -109,7 +109,7 @@ def process_data_sets():
         except Exception as ex:
             print("error occurred in process_data_sets()")
             print(ex)
-            General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
+            FolderManagement.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
             sys.exit()
 
 
@@ -171,7 +171,7 @@ def signal_handler(sig, frame):
     """
     print('Shutting down gracefully!')
     print("Deleting working directory")
-    General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
+    FolderManagement.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
     print("Done")
     print("Bye")
     sys.exit(0)
@@ -182,9 +182,8 @@ signal.signal(signal.SIGINT, signal_handler)
 if __name__ == '__main__':
     ArgumentParser.handle_args()
     Config.read_conf()
-    General_File_Service.check_folder_integrity()
-    General_File_Service.create_evaluation_folder()
-    General_File_Service.get_all_file_paths(Config.Config.DATA_RAW_DIRECTORY)
+    FolderManagement.initialize()
+    FileManagement.load_required_data()
     process_data_sets()
     generate_generate_report_files()
     plot_data_sets()
