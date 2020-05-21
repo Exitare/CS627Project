@@ -27,10 +27,10 @@ def process_data_sets():
     General_File_Service.get_similar_files()
 
     # merged file prediction
-    for file, paths in Runtime_Datasets.RAW_SIMILAR_FILES.items():
+    for file, path in Runtime_Datasets.RAW_SIMILAR_FILES.items():
         data_frames = []
 
-        for filename in paths:
+        for filename in path:
             General_File_Service.read_file(filename)
             data_frames.append(Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET)
 
@@ -42,9 +42,12 @@ def process_data_sets():
         Misc.set_general_file_data(file)
 
         if Runtime_File_Data.EVALUATED_FILE_ROW_COUNT < Config.Config.MINIMUM_ROW_COUNT:
-            print(f"Data set {file} has insufficient row count and will be ignored. ")
+            if Runtime_Datasets.COMMAND_LINE_ARGS.verbose:
+                print(f"Data set {file} has insufficient row count and will be ignored. ")
+
             Runtime_Datasets.EXCLUDED_FILES = Runtime_Datasets.EXCLUDED_FILES.append(
                 {'File': file, 'Rows': Runtime_File_Data.EVALUATED_FILE_ROW_COUNT}, ignore_index=True)
+            General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
             continue
 
         Single_Predictions.compare_real_to_predicted_data()
@@ -78,7 +81,10 @@ def process_data_sets():
 
             # Check if dataset row count is equal or greater compared to the treshold set in the config
             if Runtime_File_Data.EVALUATED_FILE_ROW_COUNT < Config.Config.MINIMUM_ROW_COUNT:
-                print("Data set has insufficient row count and will be ignored. ")
+                if Runtime_Datasets.COMMAND_LINE_ARGS.verbose:
+                    print(f"Data set {filename} has insufficient row count and will be ignored. ")
+
+                General_File_Service.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
                 Runtime_Datasets.EXCLUDED_FILES = Runtime_Datasets.EXCLUDED_FILES.append(
                     {'File': filename, 'Rows': Runtime_File_Data.EVALUATED_FILE_ROW_COUNT}, ignore_index=True)
                 continue
@@ -90,9 +96,11 @@ def process_data_sets():
             # Remove data by percentage
             if Runtime_Datasets.COMMAND_LINE_ARGS.remove:
                 if Runtime_File_Data.EVALUATED_FILE_NO_USEFUL_INFORMATION:
-                    print(
-                        f"File {Runtime_File_Data.EVALUATED_FILE_NAME} does not contain useful information. Skipping...")
+                    if Runtime_Datasets.COMMAND_LINE_ARGS.verbose:
+                        print(f"File {Runtime_File_Data.EVALUATED_FILE_NAME}"
+                              f"does not contain useful information. Skipping...")
                     continue
+
                 print("Removing data by percentage")
                 Predict_Data_Removal.removal_helper()
 
