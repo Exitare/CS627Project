@@ -11,13 +11,13 @@ from collections import defaultdict
 
 def load_required_data():
     """
-    Gatheres all data, which is required. Takes command line args into account.
+    Gathers all data, which is required. Takes command line args into account.
     :return:
     """
     if Runtime_Datasets.COMMAND_LINE_ARGS.merge:
-        get_all_file_paths(Config.DATA_RAW_DIRECTORY)
+        get_tool_version_files()
 
-    get_tool_version_files()
+    get_all_file_paths(Config.DATA_RAW_DIRECTORY)
 
 
 def get_file_name(path):
@@ -43,9 +43,6 @@ def get_all_file_paths(path: str):
             filename = os.fsdecode(file)
             if filename.endswith(".csv") or filename.endswith(".tsv"):
                 Runtime_Datasets.RAW_FILE_PATHS.append(filename)
-                continue
-            else:
-                continue
 
     except OSError as ex:
         print(ex)

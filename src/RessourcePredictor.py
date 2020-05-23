@@ -7,6 +7,7 @@ from Services import ArgumentParser
 from src import Tasks
 from Services.Reporting import Data_Set_Reporting, Plots
 
+
 def signal_handler(sig, frame):
     """
     Handles a signal. Like pressing crtl +c

@@ -1,3 +1,10 @@
+from RuntimeContants import Runtime_Datasets, Runtime_Folders, Runtime_File_Data
+from Services.FileSystem import Folder_Management, File_Management
+import sys
+from Services.Configuration.Config import Config
+from Services.Configuration import Argument_Parser
+import pandas as pd
+from Services.Processing import PreProcessing
 
 
 def process_merged_tool_version():
@@ -5,44 +12,19 @@ def process_merged_tool_version():
     Processes all detected tool versions
     :return:
     """
-    pass
-
-
-def process_single_files():
-    pass
-
-
-def process_single_file_data_removal():
-    """TBD"""
-    pass
-
-
-def process_data_sets():
-    """
-    Processes all data sets, read from the given folder
-    :return:
-    """
-
-    if len(Runtime_Datasets.RAW_FILE_PATHS) == 0:
-        print("No files found to evaluate. Stopping")
-        FolderManagement.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
-        sys.exit()
-
-    # Get similar files in directory
-
     # merged file prediction
     for file, path in Runtime_Datasets.RAW_SIMILAR_FILES.items():
-        input()
+        print(f"Evaluating {file}")
         data_frames = []
 
         for filename in path:
-            General_File_Service.read_file(filename)
+            File_Management.read_file(filename)
             data_frames.append(Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET)
 
         merged_df = pd.concat(data_frames)
-        print(f"Evaluating {file}")
+
         Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET = merged_df
-        General_File_Service.create_tool_folder(file)
+        Folder_Management.create_tool_folder(file)
         PreProcessing.pre_process_data_set(Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET)
         Misc.set_general_file_data(file)
 
@@ -57,17 +39,19 @@ def process_data_sets():
 
         Single_Predictions.compare_real_to_predicted_data()
 
-        if Runtime_Datasets.COMMAND_LINE_ARGS.remove:
-            if Runtime_File_Data.EVALUATED_FILE_NO_USEFUL_INFORMATION:
-                print(
-                    f"File {Runtime_File_Data.EVALUATED_FILE_NAME} does not contain useful information. Skipping...")
-                continue
-            print("Removing data by percentage")
-            Predict_Data_Removal.removal_helper()
 
-        generate_file_report_files()
+def process_single_files():
+    """
+    Process each file found in the raw data folder
+    :return:
+    """
 
-    # Single file prediction
+    # If no file in dir skip
+    if len(Runtime_Datasets.RAW_FILE_PATHS) == 0:
+        print("No files found to evaluate. Stopping")
+        Folder_Management.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
+        sys.exit()
+
     for filename in Runtime_Datasets.RAW_FILE_PATHS:
         try:
             print(f"Evaluating {filename}")
@@ -116,3 +100,33 @@ def process_data_sets():
             print(ex)
             FolderManagement.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
             sys.exit()
+
+
+def process_single_file_data_removal():
+    print('--------------')
+    print("Removing data by percentage")
+    if not Runtime_Datasets.COMMAND_LINE_ARGS.remove:
+        return
+
+    for filename in Runtime_Datasets.RAW_FILE_PATHS:
+        try:
+        # if Runtime_File_Data.EVALUATED_FILE_NO_USEFUL_INFORMATION:
+        print(f"File {Runtime_File_Data.EVALUATED_FILE_NAME} does not contain useful information. Skipping...")
+        continue
+
+
+    Predict_Data_Removal.removal_helper()
+
+
+
+def process_data_sets():
+    """
+    Processes all data sets, read from the given folder
+    :return:
+    """
+
+    # Get similar files in directory
+
+    generate_file_report_files()
+
+# Single file prediction

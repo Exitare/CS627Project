@@ -1,5 +1,6 @@
 import configparser
 import sys
+from pathlib import Path
 
 
 # Config.py
@@ -7,8 +8,8 @@ class Config:
     VERBOSE = 0
     DEBUG = 0
     DATA_ROOT_DIRECTORY = ''
-    DATA_RAW_DIRECTORY = ''
-    DATA_RESULTS_DIRECTORY = ''
+    DATA_RAW_DIRECTORY = Path()
+    DATA_RESULTS_DIRECTORY = Path()
     FILE_RUNTIME_MEAN_SUMMARY = ''
     FILE_RUNTIME_VAR_SUMMARY = ''
     FILE_MEMORY_MEAN_SUMMARY = ''
@@ -29,9 +30,8 @@ def read_conf():
     config.read('src/config.ini')
     try:
         Config.DATA_ROOT_DIRECTORY = config['DATA']['root_directory']
-        Config.DATA_RAW_DIRECTORY = config['DATA']['raw_directory']
-        Config.DATA_RESULTS_DIRECTORY = config['DATA']['results_directory']
-
+        Config.DATA_RAW_DIRECTORY = Path(Config.DATA_ROOT_DIRECTORY, config['DATA']['raw_directory'])
+        Config.DATA_RESULTS_DIRECTORY = Path(Config.DATA_ROOT_DIRECTORY, config['DATA']['results_directory'])
         Config.FILE_RUNTIME_MEAN_SUMMARY = config['FILE_NAMES']['runtime_mean_summary_name']
         Config.FILE_RUNTIME_VAR_SUMMARY = config['FILE_NAMES']['runtime_var_summary_name']
         Config.FILE_MEMORY_MEAN_SUMMARY = config['FILE_NAMES']['memory_mean_summary_name']
@@ -45,8 +45,9 @@ def read_conf():
         validate_config()
         return True
     except KeyError as ex:
-        print(f"Error occurred for key: {ex}")
-        print(f"Stopping tool.")
+        print(f"Error occurred while reading config.ini.")
+        print(f"Key: {ex} not found!")
+        print(f"Make sure the file config.ini exists in your src directory!")
         sys.exit()
 
 
@@ -71,17 +72,22 @@ def reset_config():
 
 
 def validate_config():
+    """
+    Validated the config options provided by the config.ini file
+    :return:
+    """
     print("Validation configuration")
-    if not Config.DATA_RESULTS_DIRECTORY:
-        print("Please specify a valid Results directory")
-        sys.exit()
-
-    if not Config.DATA_RAW_DIRECTORY:
-        print("Please specify a valid Raw data directory!")
-        sys.exit()
 
     if not Config.DATA_ROOT_DIRECTORY:
         print("Please specify a valid Root Directory!")
+        sys.exit()
+
+    if not Path.exists(Config.DATA_RESULTS_DIRECTORY):
+        print("Please specify a valid Results directory")
+        sys.exit()
+
+    if not Path.exists(Config.DATA_RAW_DIRECTORY):
+        print("Please specify a valid Raw data directory!")
         sys.exit()
 
     if not Config.FILE_MEMORY_VAR_SUMMARY:
@@ -103,19 +109,15 @@ def validate_config():
     if Config.K_FOLDS <= 3:
         print(f"A negative or value below 3 for folds is invalid. Setting to 5...")
         Config.K_FOLDS = 5
-        input()
 
     if Config.REPETITIONS <= 0:
         print(f"A negative or zero value for repetitions is invalid. Setting to 5...")
         Config.REPETITIONS = 5
-        input()
 
     if Config.REPETITIONS <= 0:
         print(f"A negative or zero value for forest estimators is invalid. Setting to 12...")
         Config.FOREST_ESTIMATORS = 12
-        input()
 
     if Config.MINIMUM_ROW_COUNT < 0:
         print(f"A negative value for the minimum row count is invalid. Setting to 50...")
         Config.MINIMUM_ROW_COUNT = 50
-        input()
