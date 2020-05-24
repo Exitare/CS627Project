@@ -76,7 +76,6 @@ def create_tool_folder(filename: str):
         print(ex)
         sys.exit()
     else:
-        Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY = path
         return path
 
 

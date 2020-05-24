@@ -7,6 +7,7 @@ from Services.Config import Config
 from Services.FileSystem import FolderManagement
 import pandas as pd
 from collections import defaultdict
+from Entities import File
 
 
 def load_required_data():
@@ -30,20 +31,22 @@ def get_file_name(path):
     return tail or ntpath.basename(head)
 
 
-def get_all_file_paths(path: str):
+def load_raw_files():
     """
     Iterates through the folder and store every file path.
     :param path:
     :return:
     """
     try:
-        print("Loading files")
-        directory = Path(path)
+        print("Loading files...")
+        directory = Config.DATA_RAW_DIRECTORY
         for file in os.listdir(directory):
-            filename = os.fsdecode(file)
-            if filename.endswith(".csv") or filename.endswith(".tsv"):
-                Runtime_Datasets.RAW_FILE_PATHS.append(filename)
+            full_file_path = os.fsdecode(file)
+            if full_file_path.endswith(".csv") or full_file_path.endswith(".tsv"):
+                evaluation_file: File = File.File(get_file_name(full_file_path), full_file_path)
+                Runtime_Datasets.FILES.append(evaluation_file)
 
+        print(f"Loaded {len(Runtime_Datasets.FILES)}")
     except OSError as ex:
         print(ex)
         FolderManagement.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
