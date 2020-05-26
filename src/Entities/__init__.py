@@ -1,1 +1,1 @@
-_all__ = ["Evaluations"]
+_all__ = ["Evaluations", "Tool"]

@@ -1,6 +1,6 @@
 import datetime
 from pathlib import Path
-from Services import Config
+from Services.Configuration.Config import Config
 from RuntimeContants import Runtime_Folders
 import sys
 import shutil
