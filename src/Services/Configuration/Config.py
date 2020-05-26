@@ -5,16 +5,24 @@ from pathlib import Path
 
 # Config.py
 class Config:
-    VERBOSE = 0
-    DEBUG = 0
+    # General
+    VERBOSE = False
+    PERCENTAGE_REMOVAL = False
+    MERGED_TOOL_EVALUATION = False
+
+    # Data
     DATA_ROOT_DIRECTORY = ''
     DATA_RAW_DIRECTORY = Path()
     DATA_RESULTS_DIRECTORY = Path()
+
+    # File Names
     FILE_RUNTIME_MEAN_SUMMARY = ''
     FILE_RUNTIME_VAR_SUMMARY = ''
     FILE_MEMORY_MEAN_SUMMARY = ''
     FILE_MEMORY_VAR_SUMMARY = ''
     FILE_EXCLUDED_FILES = ''
+
+    # ML
     K_FOLDS = 0
     REPETITIONS = 0
     FOREST_ESTIMATORS = 0
@@ -29,14 +37,25 @@ def read_conf():
     config = configparser.ConfigParser()
     config.read('src/config.ini')
     try:
+
+        # General
+        Config.VERBOSE = bool(config['GENERAL']['verbose_mode'])
+        Config.PERCENTAGE_REMOVAL = bool(config['GENERAL']['percentage_removal'])
+        Config.MERGED_TOOL_EVALUATION = bool(config['GENERAL']['merged_tool_evaluation'])
+
+        # Data
         Config.DATA_ROOT_DIRECTORY = config['DATA']['root_directory']
         Config.DATA_RAW_DIRECTORY = Path(Config.DATA_ROOT_DIRECTORY, config['DATA']['raw_directory'])
         Config.DATA_RESULTS_DIRECTORY = Path(Config.DATA_ROOT_DIRECTORY, config['DATA']['results_directory'])
+
+        # File Names
         Config.FILE_RUNTIME_MEAN_SUMMARY = config['FILE_NAMES']['runtime_mean_summary_name']
         Config.FILE_RUNTIME_VAR_SUMMARY = config['FILE_NAMES']['runtime_var_summary_name']
         Config.FILE_MEMORY_MEAN_SUMMARY = config['FILE_NAMES']['memory_mean_summary_name']
         Config.FILE_MEMORY_VAR_SUMMARY = config['FILE_NAMES']['memory_var_summary_name']
         Config.FILE_EXCLUDED_FILES = config['FILE_NAMES']['excluded_files']
+
+        # ML
         Config.K_FOLDS = int(config['ML']['k_folds'])
         Config.REPETITIONS = int(config['ML']['repetitions'])
         Config.FOREST_ESTIMATORS = int(config['ML']['forest_estimators'])
