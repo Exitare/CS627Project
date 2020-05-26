@@ -1,13 +1,14 @@
 from pathlib import Path
 import pandas as pd
-from Services.FileSystem import Folder_Management
+from Services.FileSystem import Folder_Management, File_Management
 from RuntimeContants import Runtime_Folders
+import os
 
 
 class File:
-    def __init__(self, name: str, path: Path()):
-        self.name = name
+    def __init__(self, path: str):
         self.path = path
+        self.name = os.path.splitext(path)[0]
         self.result_directory = Folder_Management.create_tool_folder(self.name)
         self.raw_df = pd.DataFrame()
         self.preprocessed_df = pd.DataFrame()

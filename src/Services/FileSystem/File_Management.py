@@ -3,22 +3,53 @@ import ntpath
 import os
 import sys
 from RuntimeContants import Runtime_Folders, Runtime_Datasets, Runtime_File_Data
-from Services.Config import Config
-from Services.FileSystem import FolderManagement
+from Services.Configuration.Config import Config
+from Services.FileSystem import Folder_Management
 import pandas as pd
 from collections import defaultdict
 from Entities import File
+from Entities.Tool import Tool
+from Entities.File import File
 
 
-def load_required_data():
+def load_tools():
     """
     Gathers all data, which is required. Takes command line args into account.
     :return:
     """
-    if Runtime_Datasets.COMMAND_LINE_ARGS.merge:
-        get_tool_version_files()
 
-    get_all_file_paths(Config.DATA_RAW_DIRECTORY)
+    for file in os.listdir(Config.DATA_RAW_DIRECTORY):
+        file_path = os.fsdecode(file)
+        try:
+            if file_path.endswith(".csv") or file_path.endswith(".tsv"):
+                file_name: str = get_file_name(file_path)
+                tool_name: str = str(file_name.rsplit('_', 1)[0])
+                tool = Tool(tool_name)
+
+                tool_found: bool = False
+                for stored_tool in Runtime_Datasets.DETECTED_TOOLS:
+                    if not tool_found:
+                        if stored_tool.__eq__(tool):
+                            stored_tool.add_file(file_path)
+                            tool_found = True
+                            break
+
+                if tool_found:
+                    continue
+                else:
+                    if Config.VERBOSE:
+                        print(f"Added tool {tool.name}")
+                    tool.add_file(file_path)
+                    Runtime_Datasets.DETECTED_TOOLS.append(tool)
+        except OSError as ex:
+            print(ex)
+        except BaseException as ex:
+            print(ex)
+
+    for tool in Runtime_Datasets.DETECTED_TOOLS:
+        for file in tool.files:
+            print(f"Path {file.path}")
+            print(f"Name {file.name}")
 
 
 def get_file_name(path):
@@ -31,41 +62,18 @@ def get_file_name(path):
     return tail or ntpath.basename(head)
 
 
-def load_raw_files():
-    """
-    Iterates through the folder and store every file path.
-    :param path:
-    :return:
-    """
-    try:
-        print("Loading files...")
-        directory = Config.DATA_RAW_DIRECTORY
-        for file in os.listdir(directory):
-            full_file_path = os.fsdecode(file)
-            if full_file_path.endswith(".csv") or full_file_path.endswith(".tsv"):
-                evaluation_file: File = File.File(get_file_name(full_file_path), full_file_path)
-                Runtime_Datasets.FILES.append(evaluation_file)
-
-        print(f"Loaded {len(Runtime_Datasets.FILES)}")
-    except OSError as ex:
-        print(ex)
-        FolderManagement.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
-        sys.exit()
-
-
 def read_file(path: str):
     """
-    Reads the file located by the given path
+    Reads the file located at the given path
     :param path:
     :return:
     """
     try:
-        df = pd.read_csv(f"{Config.DATA_RAW_DIRECTORY}/{path}")
-        Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET = df
+        return pd.read_csv(f"{Config.DATA_RAW_DIRECTORY}/{path}")
     except OSError as ex:
-        print(ex)
-        FolderManagement.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
-        sys.exit()
+        if Config.VERBOSE:
+            print(ex)
+        return None
 
 
 def create_csv_file(df, folder, name):
