@@ -5,23 +5,14 @@ from RuntimeContants import Runtime_Folders
 import os
 from Services.Configuration.Config import Config
 from Services.Processing import PreProcessing
+from time import sleep
 
 
 class File:
     def __init__(self, path: str, tool_folder: Path):
         self.path = path
         self.name = os.path.splitext(path)[0]
-        # The folder where all reports and plots are getting stored
-        self.folder = Folder_Management.create_file_folder(tool_folder, self.name)
-
-        if self.folder is not None:
-            self.verified = True
-        else:
-            self.verified = False
-
-        # Stop the init method because the folder is not available and therefore no data can be stored
-        if not self.verified:
-            return
+        self.verified = True
 
         # Load data set depending on memory saving mode
         if not Config.MEMORY_SAVING_MODE:
@@ -52,11 +43,39 @@ class File:
                      '90', '91', '92', '93', '94', '95', '96', '97', '98',
                      '99', 'Rows', 'Features'])
 
-    def get_column_count(self):
-        pass
+        self.verify_file()
 
-    def get_row_count(self):
-        pass
+        # Return, because the file is not eligible to be evaluated.
+        if not self.verified:
+            return
+
+        # The folder where all reports and plots are getting stored
+        self.folder = Folder_Management.create_file_folder(tool_folder, self.name)
+
+        if self.folder is not None:
+            self.verified = True
+        else:
+            self.verified = False
+
+    def get_raw_df_statistics(self):
+        """
+        Returns column, row and feature count of the raw data set
+        :return:
+        """
+        columns: int = len(self.raw_df.columns)
+        rows: int = len(self.raw_df.index)
+        features: int = columns - 1
+        return columns, rows, features
+
+    def get_pre_processed_df_statistics(self):
+        """
+        Returns column, row and feature count of the raw data set
+        :return:
+        """
+        columns: int = len(self.preprocessed_df.columns)
+        rows: int = len(self.preprocessed_df.index)
+        features: int = columns - 1
+        return columns, rows, features
 
     def get_feature_count(self):
         pass
@@ -67,6 +86,24 @@ class File:
         except OSError as ex:
             print(ex)
             Folder_Management.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
+
+    def verify_file(self):
+        """
+        Check if the file passes all requirements to be able to be evaluated
+        :return:
+        """
+        columns, rows, features = self.get_raw_df_statistics()
+        if rows < Config.MINIMUM_ROW_COUNT:
+            print(f"{self.name} has not sufficient rows ({rows}).")
+            print("The file will not be evaluated.")
+            sleep(1)
+            self.verified = False
+
+        if columns < Config.MINIMUM_COLUMN_COUNT:
+            print(f"{self.name} has not sufficient columns ({columns}).")
+            print("The file will not be evaluated.")
+            sleep(1)
+            self.verified = False
 
 # EVALUATED_FILE_ROW_COUNT = 0
 # EVALUATED_FILE_COLUMN_COUNT = 0

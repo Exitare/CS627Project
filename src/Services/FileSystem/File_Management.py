@@ -8,6 +8,7 @@ import pandas as pd
 from collections import defaultdict
 from Entities.Tool import Tool
 from Entities.File import File
+from time import sleep
 
 
 def load_tools():
@@ -16,6 +17,8 @@ def load_tools():
     :return:
     """
 
+    print(f"Detecting tools...")
+    sleep(1)
     for file in os.listdir(Config.DATA_RAW_DIRECTORY):
         file_path = os.fsdecode(file)
         try:
@@ -36,13 +39,22 @@ def load_tools():
                     continue
                 else:
                     if Config.VERBOSE:
-                        print(f"Detected new tool {tool.name}")
+                        print(f"Detected tool {tool.name}")
                     tool.add_file(file_path)
                     Runtime_Datasets.DETECTED_TOOLS.append(tool)
         except OSError as ex:
             print(ex)
         except BaseException as ex:
             print(ex)
+
+    # TODO: Verify tools and remove them
+    # somelist = [x for x in Runtime_Datasets.DETECTED_TOOLS if not determine(x)]
+    # for tool in Runtime_Datasets.DETECTED_TOOLS:
+    #   tool.verify()
+    #  if not tool.verified:
+
+    print(f"Tool detector detected {len(Runtime_Datasets.DETECTED_TOOLS)} tools.")
+    sleep(1)
 
 
 #   for tool in Runtime_Datasets.DETECTED_TOOLS:

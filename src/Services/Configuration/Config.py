@@ -28,6 +28,7 @@ class Config:
     REPETITIONS = 0
     FOREST_ESTIMATORS = 0
     MINIMUM_ROW_COUNT = 50
+    MINIMUM_COLUMN_COUNT = 2
 
 
 def read_conf():
@@ -62,6 +63,7 @@ def read_conf():
         Config.REPETITIONS = int(config['ML']['repetitions'])
         Config.FOREST_ESTIMATORS = int(config['ML']['forest_estimators'])
         Config.MINIMUM_ROW_COUNT = int(config['ML']['min_row_count_per_file'])
+        Config.MINIMUM_COLUMN_COUNT = int(config['ML']['min_column_count_per_file'])
 
         validate_config()
         return True
