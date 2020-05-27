@@ -3,15 +3,36 @@ import pandas as pd
 from Services.FileSystem import Folder_Management, File_Management
 from RuntimeContants import Runtime_Folders
 import os
+from Services.Configuration.Config import Config
+from Services.Processing import PreProcessing
 
 
 class File:
-    def __init__(self, path: str):
+    def __init__(self, path: str, tool_folder: Path):
         self.path = path
         self.name = os.path.splitext(path)[0]
-        self.result_directory = Folder_Management.create_tool_folder(self.name)
-        self.raw_df = pd.DataFrame()
-        self.preprocessed_df = pd.DataFrame()
+        # The folder where all reports and plots are getting stored
+        self.folder = Folder_Management.create_file_folder(tool_folder, self.name)
+
+        if self.folder is not None:
+            self.verified = True
+        else:
+            self.verified = False
+
+        # Stop the init method because the folder is not available and therefore no data can be stored
+        if not self.verified:
+            return
+
+        # Load data set depending on memory saving mode
+        if not Config.MEMORY_SAVING_MODE:
+            self.raw_df = File_Management.read_file(self.path)
+        else:
+            self.raw_df = pd.DataFrame()
+
+        # Pre process the raw data set
+        self.preprocessed_df = PreProcessing.pre_process_data_set(self.raw_df)
+
+        # Setup required data sets
         self.runtime_evaluation = pd.DataFrame(
             columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
                      'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
@@ -21,12 +42,12 @@ class File:
 
         self.predicted_values = pd.DataFrame(columns=['y', 'y_hat'])
 
-        self.removed_rows_runtime_evaluation = pd.DataFrame(
+        self.runtime_evaluation_percentage = pd.DataFrame(
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
                      '90', '91', '92', '93', '94', '95', '96', '97', '98',
                      '99', 'Rows', 'Features'])
 
-        self.removed_rows_memory_evaluation = pd.DataFrame(
+        self.memory_evaluation_percentage = pd.DataFrame(
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
                      '90', '91', '92', '93', '94', '95', '96', '97', '98',
                      '99', 'Rows', 'Features'])

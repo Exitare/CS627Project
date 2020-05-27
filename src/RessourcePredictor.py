@@ -3,7 +3,8 @@ import sys
 from Services.Configuration import Config, Argument_Parser
 from Services.FileSystem import File_Management, Folder_Management
 from RuntimeContants import Runtime_Folders
-from Services.Reporting import Data_Set_Reporting, Plots
+import os
+import psutil
 
 
 def signal_handler(sig, frame):
@@ -15,7 +16,7 @@ def signal_handler(sig, frame):
     """
     print('Shutting down gracefully!')
     print("Deleting working directory")
-    Folder_Management.remove_folder(Runtime_Folders.CURRENT_WORKING_DIRECTORY)
+    Folder_Management.remove_folder(Runtime_Folders.EVALUATION_DIRECTORY)
     print("Done")
     print("Bye")
     sys.exit(0)
@@ -28,6 +29,9 @@ if __name__ == '__main__':
     Argument_Parser.handle_args()
     Folder_Management.initialize()
     File_Management.load_tools()
+
+    process = psutil.Process(os.getpid())
+    print(f"Memory used: {process.memory_info().rss / 1024} mb.")
     # Tasks.process_single_files()
     # Tasks.process_merged_tool_version()
     # Tasks.process_single_file_data_removal()

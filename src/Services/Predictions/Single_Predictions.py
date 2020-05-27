@@ -8,7 +8,7 @@ from RuntimeContants import Runtime_Folders, Runtime_Datasets, Runtime_File_Data
 import sys
 from sklearn.feature_selection import f_regression
 from sklearn.metrics import r2_score
-from Services import PreProcessing
+from Services.Processing import PreProcessing
 
 
 def compare_real_to_predicted_data():

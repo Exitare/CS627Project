@@ -1,2 +1,1 @@
-__all__ = ['PreProcessing', 'Plotting', 'Statistics', 'FileSystem', 'Config', 'PostProcessing', 'Predictions',
-           'ArgumentParser']
+__all__ = ['Processing', 'Plotting', 'Statistics', 'FileSystem', 'Configuration', 'Predictions']

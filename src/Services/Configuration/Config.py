@@ -40,10 +40,10 @@ def read_conf():
     try:
 
         # General
-        Config.VERBOSE = bool(config['GENERAL']['verbose_mode'])
-        Config.PERCENTAGE_REMOVAL = bool(config['GENERAL']['percentage_removal'])
-        Config.MERGED_TOOL_EVALUATION = bool(config['GENERAL']['merged_tool_evaluation'])
-        Config.MEMORY_SAVING_MODE = bool(config['GENERAL']['memory_saving_mode'])
+        Config.VERBOSE = bool(int(config['GENERAL']['verbose_mode']))
+        Config.PERCENTAGE_REMOVAL = bool(int(config['GENERAL']['percentage_removal']))
+        Config.MERGED_TOOL_EVALUATION = bool(int(config['GENERAL']['merged_tool_evaluation']))
+        Config.MEMORY_SAVING_MODE = bool(int(config['GENERAL']['memory_saving_mode']))
 
         # Data
         Config.DATA_ROOT_DIRECTORY = config['DATA']['root_directory']

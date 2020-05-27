@@ -2,12 +2,10 @@ from pathlib import Path
 import ntpath
 import os
 import sys
-from RuntimeContants import Runtime_Folders, Runtime_Datasets, Runtime_File_Data
+from RuntimeContants import Runtime_Datasets
 from Services.Configuration.Config import Config
-from Services.FileSystem import Folder_Management
 import pandas as pd
 from collections import defaultdict
-from Entities import File
 from Entities.Tool import Tool
 from Entities.File import File
 
@@ -38,7 +36,7 @@ def load_tools():
                     continue
                 else:
                     if Config.VERBOSE:
-                        print(f"Added tool {tool.name}")
+                        print(f"Detected new tool {tool.name}")
                     tool.add_file(file_path)
                     Runtime_Datasets.DETECTED_TOOLS.append(tool)
         except OSError as ex:
@@ -46,10 +44,12 @@ def load_tools():
         except BaseException as ex:
             print(ex)
 
-    for tool in Runtime_Datasets.DETECTED_TOOLS:
-        for file in tool.files:
-            print(f"Path {file.path}")
-            print(f"Name {file.name}")
+
+#   for tool in Runtime_Datasets.DETECTED_TOOLS:
+#      for file in tool.files:
+#         print(f"Path {file.path}")
+#        print(f"Name {file.name}")
+#       print(f"Evaluation Folder {file.folder}")
 
 
 def get_file_name(path):
