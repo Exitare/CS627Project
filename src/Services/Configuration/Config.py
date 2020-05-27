@@ -9,6 +9,7 @@ class Config:
     VERBOSE = False
     PERCENTAGE_REMOVAL = False
     MERGED_TOOL_EVALUATION = False
+    MEMORY_SAVING_MODE = False
 
     # Data
     DATA_ROOT_DIRECTORY = ''
@@ -42,6 +43,7 @@ def read_conf():
         Config.VERBOSE = bool(config['GENERAL']['verbose_mode'])
         Config.PERCENTAGE_REMOVAL = bool(config['GENERAL']['percentage_removal'])
         Config.MERGED_TOOL_EVALUATION = bool(config['GENERAL']['merged_tool_evaluation'])
+        Config.MEMORY_SAVING_MODE = bool(config['GENERAL']['memory_saving_mode'])
 
         # Data
         Config.DATA_ROOT_DIRECTORY = config['DATA']['root_directory']
