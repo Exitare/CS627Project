@@ -1,7 +1,8 @@
 import signal
 import sys
 from Services.Configuration import Config, Argument_Parser
-from Services.FileSystem import File_Management, Folder_Management
+from Services.FileSystem import Folder_Management
+from Services.ToolLoader import Tool_Loader
 from RuntimeContants import Runtime_Folders
 import os
 import psutil
@@ -28,7 +29,7 @@ if __name__ == '__main__':
     Config.read_conf()
     Argument_Parser.handle_args()
     Folder_Management.initialize()
-    File_Management.load_tools()
+    Tool_Loader.load_tools()
 
     process = psutil.Process(os.getpid())
     print(f"Memory used: {process.memory_info().rss / 1024} mb.")
