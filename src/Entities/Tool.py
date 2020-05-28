@@ -2,9 +2,10 @@ import pandas as pd
 from pathlib import Path
 from Entities.File import File
 from RuntimeContants import Runtime_Folders
-from Services.FileSystem import Folder_Management
+from Services.FileSystem import Folder_Management, File_Management
 from Services.Configuration.Config import Config
-
+from Services.Processing import PreProcessing
+import logging
 
 class Tool:
     def __init__(self, name: str):
@@ -24,6 +25,8 @@ class Tool:
             self.verified = True
         else:
             self.verified = False
+
+        self.merged_files_df = []
 
     def __eq__(self, other):
         """
@@ -65,7 +68,23 @@ class Tool:
             print(f"Tool {self.name} does not contain at least one file that is verified. The tool will not evaluated.")
 
     def evaluate_files(self):
-        for file in self.files:
+        """
+        :return:
+        """
 
+        for file in self.verified_files:
             if Config.VERBOSE:
-                print(f"Evaluating {file_path}")
+                print(f"Evaluating {file.name}")
+
+            if Config.MEMORY_SAVING_MODE:
+
+
+
+                file.raw_df = File_Management.read_file(file.path)
+                file.preprocessed_df = PreProcessing.pre_process_data_set(file.raw_df)
+
+    def evaluate_merged_df(self):
+        pass
+
+    def evaluate_files_percentage(self):
+        pass
