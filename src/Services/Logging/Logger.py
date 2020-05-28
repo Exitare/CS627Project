@@ -1,10 +1,12 @@
 import logging
 from enum import Enum
+from Services.Configuration.Config import Config
 
 logging.basicConfig(filename='example.log', level=logging.DEBUG)
 
 
-class LogLevel(Enum):
-
-
-def write_log(LogLevel: LogLevel):
+def setup_logger():
+    if Config.DEBUG_MODE:
+        logging.basicConfig(filename='example.log', level=logging.DEBUG)
+    else:
+        logging.basicConfig(filename='example.log', level=logging.INFO)
