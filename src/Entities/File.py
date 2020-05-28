@@ -49,7 +49,7 @@ class File:
         if not self.verified:
             return
 
-        # The folder where all reports and plots are getting stored
+        # The folder where all reports and plots are getting stored, only created if file is valid
         self.folder = Folder_Management.create_file_folder(tool_folder, self.name)
 
         if self.folder is not None:

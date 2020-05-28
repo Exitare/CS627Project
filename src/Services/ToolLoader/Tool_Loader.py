@@ -20,9 +20,8 @@ def load_tools():
         try:
             if file_path.endswith(".csv") or file_path.endswith(".tsv"):
                 file_name: str = File_Management.get_file_name(file_path)
+                # Remove the files version number if present, then remove the file extension to get a clean name
                 tool_name: str = os.path.splitext(str(file_name.rsplit('_', 1)[0]))[0]
-                print(tool_name)
-                input()
                 tool = Tool(tool_name)
 
                 tool_found: bool = False
