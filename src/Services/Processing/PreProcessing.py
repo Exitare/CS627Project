@@ -1,7 +1,6 @@
 from sklearn import preprocessing
 from sklearn.feature_selection import VarianceThreshold
 import numpy as np
-from RuntimeContants import Runtime_File_Data
 
 np.random.seed(10)
 
@@ -21,6 +20,8 @@ def pre_process_data_set(df):
     df = fill_na(df)
     df = remove_bad_columns(df)
     df = convert_factorial_to_numerical(df)
+    # Test if
+    df = (df != 0).any(axis=None)
     return df
 
 

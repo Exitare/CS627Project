@@ -4,15 +4,7 @@ from Services.Configuration.Config import Config
 from RuntimeContants import Runtime_Folders
 import sys
 import shutil
-
-
-def initialize():
-    """
-    Checks if all required folders are present and creates the new evaluation folder for the ongoing evaluation
-    :return:
-    """
-    check_required_folder_integrity()
-    create_evaluation_folder()
+import logging
 
 
 def create_evaluation_folder():
@@ -52,9 +44,9 @@ def create_directory(path: str):
         Path(path).mkdir(parents=True, exist_ok=True)
 
     except OSError as ex:
-        print(ex)
-        print("Creation of the directory %s failed" % path)
-        print("Stopping application")
+        logging.critical(ex)
+        logging.critical(f"Creation of the directory {path} failed.")
+        logging.critical("Stopping application")
         sys.exit()
 
 
@@ -101,27 +93,27 @@ def create_file_folder(tool_path: Path, file_name: str):
         return path
 
 
-def check_required_folder_integrity():
+def create_required_folders():
     """
     Checks if the Data folder structure is up to date given the options from the config
     :return:
     """
+    created: bool = False
 
-    data_root = Path(Config.DATA_ROOT_DIRECTORY)
-    data_raw = Path(Config.DATA_RAW_DIRECTORY)
-    data_results = Path(Config.DATA_RESULTS_DIRECTORY)
-
-    print("Checking data folder integrity...")
-    if not data_root.is_dir():
-        print("Raw data directory not found. Creating...")
+    logging.info("Checking data folder integrity...")
+    if not Config.DATA_ROOT_DIRECTORY.is_dir():
+        created = True
+        logging.info("Raw data directory not found. Creating...")
         create_directory(Config.DATA_ROOT_DIRECTORY)
 
-    if not data_raw.is_dir():
-        print("Raw data directory not found. Creating...")
+    if not Config.DATA_RAW_DIRECTORY.is_dir():
+        created = True
+        logging.info("Raw data directory not found. Creating...")
         create_directory(Config.DATA_RAW_DIRECTORY)
 
-    if not data_results.is_dir():
-        print("Results data directory not found. Creating...")
+    if not Config.DATA_RESULTS_DIRECTORY.is_dir():
+        created = True
+        logging.info("Results data directory not found. Creating...")
         create_directory(Config.DATA_RESULTS_DIRECTORY)
 
-    print("Data folder checked and ready!")
+    return created

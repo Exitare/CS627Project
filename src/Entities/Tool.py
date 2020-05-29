@@ -7,6 +7,7 @@ from Services.Configuration.Config import Config
 from Services.Processing import PreProcessing
 import logging
 
+
 class Tool:
     def __init__(self, name: str):
         self.name = name
@@ -67,24 +68,26 @@ class Tool:
             self.verified = False
             print(f"Tool {self.name} does not contain at least one file that is verified. The tool will not evaluated.")
 
-    def evaluate_files(self):
+    def evaluate_verified_files(self):
         """
         :return:
         """
 
         for file in self.verified_files:
             if Config.VERBOSE:
-                print(f"Evaluating {file.name}")
+                logging.info(f"Evaluating {file.name}")
 
             if Config.MEMORY_SAVING_MODE:
-
-
-
+                if Config.VERBOSE:
+                    print(f"Loading data set because of memory saving mode")
                 file.raw_df = File_Management.read_file(file.path)
                 file.preprocessed_df = PreProcessing.pre_process_data_set(file.raw_df)
+
+            file.predict_runtime()
+            file.predict_memory()
 
     def evaluate_merged_df(self):
         pass
 
-    def evaluate_files_percentage(self):
+    def evaluate_verified_files_with_percentage(self):
         pass
