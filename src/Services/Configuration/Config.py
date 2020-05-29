@@ -14,7 +14,7 @@ class Config:
     DEBUG_MODE = False
 
     # Data
-    DATA_ROOT_DIRECTORY = ''
+    DATA_ROOT_DIRECTORY = Path()
     DATA_RAW_DIRECTORY = Path()
     DATA_RESULTS_DIRECTORY = Path()
 
@@ -50,7 +50,7 @@ def read_conf():
         Config.MEMORY_SAVING_MODE = bool(int(config['GENERAL']['memory_saving_mode']))
 
         # Data
-        Config.DATA_ROOT_DIRECTORY = config['DATA']['root_directory']
+        Config.DATA_ROOT_DIRECTORY = Path(config['DATA']['root_directory'])
         Config.DATA_RAW_DIRECTORY = Path(Config.DATA_ROOT_DIRECTORY, config['DATA']['raw_directory'])
         Config.DATA_RESULTS_DIRECTORY = Path(Config.DATA_ROOT_DIRECTORY, config['DATA']['results_directory'])
 

@@ -9,6 +9,12 @@ import psutil
 from Services.Logging import Logger
 import logging
 
+logging.basicConfig(filename='example.log', level=logging.DEBUG)
+logging.getLogger().setLevel(logging.DEBUG)
+logging.debug('This message should go to the log file')
+logging.info('So should this')
+logging.warning('And this, too')
+
 
 def signal_handler(sig, frame):
     """
@@ -33,6 +39,8 @@ if __name__ == '__main__':
         logging.info("All required folders generated.")
         logging.info("Please copy your files into the new folders and restart the application.")
         exit(0)
+    else:
+        logging.info("All folder checks passed.")
 
     Tool_Loader.load_tools()
 
@@ -43,7 +51,7 @@ if __name__ == '__main__':
     #   print()
 
     process = psutil.Process(os.getpid())
-    print(f"Memory used: {process.memory_info().rss / 1024} mb.")
+    print(f"Memory used: {process.memory_info().rss / 1024 / 1024} mb.")
     # Tasks.process_single_files()
     # Tasks.process_merged_tool_version()
     # Tasks.process_single_file_data_removal()
