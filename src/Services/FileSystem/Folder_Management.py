@@ -6,6 +6,8 @@ import sys
 import shutil
 import logging
 
+logging.basicConfig(filename='example.log', level=logging.DEBUG)
+
 
 def create_evaluation_folder():
     """
@@ -103,7 +105,7 @@ def create_required_folders():
     logging.info("Checking data folder integrity...")
     if not Config.DATA_ROOT_DIRECTORY.is_dir():
         created = True
-        logging.info("Raw data directory not found. Creating...")
+        logging.info("Root directory not found. Creating...")
         create_directory(Config.DATA_ROOT_DIRECTORY)
 
     if not Config.DATA_RAW_DIRECTORY.is_dir():

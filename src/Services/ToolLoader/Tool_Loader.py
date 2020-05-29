@@ -5,6 +5,9 @@ from Services.FileSystem import File_Management
 from RuntimeContants import Runtime_Datasets
 from Services.Configuration.Config import Config
 import os
+import logging
+
+logging.basicConfig(filename='example.log', level=logging.DEBUG)
 
 
 def load_tools():
@@ -13,7 +16,7 @@ def load_tools():
     :return:
     """
 
-    print(f"Detecting tools...")
+    logging.info(f"Detecting tools...")
     sleep(1)
     for file in os.listdir(Config.DATA_RAW_DIRECTORY):
         file_path = os.fsdecode(file)

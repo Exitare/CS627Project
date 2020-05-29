@@ -9,3 +9,4 @@ Data/anonymized/*
 Results/*
 venv/*
 Data/*
+*.log
