@@ -84,8 +84,18 @@ class Tool:
                 file.raw_df = File_Management.read_file(file.path)
                 file.preprocessed_df = PreProcessing.pre_process_data_set(file.raw_df)
 
+            # Predict values for single files
             file.predict_runtime()
-            # file.predict_memory()
+            file.predict_memory()
+
+            # Predict merged data sets
+            # TODO: Add function
+
+            # Predict percentage removal
+            # TODO: ADD function
+
+            # Frees memory if in memory saving mode
+            file.free_memory()
 
     def evaluate_merged_df(self):
         pass
