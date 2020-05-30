@@ -6,7 +6,8 @@ import sys
 import shutil
 import logging
 
-logging.basicConfig(filename='example.log', level=logging.DEBUG)
+folder_management = logging.getLogger()
+folder_management.setLevel(logging.DEBUG)
 
 
 def create_evaluation_folder():
@@ -20,9 +21,10 @@ def create_evaluation_folder():
         Path(path).mkdir(parents=True, exist_ok=True)
 
     except OSError as ex:
-        print(f"Could not create evaluation directory {path}")
-        print("Stopping application")
-        print(ex)
+        folder_management.warning(f"Could not create evaluation directory {path}")
+        folder_management.warning("Stopping application")
+        if Config.DEBUG_MODE:
+            folder_management.warning(ex)
         sys.exit()
     else:
         Runtime_Folders.EVALUATION_DIRECTORY = path
@@ -32,8 +34,9 @@ def remove_folder(path):
     try:
         shutil.rmtree(path)
     except OSError as ex:
-        print(f"Could not delete folder {path}")
-        print(ex)
+        folder_management.warning(f"Could not delete folder {path}")
+        if Config.DEBUG_MODE:
+            folder_management.warning(ex)
 
 
 def create_directory(path: str):
@@ -46,9 +49,9 @@ def create_directory(path: str):
         Path(path).mkdir(parents=True, exist_ok=True)
 
     except OSError as ex:
-        logging.critical(ex)
-        logging.critical(f"Creation of the directory {path} failed.")
-        logging.critical("Stopping application")
+        folder_management.critical(ex)
+        folder_management.critical(f"Creation of the directory {path} failed.")
+        folder_management.critical("Stopping application")
         sys.exit()
 
 
@@ -64,10 +67,10 @@ def create_tool_folder(tool_name: str):
         Path(path).mkdir(parents=True, exist_ok=True)
 
     except OSError as ex:
-        print(f"The folder creation for tool {tool_name} failed.")
-        print("The tool evaluation will be skipped!")
-        # TODO: Add debug mode
-        print(ex)
+        folder_management.warning(f"The folder creation for tool {tool_name} failed.")
+        folder_management.warning("The tool evaluation will be skipped!")
+        if Config.DEBUG_MODE:
+            folder_management.warning(ex)
         return None
     else:
         return path
@@ -86,10 +89,10 @@ def create_file_folder(tool_path: Path, file_name: str):
         Path(path).mkdir(parents=True, exist_ok=True)
 
     except OSError as ex:
-        print(f"The folder creation for file {file_name} failed.")
-        print("The file evaluation will be skipped!")
-        # TODO: Add debug mode
-        print(ex)
+        folder_management.warning(f"The folder creation for file {file_name} failed.")
+        folder_management.warning("The file evaluation will be skipped!")
+        if Config.DEBUG_MODE:
+            folder_management.warning(ex)
         return None
     else:
         return path
@@ -102,20 +105,20 @@ def create_required_folders():
     """
     created: bool = False
 
-    logging.info("Checking data folder integrity...")
+    folder_management.info("Checking data folder integrity...")
     if not Config.DATA_ROOT_DIRECTORY.is_dir():
         created = True
-        logging.info("Root directory not found. Creating...")
+        folder_management.info("Root directory not found. Creating...")
         create_directory(Config.DATA_ROOT_DIRECTORY)
 
     if not Config.DATA_RAW_DIRECTORY.is_dir():
         created = True
-        logging.info("Raw data directory not found. Creating...")
+        folder_management.info("Raw data directory not found. Creating...")
         create_directory(Config.DATA_RAW_DIRECTORY)
 
     if not Config.DATA_RESULTS_DIRECTORY.is_dir():
         created = True
-        logging.info("Results data directory not found. Creating...")
+        folder_management.info("Results data directory not found. Creating...")
         create_directory(Config.DATA_RESULTS_DIRECTORY)
 
     return created
