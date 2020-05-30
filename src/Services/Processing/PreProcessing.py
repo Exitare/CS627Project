@@ -21,7 +21,7 @@ def pre_process_data_set(df):
     df = remove_bad_columns(df)
     df = convert_factorial_to_numerical(df)
     # Test if
-    df = (df != 0).any(axis=None)
+    # df = (df != 0).any(axis=None)
     return df
 
 

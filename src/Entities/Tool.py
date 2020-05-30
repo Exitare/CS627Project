@@ -54,19 +54,20 @@ class Tool:
         if len(self.all_files) == 0:
             Folder_Management.remove_folder(self.folder)
             self.verified = False
-            print(f"Tool {self.name} does not contain any files. The tool will not evaluated.")
+            logging.info(f"Tool {self.name} does not contain any files. The tool will not evaluated.")
 
         self.verified_files = [file for file in self.all_files if file.verified]
         self.excluded_files = [file for file in self.all_files if not file.verified]
 
         if Config.DEBUG_MODE:
-            print(
-                f"Tool contains {len(self.excluded_files)} exlcuded files and {len(self.verified_files)} verified files.")
+            logging.info(
+                f"Tool contains {len(self.excluded_files)} excluded files and {len(self.verified_files)} verified files.")
 
         if len(self.verified_files) == 0:
             Folder_Management.remove_folder(self.folder)
             self.verified = False
-            print(f"Tool {self.name} does not contain at least one file that is verified. The tool will not evaluated.")
+            logging.info(f"Tool {self.name} does not contain at least one file that is verified")
+            logging.info(f"The tool will not evaluated and the folder will be cleanup up.")
 
     def evaluate_verified_files(self):
         """
@@ -84,7 +85,7 @@ class Tool:
                 file.preprocessed_df = PreProcessing.pre_process_data_set(file.raw_df)
 
             file.predict_runtime()
-            file.predict_memory()
+            # file.predict_memory()
 
     def evaluate_merged_df(self):
         pass

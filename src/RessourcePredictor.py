@@ -11,9 +11,6 @@ import logging
 
 logging.basicConfig(filename='example.log', level=logging.DEBUG)
 logging.getLogger().setLevel(logging.DEBUG)
-logging.debug('This message should go to the log file')
-logging.info('So should this')
-logging.warning('And this, too')
 
 
 def signal_handler(sig, frame):
@@ -41,12 +38,15 @@ if __name__ == '__main__':
         exit(0)
     else:
         logging.info("All folder checks passed.")
+        logging.info("Creating evaluation folder.")
+        Folder_Management.create_evaluation_folder()
 
     Tool_Loader.load_tools()
-
-    # for tool in Runtime_Datasets.VERIFIED_TOOLS:
-    #   logging.info(f"Evaluation tool {tool.name}...")
-    #   tool.evaluate_files()
+    logging.info("Starting tool evaluation...")
+    print()
+    for tool in Runtime_Datasets.VERIFIED_TOOLS:
+        logging.info(f"Evaluating tool {tool.name}...")
+        tool.evaluate_verified_files()
     #   logging.info(f"Done.")
     #   print()
 

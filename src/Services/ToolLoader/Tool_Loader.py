@@ -7,8 +7,6 @@ from Services.Configuration.Config import Config
 import os
 import logging
 
-logging.basicConfig(filename='example.log', level=logging.DEBUG)
-
 
 def load_tools():
     """
@@ -39,28 +37,26 @@ def load_tools():
                     continue
                 else:
                     if Config.VERBOSE:
-                        print(f"Detected tool {tool.name}")
+                        logging.info(f"Detected tool {tool.name}")
                     tool.add_file(file_path)
                     Runtime_Datasets.DETECTED_TOOLS.append(tool)
         except OSError as ex:
-            print(ex)
+            logging.warning(ex)
         except BaseException as ex:
-            print(ex)
+            logging.warning(ex)
 
     # Verify all tools
     for tool in Runtime_Datasets.DETECTED_TOOLS:
         tool.verify()
-        print(f"Tool {tool.name} is verified {tool.verified}")
+        if Config.DEBUG_MODE:
+            logging.debug(f"Tool {tool.name} is verified {tool.verified}")
 
     Runtime_Datasets.VERIFIED_TOOLS = [tool for tool in Runtime_Datasets.DETECTED_TOOLS if tool.verified]
     Runtime_Datasets.EXCLUDED_TOOLS = [tool for tool in Runtime_Datasets.DETECTED_TOOLS if not tool.verified]
-    print(
+    print()
+    logging.info(
         f"Tool detector detected {len(Runtime_Datasets.VERIFIED_TOOLS)} valid tools and excluded"
         f" {len(Runtime_Datasets.EXCLUDED_TOOLS)} tools.")
-    sleep(1)
 
-#   for tool in Runtime_Datasets.DETECTED_TOOLS:
-#      for file in tool.files:
-#         print(f"Path {file.path}")
-#        print(f"Name {file.name}")
-#       print(f"Evaluation Folder {file.folder}")
+    print()
+    sleep(1)
