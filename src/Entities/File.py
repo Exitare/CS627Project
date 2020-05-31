@@ -39,7 +39,8 @@ class File:
             columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
                      'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
 
-        self.predicted_values = pd.DataFrame(columns=['y', 'y_hat'])
+        self.predicted_runtime_values = pd.DataFrame(columns=['y', 'y_hat'])
+        self.predicted_memory_values = pd.DataFrame(columns=['y', 'y_hat'])
 
         self.runtime_evaluation_percentage = pd.DataFrame(
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
@@ -103,14 +104,14 @@ class File:
         """
         columns, rows, features = self.get_raw_df_statistics()
         if rows < Config.MINIMUM_ROW_COUNT:
-            print(f"{self.name} has not sufficient rows ({rows}).")
-            print("The file will not be evaluated.")
+            logging.warning(f"{self.name} has not sufficient rows ({rows}).")
+            logging.warning("The file will not be evaluated.")
             sleep(1)
             self.verified = False
 
         if columns < Config.MINIMUM_COLUMN_COUNT:
-            print(f"{self.name} has not sufficient columns ({columns}).")
-            print("The file will not be evaluated.")
+            logging.warning(f"{self.name} has not sufficient columns ({columns}).")
+            logging.warning("The file will not be evaluated.")
             sleep(1)
             self.verified = False
 
@@ -121,17 +122,15 @@ class File:
                 logging.warning(f"File will not be evaluated.")
                 self.verified = False
 
-        # Check if runtime column is present. If not, file is not verified
-        if 'runtime' not in self.preprocessed_df.columns:
-            logging.warning("Could not find a column matching the keyword 'runtime'. Skipping!")
-            self.verified = False
-
     def predict_runtime(self):
         """
-
+        Predicts the runtime for a complete data set.
         :return:
         """
         df = self.preprocessed_df.copy()
+
+        if 'runtime' not in df:
+            return
 
         model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
 
@@ -142,37 +141,21 @@ class File:
         source_row_count = len(X)
 
         X_indexes = (X != 0).any(axis=1)
+
         X = X.loc[X_indexes]
         y = y.loc[X_indexes]
 
-        if source_row_count != len(X):
-            if Config.VERBOSE:
-                logging.info(f"Removed {source_row_count - len(X)} rows. Source had {source_row_count}.")
-
-        if len(X.index) == 0:
-            if Config.VERBOSE:
-                logging.warning("Data set contains 0 rows. Skipping.")
-            Runtime_File_Data.EVALUATED_FILE_NO_USEFUL_INFORMATION = True
-            General_File_Service.remove_folder(Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY)
-            return
+        if source_row_count != len(X) and Config.VERBOSE:
+            logging.info(f"Removed {source_row_count - len(X)} rows. Source had {source_row_count}.")
 
         X = PreProcessing.normalize_X(X)
         X = PreProcessing.variance_selection(X)
-
-        # Check if x is valid or not
-        if type(X) == int:
-            if X == 0:
-                print("Data set did not pass the variance selection check.")
-                Runtime_File_Data.EVALUATED_FILE_NO_USEFUL_INFORMATION = True
-                General_File_Service.remove_folder(Runtime_Folders.CURRENT_EVALUATED_TOOL_DIRECTORY)
-                return
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
 
         model.fit(X_train, y_train)
         y_test_hat = model.predict(X_test)
         y_train_hat = model.predict(X_train)
-
         test_score = r2_score(y_test, y_test_hat)
         train_score = r2_score(y_train, y_train_hat)
 
@@ -180,57 +163,75 @@ class File:
         if train_score > test_score * 2:
             overFitting = True
 
-        if feature == 'runtime':
-            Runtime_File_Data.EVALUATED_FILE_RUNTIME_INFORMATION = Runtime_File_Data.EVALUATED_FILE_RUNTIME_INFORMATION.append(
-                {'File Name': Runtime_File_Data.EVALUATED_FILE_NAME, "Test Score": test_score,
-                 "Train Score": train_score, "Potential Over Fitting": overFitting,
-                 "Initial Row Count": Runtime_File_Data.EVALUATED_FILE_ROW_COUNT,
-                 "Initial Feature Count": Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT, "Processed Row Count": len(X),
-                 "Processed Feature Count": X.shape[1]}, ignore_index=True)
+        self.runtime_evaluation = self.runtime_evaluation.append(
+            {'File Name': self.name, "Test Score": test_score,
+             "Train Score": train_score, "Potential Over Fitting": overFitting,
+             "Initial Row Count": len(self.raw_df.index),
+             "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
+             "Processed Feature Count": X.shape[1]}, ignore_index=True)
 
-        if feature == 'memory.max_usage_in_bytes':
-            Runtime_File_Data.EVALUATED_FILE_MEMORY_INFORMATION = Runtime_File_Data.EVALUATED_FILE_MEMORY_INFORMATION.append(
-                {'File Name': Runtime_File_Data.EVALUATED_FILE_NAME, "Test Score": test_score,
-                 "Train Score": train_score, "Potential Over Fitting": overFitting,
-                 "Initial Row Count": Runtime_File_Data.EVALUATED_FILE_ROW_COUNT,
-                 "Initial Feature Count": Runtime_File_Data.EVALUATED_FILE_COLUMN_COUNT, "Processed Row Count": len(X),
-                 "Processed Feature Count": X.shape[1]}, ignore_index=True)
+        self.predicted_runtime_values = pd.concat([pd.Series(y_test).reset_index()['runtime'], pd.Series(y_test_hat)],
+                                                  axis=1)
 
-        value_comparison = value_comparison.assign(y=pd.Series(y_test))
-        value_comparison = value_comparison.assign(y_test_hat=pd.Series(y_test_hat))
+    def predict_memory(self):
+        """
+        Predicts the memory usage for a complete data set.
+        :return:
+        """
+        df = self.preprocessed_df.copy()
 
-        # f_regression(X, y)
+        if 'memory.max_usage_in_bytes' not in df:
+            return
 
-        # Plot y vs y hat plot
-        Plotting_Full_DS.plot(value_comparison, f"{feature}_y_vs_y_hat")
+        model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
 
-# EVALUATED_FILE_ROW_COUNT = 0
-# EVALUATED_FILE_COLUMN_COUNT = 0
-# EVALUATED_FILE_FEATURE_COUNT = 0
-# EVALUATED_FILE_RAW_DATA_SET = pd.DataFrame()
-# EVALUATED_FILE_PREPROCESSED_DATA_SET = pd.DataFrame()
-# EVALUATED_FILE_NO_USEFUL_INFORMATION = False
+        y = df['memory.max_usage_in_bytes']
+        del df['memory.max_usage_in_bytes']
+        X = df
 
-# General information about a data set with removed rows
-# EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION = pd.DataFrame(
-#   columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
-#           '90', '91', '92', '93', '94', '95', '96', '97', '98',
-#          '99', 'Rows', 'Features'])
-#
-# EVALUATED_FILE_REMOVED_ROWS_MEMORY_INFORMATION = pd.DataFrame(
-#   columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
-#             '90', '91', '92', '93', '94', '95', '96', '97', '98',
-#            '99', 'Rows', 'Features'])
-#
-# Predictions vs Real
-# EVALUATED_FILE_PREDICTED_VALUES = pd.DataFrame(columns=['y', 'y_hat'])
+        source_row_count = len(X)
 
-# General information about runtime predictions using a non modified data set
-# EVALUATED_FILE_RUNTIME_INFORMATION = pd.DataFrame(
-#   columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
-#           'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
+        X_indexes = (X != 0).any(axis=1)
 
-# General information about memory predictions using a non modified data set
-# EVALUATED_FILE_MEMORY_INFORMATION = pd.DataFrame(
-#   columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
-#           'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
+        X = X.loc[X_indexes]
+        y = y.loc[X_indexes]
+
+        if source_row_count != len(X) and Config.VERBOSE:
+            logging.info(f"Removed {source_row_count - len(X)} rows. Source had {source_row_count}.")
+
+        X = PreProcessing.normalize_X(X)
+        X = PreProcessing.variance_selection(X)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
+
+        model.fit(X_train, y_train)
+        y_test_hat = model.predict(X_test)
+        y_train_hat = model.predict(X_train)
+        test_score = r2_score(y_test, y_test_hat)
+        train_score = r2_score(y_train, y_train_hat)
+
+        overFitting = False
+        if train_score > test_score * 2:
+            overFitting = True
+
+        self.memory_evaluation = self.memory_evaluation.append(
+            {'File Name': self.name, "Test Score": test_score,
+             "Train Score": train_score, "Potential Over Fitting": overFitting,
+             "Initial Row Count": len(self.raw_df.index),
+             "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
+             "Processed Feature Count": X.shape[1]}, ignore_index=True)
+
+        self.predicted_memory_values = pd.concat(
+            [pd.Series(y_test).reset_index()['memory.max_usage_in_bytes'], pd.Series(y_test_hat)],
+            axis=1)
+
+    def free_memory(self):
+        """
+        Release not required memory for memory saving mode.
+        :return:
+        """
+        if not Config.MEMORY_SAVING_MODE:
+            return
+
+        self.raw_df = None
+        self.preprocessed_df = None

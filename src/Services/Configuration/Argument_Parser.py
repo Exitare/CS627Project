@@ -26,23 +26,33 @@ def handle_args():
     args = parser.parse_args()
 
     if args.remove:
-        print("Data removal active")
         Config.PERCENTAGE_REMOVAL = True
 
     if args.verbose:
-        print("Verbose output active")
         Config.VERBOSE = True
 
     if args.percentage:
-        print("Tool files will be merged and then evaluated")
         Config.MERGED_TOOL_EVALUATION = True
 
     if args.memory:
-        print(f"Memory saving mode is active!")
         Config.MEMORY_SAVING_MODE = True
 
     if args.debug:
-        print(f"Debug mode is active!")
         Config.DEBUG_MODE = True
+
+    if Config.PERCENTAGE_REMOVAL:
+        print("Data removal active")
+
+    if Config.VERBOSE:
+        print("Verbose output active")
+
+    if Config.MERGED_TOOL_EVALUATION:
+        print("Tool files will be merged and then evaluated")
+
+    if Config.MEMORY_SAVING_MODE:
+        print(f"Memory saving mode is active!")
+
+    if Config.DEBUG_MODE:
+        print(f"Debug mode is active!")
 
     sleep(1)
