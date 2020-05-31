@@ -60,3 +60,17 @@ def load_tools():
 
     print()
     sleep(1)
+
+
+def prepare_verified_tools():
+    """
+    Prepare verified tools
+    :return:
+    """
+
+    logging.info("Preparing tools...")
+    if Config.MEMORY_SAVING_MODE:
+        return
+
+    for tool in Runtime_Datasets.VERIFIED_TOOLS:
+        tool.merge_files()

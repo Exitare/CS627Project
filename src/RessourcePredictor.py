@@ -42,13 +42,16 @@ if __name__ == '__main__':
         Folder_Management.create_evaluation_folder()
 
     Tool_Loader.load_tools()
+    Tool_Loader.prepare_verified_tools()
+
     logging.info("Starting tool evaluation...")
     print()
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
+
         logging.info(f"Evaluating tool {tool.name}...")
-        tool.evaluate_verified_files()
-    #   logging.info(f"Done.")
-    #   print()
+        tool.evaluate()
+        logging.info(f"Done.")
+        print()
 
     process = psutil.Process(os.getpid())
     print(f"Memory used: {process.memory_info().rss / 1024 / 1024} mb.")

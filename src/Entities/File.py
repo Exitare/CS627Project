@@ -66,6 +66,14 @@ class File:
         else:
             self.verified = False
 
+    def load_data(self):
+        """
+        Loads the data set. Only used if memory saving mode is active
+        :return:
+        """
+        self.raw_df = File_Management.read_file(self.path)
+        self.preprocessed_df = PreProcessing.pre_process_data_set(self.raw_df)
+
     def get_raw_df_statistics(self):
         """
         Returns column, row and feature count of the raw data set
@@ -159,13 +167,13 @@ class File:
         test_score = r2_score(y_test, y_test_hat)
         train_score = r2_score(y_train, y_train_hat)
 
-        overFitting = False
+        over_fitting = False
         if train_score > test_score * 2:
-            overFitting = True
+            over_fitting = True
 
         self.runtime_evaluation = self.runtime_evaluation.append(
             {'File Name': self.name, "Test Score": test_score,
-             "Train Score": train_score, "Potential Over Fitting": overFitting,
+             "Train Score": train_score, "Potential Over Fitting": over_fitting,
              "Initial Row Count": len(self.raw_df.index),
              "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
              "Processed Feature Count": X.shape[1]}, ignore_index=True)
@@ -210,13 +218,13 @@ class File:
         test_score = r2_score(y_test, y_test_hat)
         train_score = r2_score(y_train, y_train_hat)
 
-        overFitting = False
+        over_fitting = False
         if train_score > test_score * 2:
-            overFitting = True
+            over_fitting = True
 
         self.memory_evaluation = self.memory_evaluation.append(
             {'File Name': self.name, "Test Score": test_score,
-             "Train Score": train_score, "Potential Over Fitting": overFitting,
+             "Train Score": train_score, "Potential Over Fitting": over_fitting,
              "Initial Row Count": len(self.raw_df.index),
              "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
              "Processed Feature Count": X.shape[1]}, ignore_index=True)

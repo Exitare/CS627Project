@@ -6,6 +6,9 @@ from Services.FileSystem import Folder_Management, File_Management
 from Services.Configuration.Config import Config
 from Services.Processing import PreProcessing
 import logging
+from sklearn.metrics import r2_score
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
 
 
 class Tool:
@@ -27,7 +30,18 @@ class Tool:
         else:
             self.verified = False
 
-        self.merged_files_df = []
+        self.merged_files_raw_df = pd.DataFrame()
+        self.merged_files_preprocessed_df = pd.DataFrame()
+        # Setup required data sets
+        self.runtime_evaluation = pd.DataFrame(
+            columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
+                     'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
+        self.memory_evaluation = pd.DataFrame(
+            columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
+                     'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
+
+        self.predicted_runtime_values = pd.DataFrame(columns=['y', 'y_hat'])
+        self.predicted_memory_values = pd.DataFrame(columns=['y', 'y_hat'])
 
     def __eq__(self, other):
         """
@@ -69,7 +83,28 @@ class Tool:
             logging.info(f"Tool {self.name} does not contain at least one file that is verified")
             logging.info(f"The tool will not evaluated and the folder will be cleanup up.")
 
-    def evaluate_verified_files(self):
+    def evaluate(self):
+        """
+        Handles the evaluation of a tool
+        :return:
+        """
+
+        # Load data for each file of the tool because it was not loaded at the start
+        if Config.MEMORY_SAVING_MODE:
+            for file in self.verified_files:
+                file.load_data()
+
+        # Evaluate the files
+        self.__evaluate_verified_files()
+        self.__evaluate_merged_df()
+        self.__evaluate_verified_files_with_percentage()
+
+        # Free not required data up, to save memory
+        if Config.MEMORY_SAVING_MODE:
+            for file in self.verified_files:
+                file.free_memory()
+
+    def __evaluate_verified_files(self):
         """
         Evaluates all files associated to a tool.
         Runtime and memory is evaluated
@@ -80,51 +115,139 @@ class Tool:
             if Config.VERBOSE:
                 logging.info(f"Evaluating {file.name}")
 
-            if Config.MEMORY_SAVING_MODE:
-                if Config.VERBOSE:
-                    print(f"Loading data set because of memory saving mode")
-                file.raw_df = File_Management.read_file(file.path)
-                file.preprocessed_df = PreProcessing.pre_process_data_set(file.raw_df)
-
             # Predict values for single files
             file.predict_runtime()
             file.predict_memory()
 
-            # Predict merged data sets
-            # TODO: Add function
-
-            # Predict percentage removal
-            # TODO: ADD function
-
-            # Frees memory if in memory saving mode
-            file.free_memory()
-
-    def evaluate_merged_df(self):
-        pass
-
-    def evaluate_verified_files_with_percentage(self):
-        pass
-
-    def merge_files(self):
+    def __evaluate_merged_df(self):
         """
-
+        Evaluates the merged data set
         :return:
         """
+        # Merge files now, because it was not done at the start because of saving memory
         if Config.MEMORY_SAVING_MODE:
-            return
+            self.__merge_files()
+
+        self.__predict_runtime()
+        self.__predict_memory()
+
+        pass
+
+    def __evaluate_verified_files_with_percentage(self):
+        pass
+
+    def __merge_files(self):
+        """
+        Merges the raw data sets of all files.
+        :return:
+        """
 
         data_frames = []
-
-        for filename in path:
-            File_Management.read_file(filename)
-            data_frames.append(Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET)
-
-        merged_df = pd.concat(data_frames)
-
         for file in self.verified_files:
-            if Config.MEMORY_SAVING_MODE:
-                if Config.VERBOSE:
-                    print(f"Loading data set because of memory saving mode")
-                file.raw_df = File_Management.read_file(file.path)
-                file.preprocessed_df = PreProcessing.pre_process_data_set(file.raw_df)
-            pass
+            data_frames.append(file.raw_df)
+
+        self.merged_files_raw_df = pd.concat(data_frames)
+        self.merged_files_preprocessed_df = PreProcessing.pre_process_data_set(self.merged_files_raw_df)
+
+    def __predict_runtime(self):
+        """
+        Predicts the runtime for a complete data set.
+        :return:
+        """
+        df = self.merged_files_preprocessed_df.copy()
+
+        if 'runtime' not in df:
+            return
+
+        model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
+
+        y = df['runtime']
+        del df['runtime']
+        X = df
+
+        source_row_count = len(X)
+
+        X_indexes = (X != 0).any(axis=1)
+
+        X = X.loc[X_indexes]
+        y = y.loc[X_indexes]
+
+        if source_row_count != len(X) and Config.VERBOSE:
+            logging.info(f"Removed {source_row_count - len(X)} rows. Source had {source_row_count}.")
+
+        X = PreProcessing.normalize_X(X)
+        X = PreProcessing.variance_selection(X)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
+
+        model.fit(X_train, y_train)
+        y_test_hat = model.predict(X_test)
+        y_train_hat = model.predict(X_train)
+        test_score = r2_score(y_test, y_test_hat)
+        train_score = r2_score(y_train, y_train_hat)
+
+        over_fitting = False
+        if train_score > test_score * 2:
+            over_fitting = True
+
+        self.runtime_evaluation = self.runtime_evaluation.append(
+            {'File Name': self.name, "Test Score": test_score,
+             "Train Score": train_score, "Potential Over Fitting": over_fitting,
+             "Initial Row Count": len(self.merged_files_raw_df.index),
+             "Initial Feature Count": len(self.merged_files_raw_df.columns) - 1, "Processed Row Count": len(X),
+             "Processed Feature Count": X.shape[1]}, ignore_index=True)
+
+        self.predicted_runtime_values = pd.concat([pd.Series(y_test).reset_index()['runtime'], pd.Series(y_test_hat)],
+                                                  axis=1)
+
+    def __predict_memory(self):
+        """
+        Predicts the memory usage for a complete data set.
+        :return:
+        """
+        df = self.merged_files_preprocessed_df.copy()
+
+        if 'memory.max_usage_in_bytes' not in df:
+            return
+
+        model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
+
+        y = df['memory.max_usage_in_bytes']
+        del df['memory.max_usage_in_bytes']
+        X = df
+
+        source_row_count = len(X)
+
+        X_indexes = (X != 0).any(axis=1)
+
+        X = X.loc[X_indexes]
+        y = y.loc[X_indexes]
+
+        if source_row_count != len(X) and Config.VERBOSE:
+            logging.info(f"Removed {source_row_count - len(X)} rows. Source had {source_row_count}.")
+
+        X = PreProcessing.normalize_X(X)
+        X = PreProcessing.variance_selection(X)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
+
+        model.fit(X_train, y_train)
+        y_test_hat = model.predict(X_test)
+        y_train_hat = model.predict(X_train)
+        test_score = r2_score(y_test, y_test_hat)
+        train_score = r2_score(y_train, y_train_hat)
+
+        over_fitting = False
+        if train_score > test_score * 2:
+            over_fitting = True
+
+        self.memory_evaluation = self.memory_evaluation.append(
+            {'File Name': self.name, "Test Score": test_score,
+             "Train Score": train_score, "Potential Over Fitting": over_fitting,
+             "Initial Row Count": len(self.merged_files_raw_df.index),
+             "Initial Feature Count": len(self.merged_files_raw_df.columns) - 1, "Processed Row Count": len(X),
+             "Processed Feature Count": X.shape[1]}, ignore_index=True)
+
+        self.predicted_memory_values = pd.concat(
+            [pd.Series(y_test).reset_index()['memory.max_usage_in_bytes'], pd.Series(y_test_hat)],
+            axis=1)
