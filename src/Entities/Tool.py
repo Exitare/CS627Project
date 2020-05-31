@@ -9,6 +9,7 @@ import logging
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
+from time import sleep
 
 
 class Tool:
@@ -84,12 +85,30 @@ class Tool:
             logging.info(f"Tool {self.name} does not contain at least one file that is verified")
             logging.info(f"The tool will not evaluated and the folder will be cleanup up.")
 
+    def free_memory(self):
+        """
+        Frees memory if the memory saving mode is active
+        :return:
+        """
+
+        if not Config.MEMORY_SAVING_MODE:
+            return
+
+        logging.info("Freeing up memory...")
+        for file in self.verified_files:
+            file.free_memory()
+
+        self.merged_files_raw_df = None
+        self.merged_files_preprocessed_df = None
+
+        sleep(1)
+
     def evaluate(self):
         """
         Handles the evaluation of a tool
         :return:
         """
-
+        logging.info(f"Evaluation tool {self.name}...")
         # Load data for each file of the tool because it was not loaded at the start
         if Config.MEMORY_SAVING_MODE:
             for file in self.verified_files:
@@ -99,11 +118,6 @@ class Tool:
         self.__evaluate_verified_files()
         self.__evaluate_merged_df()
         self.__evaluate_verified_files_with_percentage()
-
-        # Free not required data up, to save memory
-        if Config.MEMORY_SAVING_MODE:
-            for file in self.verified_files:
-                file.free_memory()
 
     def __evaluate_verified_files(self):
         """
