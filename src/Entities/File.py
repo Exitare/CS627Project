@@ -180,6 +180,7 @@ class File:
 
         self.predicted_runtime_values = pd.concat([pd.Series(y_test).reset_index()['runtime'], pd.Series(y_test_hat)],
                                                   axis=1)
+        self.predicted_runtime_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
 
     def predict_memory(self):
         """
@@ -232,6 +233,7 @@ class File:
         self.predicted_memory_values = pd.concat(
             [pd.Series(y_test).reset_index()['memory.max_usage_in_bytes'], pd.Series(y_test_hat)],
             axis=1)
+        self.predicted_memory_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
 
     def free_memory(self):
         """

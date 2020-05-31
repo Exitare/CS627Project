@@ -62,7 +62,8 @@ class Tool:
 
     def verify(self):
         """
-        Checks if the tool contains actual files
+        Checks if the tool contains actual files and is therefore a valid /verified tool
+        If no file is associated to the tool, the tool folder will be deleted.
         :return:
         """
         if len(self.all_files) == 0:
@@ -113,7 +114,7 @@ class Tool:
 
         for file in self.verified_files:
             if Config.VERBOSE:
-                logging.info(f"Evaluating {file.name}")
+                logging.info(f"Evaluating {file.name}...")
 
             # Predict values for single files
             file.predict_runtime()
@@ -124,19 +125,23 @@ class Tool:
         Evaluates the merged data set
         :return:
         """
+
+        if Config.VERBOSE:
+            logging.info(f"Evaluating tool {self.name}...")
         # Merge files now, because it was not done at the start because of saving memory
         if Config.MEMORY_SAVING_MODE:
-            self.__merge_files()
+            self.merge_files()
 
         self.__predict_runtime()
         self.__predict_memory()
-
-        pass
+        print(self.predicted_runtime_values)
+        print(self.predicted_runtime_values['y'])
+        input()
 
     def __evaluate_verified_files_with_percentage(self):
         pass
 
-    def __merge_files(self):
+    def merge_files(self):
         """
         Merges the raw data sets of all files.
         :return:
@@ -199,6 +204,7 @@ class Tool:
 
         self.predicted_runtime_values = pd.concat([pd.Series(y_test).reset_index()['runtime'], pd.Series(y_test_hat)],
                                                   axis=1)
+        self.predicted_runtime_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
 
     def __predict_memory(self):
         """
@@ -251,3 +257,5 @@ class Tool:
         self.predicted_memory_values = pd.concat(
             [pd.Series(y_test).reset_index()['memory.max_usage_in_bytes'], pd.Series(y_test_hat)],
             axis=1)
+
+        self.predicted_memory_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
