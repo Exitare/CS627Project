@@ -70,6 +70,8 @@ class Tool:
 
     def evaluate_verified_files(self):
         """
+        Evaluates all files associated to a tool.
+        Runtime and memory is evaluated
         :return:
         """
 
@@ -91,3 +93,27 @@ class Tool:
 
     def evaluate_verified_files_with_percentage(self):
         pass
+
+    def merge_files(self):
+        """
+
+        :return:
+        """
+        if Config.MEMORY_SAVING_MODE:
+            return
+
+        data_frames = []
+
+        for filename in path:
+            File_Management.read_file(filename)
+            data_frames.append(Runtime_File_Data.EVALUATED_FILE_RAW_DATA_SET)
+
+        merged_df = pd.concat(data_frames)
+
+        for file in self.verified_files:
+            if Config.MEMORY_SAVING_MODE:
+                if Config.VERBOSE:
+                    print(f"Loading data set because of memory saving mode")
+                file.raw_df = File_Management.read_file(file.path)
+                file.preprocessed_df = PreProcessing.pre_process_data_set(file.raw_df)
+            pass
