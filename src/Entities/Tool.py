@@ -148,9 +148,6 @@ class Tool:
 
         self.__predict_runtime()
         self.__predict_memory()
-        print(self.predicted_runtime_values)
-        print(self.predicted_runtime_values['y'])
-        input()
 
     def __evaluate_verified_files_with_percentage(self):
         pass
