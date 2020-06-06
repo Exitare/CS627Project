@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from Entities.File import File
+from Entities.File import File, PredictiveColumn
 from RuntimeContants import Runtime_Folders
 from Services.FileSystem import Folder_Management, File_Management
 from Services.Configuration.Config import Config
@@ -133,8 +133,8 @@ class Tool:
             file.predict_runtime()
             file.predict_memory()
             if Config.PERCENTAGE_REMOVAL:
-                file.predict_row_removal("runtime")
-                file.predict_row_removal("memory.max_usage_in_bytes")
+                file.predict_row_removal(PredictiveColumn.RUNTIME.value)
+                file.predict_row_removal(PredictiveColumn.MEMORY.value)
 
     def __evaluate_merged_df(self):
         """

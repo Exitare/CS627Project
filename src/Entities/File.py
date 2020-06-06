@@ -11,6 +11,12 @@ import logging
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.ensemble import RandomForestRegressor
+from enum import Enum
+
+
+class PredictiveColumn(Enum):
+    RUNTIME = 'runtime'
+    MEMORY = 'memory.max_usage_in_bytes'
 
 
 class File:
@@ -47,12 +53,22 @@ class File:
         self.predicted_runtime_values = pd.DataFrame(columns=['y', 'y_hat'])
         self.predicted_memory_values = pd.DataFrame(columns=['y', 'y_hat'])
 
-        self.runtime_evaluation_percentage = pd.DataFrame(
+        self.runtime_evaluation_percentage_mean = pd.DataFrame(
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
                      '90', '91', '92', '93', '94', '95', '96', '97', '98',
                      '99', 'Rows', 'Features'])
 
-        self.memory_evaluation_percentage = pd.DataFrame(
+        self.runtime_evaluation_percentage_var = pd.DataFrame(
+            columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
+                     '90', '91', '92', '93', '94', '95', '96', '97', '98',
+                     '99', 'Rows', 'Features'])
+
+        self.memory_evaluation_percentage_mean = pd.DataFrame(
+            columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
+                     '90', '91', '92', '93', '94', '95', '96', '97', '98',
+                     '99', 'Rows', 'Features'])
+
+        self.memory_evaluation_percentage_var = pd.DataFrame(
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
                      '90', '91', '92', '93', '94', '95', '96', '97', '98',
                      '99', 'Rows', 'Features'])
@@ -259,6 +275,8 @@ class File:
         """
         df = self.preprocessed_df.copy()
 
+        print(column)
+        input()
         if column not in df:
             return
 
@@ -272,21 +290,40 @@ class File:
         del df[column]
         X = df
 
-        row, = self.get_pre_processed_df_statistics()
+        X = PreProcessing.normalize_X(X)
+        X = PreProcessing.variance_selection(X)
 
+        print(X)
+        input()
+
+        column_count, row_count, feature_count = self.get_pre_processed_df_statistics()
+        print(final_evaluation)
         for i in range(0, Config.REPETITIONS, 1):
             print(f"Started repetition # {i + 1}")
             averages_per_repetition = averages_per_repetition.append(self.k_folds(X, y)).mean()
 
             averages_per_repetition = averages_per_repetition.dropna()
-            averages_per_repetition['Rows'] =
-            averages_per_repetition['Features'] = int(Runtime_File_Data.EVALUATED_FILE_FEATURE_COUNT)
+            averages_per_repetition['Rows'] = row_count
+            averages_per_repetition['Features'] = feature_count
             final_evaluation = final_evaluation.append(averages_per_repetition, ignore_index=True)
+            print(final_evaluation)
 
-        final_evaluation.drop(final_evaluation.columns[len(final_evaluation.columns) - 1], axis=1, inplace=True)
+        print(final_evaluation)
+        print(final_evaluation)
+        input()
 
-        mean_runtime = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION.mean())
-        var_runtime = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION.var())
+        if column == PredictiveColumn.MEMORY:
+            self.memory_evaluation_percentage_mean = pd.Series(final_evaluation.mean())
+            self.memory_evaluation_percentage_var = pd.Series(final_evaluation.var())
+        elif column == PredictiveColumn.RUNTIME:
+            self.runtime_evaluation_percentage_mean = pd.Series(final_evaluation.mean())
+            self.runtime_evaluation_percentage_var = pd.Series(final_evaluation.var())
+        else:
+            logging.warning(f"Could not detect predictive column: {column}")
+
+        print(self.runtime_evaluation_percentage_var)
+        print(self.runtime_evaluation_percentage_mean)
+        input()
 
     def k_folds(self, X, y):
         """
