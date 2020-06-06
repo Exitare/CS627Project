@@ -117,7 +117,6 @@ class Tool:
         # Evaluate the files
         self.__evaluate_verified_files()
         self.__evaluate_merged_df()
-        self.__evaluate_verified_files_with_percentage()
 
     def __evaluate_verified_files(self):
         """
@@ -133,6 +132,9 @@ class Tool:
             # Predict values for single files
             file.predict_runtime()
             file.predict_memory()
+            if Config.PERCENTAGE_REMOVAL:
+                file.predict_row_removal("runtime")
+                file.predict_row_removal("memory.max_usage_in_bytes")
 
     def __evaluate_merged_df(self):
         """
@@ -148,9 +150,6 @@ class Tool:
 
         self.__predict_runtime()
         self.__predict_memory()
-
-    def __evaluate_verified_files_with_percentage(self):
-        pass
 
     def merge_files(self):
         """

@@ -9,17 +9,22 @@ from time import sleep
 import numpy as np
 import logging
 from sklearn.metrics import r2_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 from sklearn.ensemble import RandomForestRegressor
 
 
 class File:
     def __init__(self, path: str, tool_folder: Path):
+        """
+        the constructor for the class
+        :param path:
+        :param tool_folder:
+        """
         self.path = path
         self.name = os.path.splitext(path)[0]
         self.verified = True
 
-        # Load data set depending on memory saving mode
+        # Load data set depending on memory saving modes
         if not Config.MEMORY_SAVING_MODE:
             self.raw_df = File_Management.read_file(self.path)
             if self.raw_df is None:
@@ -245,3 +250,118 @@ class File:
 
         self.raw_df = None
         self.preprocessed_df = None
+
+    def predict_row_removal(self, column: str):
+        """
+        Predict the value for the column specified, while removing data from the original df
+        :param column: the column that should be predicted.
+        :return:
+        """
+        df = self.preprocessed_df.copy()
+
+        if column not in df:
+            return
+
+        averages_per_repetition = pd.Series()
+
+        final_evaluation = pd.DataFrame(
+            columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
+                     '95', '96', '97', '98', '99', 'Rows', 'Features'])
+
+        y = df[column]
+        del df[column]
+        X = df
+
+        row, = self.get_pre_processed_df_statistics()
+
+        for i in range(0, Config.REPETITIONS, 1):
+            print(f"Started repetition # {i + 1}")
+            averages_per_repetition = averages_per_repetition.append(self.k_folds(X, y)).mean()
+
+            averages_per_repetition = averages_per_repetition.dropna()
+            averages_per_repetition['Rows'] =
+            averages_per_repetition['Features'] = int(Runtime_File_Data.EVALUATED_FILE_FEATURE_COUNT)
+            final_evaluation = final_evaluation.append(averages_per_repetition, ignore_index=True)
+
+        final_evaluation.drop(final_evaluation.columns[len(final_evaluation.columns) - 1], axis=1, inplace=True)
+
+        mean_runtime = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION.mean())
+        var_runtime = pd.Series(Runtime_File_Data.EVALUATED_FILE_REMOVED_ROWS_RUNTIME_INFORMATION.var())
+
+    def k_folds(self, X, y):
+        """
+        Trains the model to predict the total time
+        :param X:
+        :param y:
+        :return:
+        """
+        try:
+            model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
+
+            kf = KFold(n_splits=Config.K_FOLDS)
+            k_fold_scores = pd.DataFrame(
+                columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
+                         '95', '96', '97', '98', '99'])
+            counter = 0
+            for train_index, test_index in kf.split(X):
+                r2scores = []
+                # Iterate from 0 to 101. Ends @ 100, reduce by 1
+                for i in range(0, 101, 1):
+                    if i <= 90 and i % 10 == 0:
+                        r2scores.append(self.calculate_fold(model, i, X, y, train_index, test_index))
+                    if 99 >= i > 90:
+                        r2scores.append(self.calculate_fold(model, i, X, y, train_index, test_index))
+
+                k_fold_scores = k_fold_scores.append(
+                    {'0': r2scores[0], '10': r2scores[1], '20': r2scores[2], '30': r2scores[3], '40': r2scores[4],
+                     '50': r2scores[5], '60': r2scores[6], '70': r2scores[7], '80': r2scores[8],
+                     '90': r2scores[9], '91': r2scores[10], '92': r2scores[11], '93': r2scores[12],
+                     '94': r2scores[13], '95': r2scores[14], '96': r2scores[15], '97': r2scores[16],
+                     '98': r2scores[17], '99': r2scores[18]}, ignore_index=True)
+
+                counter += 1
+
+            return k_fold_scores
+
+        except BaseException as ex:
+            print(ex)
+            k_fold_scores = pd.DataFrame(0, index=np.arange(Config.K_FOLDS),
+                                         columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92',
+                                                  '93', '94', '95', '96', '97', '98', '99'])
+            return k_fold_scores
+
+    def calculate_fold(self, model, i, X, y, train_index, test_index):
+        """
+        Calculates the r2 scores
+        :param model:
+        :param i:
+        :param X:
+        :param y:
+        :param train_index:
+        :param test_index:
+        :return:
+        """
+        # Create a deep copy, to keep the original data set untouched
+        train_index_copy = train_index
+
+        source_len = len(train_index_copy)
+
+        # Calculate amount of rows to be removed
+        rows = int(len(train_index_copy) * i / 100)
+
+        # Remove rows by random index
+        train_index_copy = PreProcessing.remove_random_rows(train_index_copy, rows)
+        # print(f"Removed {rows} rows, {len(train_index_copy)} indices left of {source_len}. {100 - i}% data left!")
+
+        X_train, X_test = X[train_index_copy], X[test_index]
+        y_train, y_test = y[train_index_copy], y[test_index]
+
+        # print(f"y_test contains {len(y_test)} rows")
+        # print(f"X_test contains {len(X_test)} rows")
+
+        # print(f"y_train contains {len(y_train)} rows")
+        # print(f"X_train contains {len(X_train)} rows")
+
+        model.fit(X_train, y_train)
+        y_test_hat = model.predict(X_test)
+        return r2_score(y_test, y_test_hat)
