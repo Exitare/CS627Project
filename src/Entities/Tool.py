@@ -10,6 +10,7 @@ from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from time import sleep
+import os
 
 
 class Tool:
@@ -108,15 +109,67 @@ class Tool:
         Handles the evaluation of a tool
         :return:
         """
-        logging.info(f"Evaluation tool {self.name}...")
+        print()
+        logging.info(f"Evaluating tool {self.name}...")
         # Load data for each file of the tool because it was not loaded at the start
         if Config.MEMORY_SAVING_MODE:
             for file in self.verified_files:
                 file.load_data()
 
         # Evaluate the files
-        self.__evaluate_verified_files()
         self.__evaluate_merged_df()
+        self.__evaluate_verified_files()
+
+    def generate_reports(self):
+        """
+        Generate csv and tsv files for the tool and all files associated to the tool
+        :return:
+        """
+        logging.info("Generating report files...")
+        files_runtime_overview = pd.DataFrame()
+        files_memory_overview = pd.DataFrame()
+        for file in self.verified_files:
+            files_runtime_overview.append(file.runtime_evaluation)
+            files_memory_overview.append(file.memory_evaluation)
+
+        print(files_runtime_overview)
+        input()
+        if not files_runtime_overview.empty:
+            print("in here")
+            files_runtime_overview.to_csv(os.path.join(self.folder, "files_runtime_report.csv"), index=True)
+
+        if not files_memory_overview.empty:
+            files_memory_overview.to_csv(os.path.join(self.folder, "files_memory_report.csv"), index=True)
+
+        if not self.runtime_evaluation.empty:
+            # TODO: Add config option
+            self.runtime_evaluation.to_csv(os.path.join(self.folder, "merged_runtime_report.csv"), index=True)
+            self.runtime_evaluation.to_csv(os.path.join(self.folder, "merged_runtime_report.tsv"), index=True,
+                                           sep=",")
+
+        if not self.memory_evaluation.empty:
+            self.memory_evaluation.to_csv(os.path.join(self.folder, "merged_memory_report.csv"), index=True)
+            self.memory_evaluation.to_csv(os.path.join(self.folder, "merged_memory_report.tsv"), index=True,
+                                          sep=",")
+
+        if not self.predicted_memory_values.empty:
+            self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.csv"),
+                                                index=True)
+            self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.tsv"),
+                                                index=True, sep=",")
+
+        if not self.predicted_runtime_values.empty:
+            self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_runtime_report.csv"),
+                                                 index=True)
+            self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_memory_report.tsv"),
+                                                 index=True, sep=",")
+
+        logging.info("All reports generated.")
+        input()
+        sleep(1)
+
+    def generate_plots(self):
+        pass
 
     def __evaluate_verified_files(self):
         """
@@ -127,8 +180,7 @@ class Tool:
 
         for file in self.verified_files:
             if Config.VERBOSE:
-
-                logging.info(f"Evaluating {file.name}...")
+                logging.info(f"Evaluating file {file.name}...")
 
             # Predict values for single files
             file.predict_runtime()
@@ -143,8 +195,6 @@ class Tool:
         :return:
         """
 
-        if Config.VERBOSE:
-            logging.info(f"Evaluating tool {self.name}...")
         # Merge files now, because it was not done at the start because of saving memory
         if Config.MEMORY_SAVING_MODE:
             self.merge_files()

@@ -48,6 +48,8 @@ if __name__ == '__main__':
     print()
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         tool.evaluate()
+        tool.generate_reports()
+        tool.generate_plots()
         tool.free_memory()
         logging.info(f"Done.")
         print()
