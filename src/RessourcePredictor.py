@@ -47,7 +47,6 @@ if __name__ == '__main__':
     logging.info("Starting tool evaluation...")
     print()
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
-        logging.info(f"Evaluating tool {tool.name}...")
         tool.evaluate()
         tool.free_memory()
         logging.info(f"Done.")

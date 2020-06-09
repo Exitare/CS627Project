@@ -74,3 +74,7 @@ def prepare_verified_tools():
 
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         tool.merge_files()
+
+    logging.info("Preparation complete.")
+    print()
+    sleep(1)
