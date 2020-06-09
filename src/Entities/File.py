@@ -11,6 +11,9 @@ import logging
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.feature_selection import VarianceThreshold
 from enum import Enum
 
 
@@ -275,8 +278,6 @@ class File:
         """
         df = self.preprocessed_df.copy()
 
-        print(column)
-        input()
         if column not in df:
             return
 
@@ -293,37 +294,34 @@ class File:
         X = PreProcessing.normalize_X(X)
         X = PreProcessing.variance_selection(X)
 
-        print(X)
-        input()
-
         column_count, row_count, feature_count = self.get_pre_processed_df_statistics()
-        print(final_evaluation)
+
         for i in range(0, Config.REPETITIONS, 1):
             print(f"Started repetition # {i + 1}")
-            averages_per_repetition = averages_per_repetition.append(self.k_folds(X, y)).mean()
+            k_folds = self.k_folds(X, y)
+            averages_per_repetition = averages_per_repetition.append(k_folds).mean()
+            # Remove the mean of the index column
+            del averages_per_repetition[0]
 
-            averages_per_repetition = averages_per_repetition.dropna()
-            averages_per_repetition['Rows'] = row_count
-            averages_per_repetition['Features'] = feature_count
+            averages_per_repetition = averages_per_repetition.fillna(0)
             final_evaluation = final_evaluation.append(averages_per_repetition, ignore_index=True)
-            print(final_evaluation)
 
-        print(final_evaluation)
-        print(final_evaluation)
-        input()
-
-        if column == PredictiveColumn.MEMORY:
+        if column == PredictiveColumn.MEMORY.value:
             self.memory_evaluation_percentage_mean = pd.Series(final_evaluation.mean())
+            self.memory_evaluation_percentage_mean['Rows'] = row_count
+            self.memory_evaluation_percentage_mean['Features'] = feature_count
             self.memory_evaluation_percentage_var = pd.Series(final_evaluation.var())
-        elif column == PredictiveColumn.RUNTIME:
+            self.memory_evaluation_percentage_var['Rows'] = row_count
+            self.memory_evaluation_percentage_var['Features'] = feature_count
+        elif column == PredictiveColumn.RUNTIME.value:
             self.runtime_evaluation_percentage_mean = pd.Series(final_evaluation.mean())
+            self.runtime_evaluation_percentage_mean['Rows'] = row_count
+            self.runtime_evaluation_percentage_mean['Features'] = feature_count
             self.runtime_evaluation_percentage_var = pd.Series(final_evaluation.var())
+            self.runtime_evaluation_percentage_var['Rows'] = row_count
+            self.runtime_evaluation_percentage_var['Features'] = feature_count
         else:
             logging.warning(f"Could not detect predictive column: {column}")
-
-        print(self.runtime_evaluation_percentage_var)
-        print(self.runtime_evaluation_percentage_mean)
-        input()
 
     def k_folds(self, X, y):
         """
@@ -388,16 +386,8 @@ class File:
 
         # Remove rows by random index
         train_index_copy = PreProcessing.remove_random_rows(train_index_copy, rows)
-        # print(f"Removed {rows} rows, {len(train_index_copy)} indices left of {source_len}. {100 - i}% data left!")
-
         X_train, X_test = X[train_index_copy], X[test_index]
         y_train, y_test = y[train_index_copy], y[test_index]
-
-        # print(f"y_test contains {len(y_test)} rows")
-        # print(f"X_test contains {len(X_test)} rows")
-
-        # print(f"y_train contains {len(y_train)} rows")
-        # print(f"X_train contains {len(X_train)} rows")
 
         model.fit(X_train, y_train)
         y_test_hat = model.predict(X_test)

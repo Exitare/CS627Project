@@ -127,6 +127,7 @@ class Tool:
 
         for file in self.verified_files:
             if Config.VERBOSE:
+
                 logging.info(f"Evaluating {file.name}...")
 
             # Predict values for single files
