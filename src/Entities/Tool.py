@@ -126,6 +126,12 @@ class Tool:
         :return:
         """
         logging.info("Generating report files...")
+
+        # Generate file specific reports
+        for file in self.verified_files:
+            file.generate_reports()
+
+        # Generate file overview reports
         files_runtime_overview = pd.DataFrame()
         files_memory_overview = pd.DataFrame()
         for file in self.verified_files:
@@ -138,8 +144,8 @@ class Tool:
         if not files_memory_overview.empty:
             files_memory_overview.to_csv(os.path.join(self.folder, "files_memory_report.csv"))
 
+        # Generate tool specific reports
         if not self.runtime_evaluation.empty:
-            # TODO: Add config option
             self.runtime_evaluation.to_csv(os.path.join(self.folder, "merged_runtime_report.csv"), index=True)
             self.runtime_evaluation.to_csv(os.path.join(self.folder, "merged_runtime_report.tsv"), index=True,
                                            sep=",")

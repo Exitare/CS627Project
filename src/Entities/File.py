@@ -392,3 +392,21 @@ class File:
         model.fit(X_train, y_train)
         y_test_hat = model.predict(X_test)
         return r2_score(y_test, y_test_hat)
+
+    def generate_reports(self):
+        """
+        Generate file specific reports
+        :return:
+        """
+
+        if not self.runtime_evaluation.empty:
+            self.runtime_evaluation.to_csv(os.path.join(self.folder, "runtime_report.csv"), index=True)
+
+        if not self.memory_evaluation.empty:
+            self.memory_evaluation.to_csv(os.path.join(self.folder, "memory_report.csv"), index=True)
+
+        if not self.predicted_memory_values.empty:
+            self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.csv"), index=True)
+
+        if not self.predicted_runtime_values.empty:
+            self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_runtime_report.csv"), index=True)
