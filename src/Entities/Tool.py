@@ -129,17 +129,14 @@ class Tool:
         files_runtime_overview = pd.DataFrame()
         files_memory_overview = pd.DataFrame()
         for file in self.verified_files:
-            files_runtime_overview.append(file.runtime_evaluation)
-            files_memory_overview.append(file.memory_evaluation)
+            files_runtime_overview = files_runtime_overview.append(file.runtime_evaluation)
+            files_memory_overview = files_memory_overview.append(file.memory_evaluation)
 
-        print(files_runtime_overview)
-        input()
         if not files_runtime_overview.empty:
-            print("in here")
-            files_runtime_overview.to_csv(os.path.join(self.folder, "files_runtime_report.csv"), index=True)
+            files_runtime_overview.to_csv(os.path.join(self.folder, "files_runtime_report.csv"))
 
         if not files_memory_overview.empty:
-            files_memory_overview.to_csv(os.path.join(self.folder, "files_memory_report.csv"), index=True)
+            files_memory_overview.to_csv(os.path.join(self.folder, "files_memory_report.csv"))
 
         if not self.runtime_evaluation.empty:
             # TODO: Add config option
@@ -165,7 +162,6 @@ class Tool:
                                                  index=True, sep=",")
 
         logging.info("All reports generated.")
-        input()
         sleep(1)
 
     def generate_plots(self):
