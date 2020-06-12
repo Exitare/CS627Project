@@ -426,8 +426,7 @@ class File:
                                                          index=True)
 
     def generate_plots(self):
-        ax = sns.scatterplot(x='y', y='y_hat', groupby=self.predicted_runtime_values.index,
-                             data=self.predicted_runtime_values)
-        ax.set(yscale="log")
+        ax = sns.scatterplot(x='y', y='y_hat', data=self.predicted_runtime_values)
+        ax.set(xscale="log", yscale="log")
         fig = ax.get_figure()
         fig.savefig(os.path.join(self.folder, "test_plot.png"))
