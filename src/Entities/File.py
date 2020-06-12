@@ -1,7 +1,6 @@
 from pathlib import Path
 import pandas as pd
 from Services.FileSystem import Folder_Management, File_Management
-from RuntimeContants import Runtime_Folders
 import os
 from Services.Configuration.Config import Config
 from Services.Processing import PreProcessing
@@ -11,10 +10,10 @@ import logging
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.feature_selection import VarianceThreshold
 from enum import Enum
+import seaborn as sns
+
+sns.set()
 
 
 class PredictiveColumn(Enum):
@@ -379,8 +378,6 @@ class File:
         # Create a deep copy, to keep the original data set untouched
         train_index_copy = train_index
 
-        source_len = len(train_index_copy)
-
         # Calculate amount of rows to be removed
         rows = int(len(train_index_copy) * i / 100)
 
@@ -399,6 +396,7 @@ class File:
         :return:
         """
 
+        # Predicted values
         if not self.runtime_evaluation.empty:
             self.runtime_evaluation.to_csv(os.path.join(self.folder, "runtime_report.csv"), index=True)
 
@@ -410,3 +408,26 @@ class File:
 
         if not self.predicted_runtime_values.empty:
             self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_runtime_report.csv"), index=True)
+
+        if not self.runtime_evaluation_percentage_mean.empty:
+            self.runtime_evaluation_percentage_mean.to_csv(os.path.join(self.folder, "runtime_row_removal_mean.csv"),
+                                                           index=True)
+
+        if not self.runtime_evaluation_percentage_var.empty:
+            self.runtime_evaluation_percentage_var.to_csv(os.path.join(self.folder, "runtime_row_removal_var.csv"),
+                                                          index=True)
+
+        if not self.memory_evaluation_percentage_mean.empty:
+            self.memory_evaluation_percentage_mean.to_csv(os.path.join(self.folder, "memory_row_removal_mean.csv"),
+                                                          index=True)
+
+        if not self.memory_evaluation_percentage_var.empty:
+            self.memory_evaluation_percentage_var.to_csv(os.path.join(self.folder, "memory_row_removal_var.csv"),
+                                                         index=True)
+
+    def generate_plots(self):
+        ax = sns.scatterplot(x='y', y='y_hat', groupby=self.predicted_runtime_values.index,
+                             data=self.predicted_runtime_values)
+        ax.set(yscale="log")
+        fig = ax.get_figure()
+        fig.savefig(os.path.join(self.folder, "test_plot.png"))

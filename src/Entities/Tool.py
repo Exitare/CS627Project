@@ -171,7 +171,13 @@ class Tool:
         sleep(1)
 
     def generate_plots(self):
-        pass
+        """
+        Generates all plots
+        :return:
+        """
+        for file in self.verified_files:
+            file.generate_plots()
+            input()
 
     def __evaluate_verified_files(self):
         """
