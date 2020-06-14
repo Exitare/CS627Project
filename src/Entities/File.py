@@ -426,7 +426,31 @@ class File:
                                                          index=True)
 
     def generate_plots(self):
+        self.plot_percentage_removal()
         ax = sns.scatterplot(x='y', y='y_hat', data=self.predicted_runtime_values)
         ax.set(xscale="log", yscale="log")
         fig = ax.get_figure()
         fig.savefig(os.path.join(self.folder, "test_plot.png"))
+
+    def plot_percentage_removal(self):
+        print(self.runtime_evaluation_percentage_mean)
+        print(self.runtime_evaluation_percentage_var)
+        input()
+        mean_transposed = self.runtime_evaluation_percentage_mean
+        var_transposed = self.runtime_evaluation_percentage_var
+        del mean_transposed['Rows']
+        del mean_transposed['Features']
+
+        del var_transposed['Rows']
+        del var_transposed['Features']
+
+        frames = [self.runtime_evaluation_percentage_mean, self.runtime_evaluation_percentage_var]
+
+        result = pd.concat(frames, ignore_index=True)
+        print(result)
+        input()
+        ax = sns.lineplot(data=result, palette="tab10", linewidth=2.5)
+        ax.legend()
+        fig = ax.get_figure()
+        fig.savefig(os.path.join(self.folder, "percentage_removal.png"))
+
