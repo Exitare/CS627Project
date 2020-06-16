@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from time import sleep
 import os
-
+import seaborn as sns
 
 class Tool:
     def __init__(self, name: str):
@@ -175,9 +175,25 @@ class Tool:
         Generates all plots
         :return:
         """
+
+        # Generate plots for each file associated to the tool
         for file in self.verified_files:
             file.generate_plots()
-            input()
+
+        ax = None
+
+        if not self.predicted_memory_values.empty:
+            ax = sns.scatterplot(x='y', y='y_hat', label="memory", data=self.predicted_memory_values)
+            ax.set(xscale="log", yscale="log")
+
+        if not self.predicted_runtime_values.empty:
+            ax = sns.scatterplot(x='y', y='y_hat', label="runtime", data=self.predicted_runtime_values)
+            ax.set(xscale="log", yscale="log")
+
+        ax.legend()
+        fig = ax.get_figure()
+        fig.savefig(os.path.join(self.folder, "predicated_values.png"))
+        fig.clf()
 
     def __evaluate_verified_files(self):
         """

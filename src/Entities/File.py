@@ -398,10 +398,10 @@ class File:
 
         # Predicted values
         if not self.runtime_evaluation.empty:
-            self.runtime_evaluation.to_csv(os.path.join(self.folder, "runtime_report.csv"), index=True)
+            self.runtime_evaluation.to_csv(os.path.join(self.folder, "runtime_evaluation_report.csv"), index=True)
 
         if not self.memory_evaluation.empty:
-            self.memory_evaluation.to_csv(os.path.join(self.folder, "memory_report.csv"), index=True)
+            self.memory_evaluation.to_csv(os.path.join(self.folder, "memory_evaluation_report.csv"), index=True)
 
         if not self.predicted_memory_values.empty:
             self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.csv"), index=True)
@@ -426,31 +426,54 @@ class File:
                                                          index=True)
 
     def generate_plots(self):
+        """
+        Helper to call all plotting functions
+        :return:
+        """
+        self.plot_predicted_values()
         self.plot_percentage_removal()
-        ax = sns.scatterplot(x='y', y='y_hat', data=self.predicted_runtime_values)
-        ax.set(xscale="log", yscale="log")
-        fig = ax.get_figure()
-        fig.savefig(os.path.join(self.folder, "test_plot.png"))
 
-    def plot_percentage_removal(self):
-        print(self.runtime_evaluation_percentage_mean)
-        print(self.runtime_evaluation_percentage_var)
-        input()
-        mean_transposed = self.runtime_evaluation_percentage_mean
-        var_transposed = self.runtime_evaluation_percentage_var
-        del mean_transposed['Rows']
-        del mean_transposed['Features']
+    def plot_predicted_values(self):
+        """
+        Plots the predicted values for the unmodified dataset
+        :return:
+        """
 
-        del var_transposed['Rows']
-        del var_transposed['Features']
+        ax = None
 
-        frames = [self.runtime_evaluation_percentage_mean, self.runtime_evaluation_percentage_var]
+        if not self.predicted_memory_values.empty:
+            ax = sns.scatterplot(x='y', y='y_hat', label="memory", data=self.predicted_memory_values)
+            ax.set(xscale="log", yscale="log")
 
-        result = pd.concat(frames, ignore_index=True)
-        print(result)
-        input()
-        ax = sns.lineplot(data=result, palette="tab10", linewidth=2.5)
+        if not self.predicted_runtime_values.empty:
+            ax = sns.scatterplot(x='y', y='y_hat', label="runtime", data=self.predicted_runtime_values)
+            ax.set(xscale="log", yscale="log")
+
         ax.legend()
         fig = ax.get_figure()
-        fig.savefig(os.path.join(self.folder, "percentage_removal.png"))
+        fig.savefig(os.path.join(self.folder, "predicated_values.png"))
+        fig.clf()
 
+    def plot_percentage_removal(self):
+        ax = None
+
+        if not self.runtime_evaluation_percentage_mean.empty:
+            mean = self.runtime_evaluation_percentage_mean
+            del mean['Rows']
+            del mean['Features']
+
+            ax = sns.lineplot(data=mean, label="mean", palette="tab10", linewidth=2.5)
+
+        if not self.runtime_evaluation_percentage_var.empty:
+            var = self.runtime_evaluation_percentage_var
+            del var['Rows']
+            del var['Features']
+
+            ax = sns.lineplot(data=var, label="var", palette="tab10", linewidth=2.5)
+
+        # Remove not required rows from dfs
+
+        ax.legend()
+        fig = ax.get_figure()
+        fig.savefig(os.path.join(self.folder, "percentage_removal_prediction.png"))
+        fig.clf()
