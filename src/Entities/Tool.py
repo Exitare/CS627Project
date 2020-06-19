@@ -13,6 +13,7 @@ from time import sleep
 import os
 import seaborn as sns
 
+
 class Tool:
     def __init__(self, name: str):
         self.name = name
@@ -138,22 +139,18 @@ class Tool:
             files_runtime_overview = files_runtime_overview.append(file.runtime_evaluation)
             files_memory_overview = files_memory_overview.append(file.memory_evaluation)
 
+            # Generate tool specific reports
+        if not self.runtime_evaluation.empty:
+            files_runtime_overview = files_runtime_overview.append(self.runtime_evaluation)
+
+        if not self.memory_evaluation.empty:
+            files_memory_overview = files_memory_overview.append(self.memory_evaluation)
+
         if not files_runtime_overview.empty:
             files_runtime_overview.to_csv(os.path.join(self.folder, "files_runtime_report.csv"))
 
         if not files_memory_overview.empty:
             files_memory_overview.to_csv(os.path.join(self.folder, "files_memory_report.csv"))
-
-        # Generate tool specific reports
-        if not self.runtime_evaluation.empty:
-            self.runtime_evaluation.to_csv(os.path.join(self.folder, "merged_runtime_report.csv"), index=False)
-            self.runtime_evaluation.to_csv(os.path.join(self.folder, "merged_runtime_report.tsv"), index=False,
-                                           sep=",")
-
-        if not self.memory_evaluation.empty:
-            self.memory_evaluation.to_csv(os.path.join(self.folder, "merged_memory_report.csv"), index=False)
-            self.memory_evaluation.to_csv(os.path.join(self.folder, "merged_memory_report.tsv"), index=False,
-                                          sep=",")
 
         if not self.predicted_memory_values.empty:
             self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.csv"),
@@ -198,9 +195,9 @@ class Tool:
     def __evaluate_verified_files(self):
         """
         Evaluates all files associated to a tool.
-        Runtime and memory is evaluated
-        :return:
-        """
+       Runtime and memory is evaluated
+       :return:
+       """
 
         for file in self.verified_files:
             if Config.VERBOSE:
