@@ -1,2 +1,2 @@
-__all__ = ['Processing', 'Plotting', 'Statistics', 'FileSystem', 'Configuration', 'Predictions', 'Logging',
+__all__ = ['Processing', 'FileSystem', 'Configuration', 'Logging',
            'ToolLoader']
