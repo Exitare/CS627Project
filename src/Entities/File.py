@@ -398,32 +398,32 @@ class File:
 
         # Predicted values
         if not self.runtime_evaluation.empty:
-            self.runtime_evaluation.to_csv(os.path.join(self.folder, "runtime_evaluation_report.csv"), index=True)
+            self.runtime_evaluation.to_csv(os.path.join(self.folder, "runtime_evaluation_report.csv"), index=False)
 
         if not self.memory_evaluation.empty:
-            self.memory_evaluation.to_csv(os.path.join(self.folder, "memory_evaluation_report.csv"), index=True)
+            self.memory_evaluation.to_csv(os.path.join(self.folder, "memory_evaluation_report.csv"), index=False)
 
         if not self.predicted_memory_values.empty:
-            self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.csv"), index=True)
+            self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.csv"), index=False)
 
         if not self.predicted_runtime_values.empty:
-            self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_runtime_report.csv"), index=True)
+            self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_runtime_report.csv"), index=False)
 
         if not self.runtime_evaluation_percentage_mean.empty:
             self.runtime_evaluation_percentage_mean.to_csv(os.path.join(self.folder, "runtime_row_removal_mean.csv"),
-                                                           index=True)
+                                                           index=False)
 
         if not self.runtime_evaluation_percentage_var.empty:
             self.runtime_evaluation_percentage_var.to_csv(os.path.join(self.folder, "runtime_row_removal_var.csv"),
-                                                          index=True)
+                                                          index=False)
 
         if not self.memory_evaluation_percentage_mean.empty:
             self.memory_evaluation_percentage_mean.to_csv(os.path.join(self.folder, "memory_row_removal_mean.csv"),
-                                                          index=True)
+                                                          index=False)
 
         if not self.memory_evaluation_percentage_var.empty:
             self.memory_evaluation_percentage_var.to_csv(os.path.join(self.folder, "memory_row_removal_var.csv"),
-                                                         index=True)
+                                                         index=False)
 
     def generate_plots(self):
         """
@@ -472,6 +472,8 @@ class File:
             ax = sns.lineplot(data=var, label="var", palette="tab10", linewidth=2.5)
 
         # Remove not required rows from dfs
+
+        ax.set(xlabel='% rows removed', ylabel='R^2 Score')
 
         ax.legend()
         fig = ax.get_figure()

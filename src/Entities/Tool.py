@@ -146,26 +146,26 @@ class Tool:
 
         # Generate tool specific reports
         if not self.runtime_evaluation.empty:
-            self.runtime_evaluation.to_csv(os.path.join(self.folder, "merged_runtime_report.csv"), index=True)
-            self.runtime_evaluation.to_csv(os.path.join(self.folder, "merged_runtime_report.tsv"), index=True,
+            self.runtime_evaluation.to_csv(os.path.join(self.folder, "merged_runtime_report.csv"), index=False)
+            self.runtime_evaluation.to_csv(os.path.join(self.folder, "merged_runtime_report.tsv"), index=False,
                                            sep=",")
 
         if not self.memory_evaluation.empty:
-            self.memory_evaluation.to_csv(os.path.join(self.folder, "merged_memory_report.csv"), index=True)
-            self.memory_evaluation.to_csv(os.path.join(self.folder, "merged_memory_report.tsv"), index=True,
+            self.memory_evaluation.to_csv(os.path.join(self.folder, "merged_memory_report.csv"), index=False)
+            self.memory_evaluation.to_csv(os.path.join(self.folder, "merged_memory_report.tsv"), index=False,
                                           sep=",")
 
         if not self.predicted_memory_values.empty:
             self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.csv"),
-                                                index=True)
+                                                index=False)
             self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.tsv"),
-                                                index=True, sep=",")
+                                                index=False, sep=",")
 
         if not self.predicted_runtime_values.empty:
             self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_runtime_report.csv"),
-                                                 index=True)
+                                                 index=False)
             self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_memory_report.tsv"),
-                                                 index=True, sep=",")
+                                                 index=False, sep=",")
 
         logging.info("All reports generated.")
         sleep(1)
