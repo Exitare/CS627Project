@@ -147,10 +147,10 @@ class Tool:
             files_memory_overview = files_memory_overview.append(self.memory_evaluation)
 
         if not files_runtime_overview.empty:
-            files_runtime_overview.to_csv(os.path.join(self.folder, "files_runtime_report.csv"))
+            files_runtime_overview.to_csv(os.path.join(self.folder, "files_runtime_report.csv"), index=False)
 
         if not files_memory_overview.empty:
-            files_memory_overview.to_csv(os.path.join(self.folder, "files_memory_report.csv"))
+            files_memory_overview.to_csv(os.path.join(self.folder, "files_memory_report.csv"), index=False)
 
         if not self.predicted_memory_values.empty:
             self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.csv"),
@@ -278,7 +278,7 @@ class Tool:
             over_fitting = True
 
         self.runtime_evaluation = self.runtime_evaluation.append(
-            {'File Name': self.name, "Test Score": test_score,
+            {'File Name': f"{self.name}_merged", "Test Score": test_score,
              "Train Score": train_score, "Potential Over Fitting": over_fitting,
              "Initial Row Count": len(self.merged_files_raw_df.index),
              "Initial Feature Count": len(self.merged_files_raw_df.columns) - 1, "Processed Row Count": len(X),
@@ -330,7 +330,7 @@ class Tool:
             over_fitting = True
 
         self.memory_evaluation = self.memory_evaluation.append(
-            {'File Name': self.name, "Test Score": test_score,
+            {'File Name': f"{self.name}_merged", "Test Score": test_score,
              "Train Score": train_score, "Potential Over Fitting": over_fitting,
              "Initial Row Count": len(self.merged_files_raw_df.index),
              "Initial Feature Count": len(self.merged_files_raw_df.columns) - 1, "Processed Row Count": len(X),
