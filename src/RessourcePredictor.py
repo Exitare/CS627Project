@@ -10,7 +10,11 @@ import logging
 import time
 
 logging.basicConfig(filename='example.log', level=logging.DEBUG)
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG)
+handler = logging.StreamHandler(sys.stdout)
+root = logging.getLogger()
+root.setLevel(logging.DEBUG)
+root.addHandler(handler)
 
 
 def signal_handler(sig, frame):
@@ -56,17 +60,17 @@ if __name__ == '__main__':
         print()
 
     process = psutil.Process(os.getpid())
-    print(f"Memory used: {process.memory_info().rss / 1024 / 1024} mb.")
+    logging.info(f"Memory used: {process.memory_info().rss / 1024 / 1024} mb.")
     end_time = time.time()
     if end_time - start_time > 60:
-        print(f"Time passed: {(end_time - start_time) / 60} minutes.")
+        logging.info(f"Time passed: {(end_time - start_time) / 60} minutes.")
     else:
-        print(f"Time passed: {end_time - start_time} seconds.")
+        logging.info(f"Time passed: {end_time - start_time} seconds.")
     # Tasks.process_single_files()
     # Tasks.process_merged_tool_version()
     # Tasks.process_single_file_data_removal()
     # Data_Set_Reporting.generate_file_report_files()
     # Add plotting
-    print("Done")
+    logging.info("Done")
 
     exit(0)
