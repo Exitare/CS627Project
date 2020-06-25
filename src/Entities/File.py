@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split, KFold
 from sklearn.ensemble import RandomForestRegressor
 from enum import Enum
 import seaborn as sns
-
+from sklearn.feature_selection import SelectFromModel
 sns.set()
 
 
@@ -182,13 +182,14 @@ class File:
         X = PreProcessing.normalize_X(X)
         X = PreProcessing.variance_selection(X)
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=1)
 
         model.fit(X_train, y_train)
+
         y_test_hat = model.predict(X_test)
         y_train_hat = model.predict(X_train)
-        test_score = r2_score(y_test, y_test_hat)
         train_score = r2_score(y_train, y_train_hat)
+        test_score = r2_score(y_test, y_test_hat)
 
         over_fitting = False
         if train_score > test_score * 2:
@@ -234,7 +235,7 @@ class File:
         X = PreProcessing.normalize_X(X)
         X = PreProcessing.variance_selection(X)
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=1)
 
         model.fit(X_train, y_train)
         y_test_hat = model.predict(X_test)
