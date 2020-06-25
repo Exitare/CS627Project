@@ -3,14 +3,14 @@ import sys
 from Services.Configuration import Config, Argument_Parser
 from Services.FileSystem import Folder_Management
 from Services.ToolLoader import Tool_Loader
-from RuntimeContants import Runtime_Folders, Runtime_Datasets
+from RuntimeContants import Runtime_Datasets
 import os
 import psutil
-from Services.Logging import Logger
 import logging
+import time
 
 logging.basicConfig(filename='example.log', level=logging.DEBUG)
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 
 def signal_handler(sig, frame):
@@ -29,6 +29,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 if __name__ == '__main__':
+    start_time = time.time()
     Config.read_conf()
     Argument_Parser.handle_args()
 
@@ -56,10 +57,16 @@ if __name__ == '__main__':
 
     process = psutil.Process(os.getpid())
     print(f"Memory used: {process.memory_info().rss / 1024 / 1024} mb.")
+    end_time = time.time()
+    if end_time - start_time > 60:
+        print(f"Time passed: {(end_time - start_time) / 60} minutes.")
+    else:
+        print(f"Time passed: {end_time - start_time} seconds.")
     # Tasks.process_single_files()
     # Tasks.process_merged_tool_version()
     # Tasks.process_single_file_data_removal()
     # Data_Set_Reporting.generate_file_report_files()
     # Add plotting
     print("Done")
+
     exit(0)
