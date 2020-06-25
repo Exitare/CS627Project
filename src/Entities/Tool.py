@@ -139,7 +139,7 @@ class Tool:
             files_runtime_overview = files_runtime_overview.append(file.runtime_evaluation)
             files_memory_overview = files_memory_overview.append(file.memory_evaluation)
 
-            # Generate tool specific reports
+        # Generate tool specific reports
         if not self.runtime_evaluation.empty:
             files_runtime_overview = files_runtime_overview.append(self.runtime_evaluation)
 

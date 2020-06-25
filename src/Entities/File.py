@@ -296,7 +296,8 @@ class File:
         column_count, row_count, feature_count = self.get_pre_processed_df_statistics()
 
         for i in range(0, Config.REPETITIONS, 1):
-            print(f"Started repetition # {i + 1}")
+            if Config.VERBOSE:
+                logging.info(f"Started repetition # {i + 1}")
             k_folds = self.k_folds(X, y)
             averages_per_repetition = averages_per_repetition.append(k_folds).mean()
             # Remove the mean of the index column
@@ -448,6 +449,19 @@ class File:
         if not self.predicted_runtime_values.empty:
             ax = sns.scatterplot(x='y', y='y_hat', label="runtime", data=self.predicted_runtime_values)
             ax.set(xscale="log", yscale="log")
+
+        ax.legend()
+        fig = ax.get_figure()
+        fig.savefig(os.path.join(self.folder, "predicated_log_values.png"))
+        fig.clf()
+
+        ax = None
+
+        if not self.predicted_memory_values.empty:
+            ax = sns.scatterplot(x='y', y='y_hat', label="memory", data=self.predicted_memory_values)
+
+        if not self.predicted_runtime_values.empty:
+            ax = sns.scatterplot(x='y', y='y_hat', label="runtime", data=self.predicted_runtime_values)
 
         ax.legend()
         fig = ax.get_figure()
