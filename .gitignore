@@ -10,3 +10,4 @@ Results/*
 venv/*
 Data/*
 *.log
+ExampleData/anonymized/*
