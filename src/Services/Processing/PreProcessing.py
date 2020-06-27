@@ -17,11 +17,12 @@ def pre_process_data_set(df):
     """
     df.replace([np.inf, -np.inf], np.nan)
     df[df == np.inf] = np.nan
-    df = fill_na(df)
     df = remove_bad_columns(df)
+    df = fill_na(df)
     df = convert_factorial_to_numerical(df)
-    # TODO: Check file for rows that are all 0
-    # df = (df != 0).any(axis=None)
+
+    # Remove columns only containing 0
+    df = df[(df.T != 0).any()]
     return df
 
 
@@ -44,8 +45,9 @@ def normalize_X(X):
     """
     Standard Scaler to normalize the data using z-scores
     """
-    scaler = preprocessing.StandardScaler()
-    X = scaler.fit_transform(X)
+    X = preprocessing.normalize(X)
+    # scaler = preprocessing.StandardScaler()
+    # X = scaler.fit_transform(X)
     return X
 
 
@@ -107,7 +109,7 @@ def fill_na(df):
 
     for column in categorical_columns:
         if True in df[column]:
-            df[column].fillna('False', inplace=True)
+            df[column].fillna('True', inplace=True)
 
         elif False in df[column]:
             df[column].fillna('False', inplace=True)
@@ -120,7 +122,7 @@ def fill_na(df):
 
 def remove_random_rows(df, amount):
     """
-
+    Remove random rows
     """
 
     drop_indices = np.random.choice(len(df), amount, replace=False)
