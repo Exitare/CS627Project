@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestRegressor
 from enum import Enum
 import seaborn as sns
 from sklearn.feature_selection import SelectFromModel
+
 sns.set()
 
 
@@ -22,19 +23,23 @@ class PredictiveColumn(Enum):
 
 
 class File:
-    def __init__(self, path: str, tool_folder: Path):
+    def __init__(self, full_name: str, tool_folder: Path):
         """
         the constructor for the class
         :param path:
         :param tool_folder:
         """
-        self.path = path
-        self.name = os.path.splitext(path)[0]
+        # Full path to the source file
+        self.path = Path(Config.DATA_RAW_DIRECTORY, full_name)
+        # Name of file with extension
+        self.full_name = full_name
+        # Name of file without extension
+        self.name = os.path.splitext(full_name)[0]
         self.verified = True
 
         # Load data set depending on memory saving modes
         if not Config.MEMORY_SAVING_MODE:
-            self.raw_df = File_Management.read_file(self.path)
+            self.raw_df = File_Management.read_file(self.full_name)
             if self.raw_df is None:
                 self.verified = False
                 return
@@ -94,7 +99,7 @@ class File:
         Loads the data set. Only used if memory saving mode is active
         :return:
         """
-        self.raw_df = File_Management.read_file(self.path)
+        self.raw_df = File_Management.read_file(self.full_name)
         self.preprocessed_df = PreProcessing.pre_process_data_set(self.raw_df)
 
     def get_raw_df_statistics(self):
@@ -123,7 +128,7 @@ class File:
         :return:
         """
         try:
-            self.raw_df = pd.read_csv(self.path)
+            self.raw_df = pd.read_csv(self.full_name)
         except OSError as ex:
             logging.error(ex)
             self.raw_df = None
@@ -171,17 +176,15 @@ class File:
 
         source_row_count = len(X)
 
-        X_indexes = (X != 0).any(axis=1)
-
-        X = X.loc[X_indexes]
-        y = y.loc[X_indexes]
+        X_indices = (X != 0).any(axis=1)
+        X = X.loc[X_indices]
+        y = y.loc[X_indices]
 
         if source_row_count != len(X) and Config.VERBOSE:
-            logging.info(f"Removed {source_row_count - len(X)} rows. Source had {source_row_count}.")
+            logging.info(f"Removed {source_row_count - len(X)} row(s). Source had {source_row_count}.")
 
         X = PreProcessing.normalize_X(X)
         X = PreProcessing.variance_selection(X)
-
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=1)
 
         model.fit(X_train, y_train)

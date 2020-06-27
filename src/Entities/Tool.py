@@ -1,5 +1,4 @@
 import pandas as pd
-from pathlib import Path
 from Entities.File import File, PredictiveColumn
 from RuntimeContants import Runtime_Folders
 from Services.FileSystem import Folder_Management, File_Management
@@ -12,6 +11,7 @@ from sklearn.ensemble import RandomForestRegressor
 from time import sleep
 import os
 import seaborn as sns
+import shutil
 
 
 class Tool:
@@ -209,6 +209,9 @@ class Tool:
             if Config.PERCENTAGE_REMOVAL:
                 file.predict_row_removal(PredictiveColumn.RUNTIME.value)
                 file.predict_row_removal(PredictiveColumn.MEMORY.value)
+
+            # Copy the source file to the results folder
+            shutil.copy(file.path, file.folder)
 
     def __evaluate_merged_df(self):
         """
