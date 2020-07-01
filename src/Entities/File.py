@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestRegressor
 from enum import Enum
 import seaborn as sns
 from sklearn.feature_selection import SelectFromModel
+import matplotlib.pyplot as plt
 
 sns.set()
 
@@ -79,6 +80,9 @@ class File:
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
                      '90', '91', '92', '93', '94', '95', '96', '97', '98',
                      '99', 'Rows', 'Features'])
+
+        self.runtime_feature_importance = pd.DataFrame()
+        self.memory_feature_importance = pd.DataFrame()
 
         self.verify_file()
 
@@ -189,6 +193,9 @@ class File:
 
         model.fit(X_train, y_train)
 
+        # Feature importance
+        self.calculate_feature_importance(model, df, True)
+
         y_test_hat = model.predict(X_test)
         y_train_hat = model.predict(X_train)
         train_score = r2_score(y_train, y_train_hat)
@@ -241,6 +248,10 @@ class File:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=1)
 
         model.fit(X_train, y_train)
+
+        # Feature importance
+        self.calculate_feature_importance(model, df, False)
+
         y_test_hat = model.predict(X_test)
         y_train_hat = model.predict(X_train)
         test_score = r2_score(y_test, y_test_hat)
@@ -437,6 +448,8 @@ class File:
         """
         self.plot_predicted_values()
         self.plot_percentage_removal()
+        self.plot_feature_importance(True)
+        self.plot_feature_importance(False)
 
     def plot_predicted_values(self):
         """
@@ -496,4 +509,45 @@ class File:
         ax.legend()
         fig = ax.get_figure()
         fig.savefig(os.path.join(self.folder, "percentage_removal_prediction.png"))
+        fig.clf()
+
+    def calculate_feature_importance(self, model, df, runtime: bool):
+        """
+        Calculates the feature importance for the given model
+        """
+        feats = {}  # a dict to hold feature_name: feature_importance
+        for feature, importance in zip(df.columns, model.feature_importances_):
+            feats[feature] = importance  # add the name/value pair
+
+        importance = pd.DataFrame.from_dict(feats, orient='index').rename(columns={0: 'Gini-importance'})
+        importance.sort_values(by='Gini-importance', inplace=True, ascending=False)
+
+        importance_indices = importance[importance['Gini-importance'].gt(0.01)].index
+        if runtime:
+            self.runtime_feature_importance = importance.T[importance_indices]
+        else:
+            self.memory_feature_importance = importance.T[importance_indices]
+
+    def plot_feature_importance(self, runtime: bool):
+        """
+        Plots the feature importance for each evaluation
+        """
+        if runtime:
+            if self.runtime_feature_importance.empty:
+                return
+            ax = sns.barplot(data=self.runtime_feature_importance)
+        else:
+            if self.memory_feature_importance.empty:
+                return
+            ax = sns.barplot(data=self.memory_feature_importance)
+
+        ax.set(xlabel='Feature', ylabel='Gini Index')
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
+        ax.legend()
+        fig = ax.get_figure()
+        # Save the fig
+        if runtime:
+            fig.savefig(os.path.join(self.folder, "runtime_feature_importance.png"), bbox_inches='tight')
+        else:
+            fig.savefig(os.path.join(self.folder, "memory_feature_importance.png"), bbox_inches='tight')
         fig.clf()

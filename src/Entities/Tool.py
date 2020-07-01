@@ -46,6 +46,9 @@ class Tool:
         self.predicted_runtime_values = pd.DataFrame(columns=['y', 'y_hat'])
         self.predicted_memory_values = pd.DataFrame(columns=['y', 'y_hat'])
 
+        self.memory_feature_importance = pd.DataFrame()
+        self.runtime_feature_importance = pd.DataFrame()
+
     def __eq__(self, other):
         """
         Checks if another tool entity is equal to this one
@@ -177,20 +180,9 @@ class Tool:
         for file in self.verified_files:
             file.generate_plots()
 
-        ax = None
-
-        if not self.predicted_memory_values.empty:
-            ax = sns.scatterplot(x='y', y='y_hat', label="memory", data=self.predicted_memory_values)
-            ax.set(xscale="log", yscale="log")
-
-        if not self.predicted_runtime_values.empty:
-            ax = sns.scatterplot(x='y', y='y_hat', label="runtime", data=self.predicted_runtime_values)
-            ax.set(xscale="log", yscale="log")
-
-        ax.legend()
-        fig = ax.get_figure()
-        fig.savefig(os.path.join(self.folder, "predicated_values.png"))
-        fig.clf()
+        self.plot_predicted_values()
+        self.plot_feature_importance(True)
+        self.plot_feature_importance(False)
 
     def __evaluate_verified_files(self):
         """
@@ -271,6 +263,10 @@ class Tool:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
 
         model.fit(X_train, y_train)
+
+        # Calculate Feature importance
+        self.calculate_feature_importance(model, df, True)
+
         y_test_hat = model.predict(X_test)
         y_train_hat = model.predict(X_train)
         test_score = r2_score(y_test, y_test_hat)
@@ -323,6 +319,10 @@ class Tool:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
 
         model.fit(X_train, y_train)
+
+        # Calculate Feature importance
+        self.calculate_feature_importance(model, df, False)
+
         y_test_hat = model.predict(X_test)
         y_train_hat = model.predict(X_train)
         test_score = r2_score(y_test, y_test_hat)
@@ -344,3 +344,63 @@ class Tool:
             axis=1)
 
         self.predicted_memory_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
+
+    def calculate_feature_importance(self, model, df, runtime: bool):
+        """
+        Calculates the feature importance for the given model
+        """
+        feats = {}  # a dict to hold feature_name: feature_importance
+        for feature, importance in zip(df.columns, model.feature_importances_):
+            feats[feature] = importance  # add the name/value pair
+
+        importance = pd.DataFrame.from_dict(feats, orient='index').rename(columns={0: 'Gini-importance'})
+        importance.sort_values(by='Gini-importance', inplace=True, ascending=False)
+
+        importance_indices = importance[importance['Gini-importance'].gt(0.01)].index
+        if runtime:
+            self.runtime_feature_importance = importance.T[importance_indices]
+        else:
+            self.memory_feature_importance = importance.T[importance_indices]
+
+    def plot_predicted_values(self):
+        """
+        Plots the predicted values, without row removal
+        """
+        ax = None
+
+        if not self.predicted_memory_values.empty:
+            ax = sns.scatterplot(x='y', y='y_hat', label="memory", data=self.predicted_memory_values)
+            ax.set(xscale="log", yscale="log")
+
+        if not self.predicted_runtime_values.empty:
+            ax = sns.scatterplot(x='y', y='y_hat', label="runtime", data=self.predicted_runtime_values)
+            ax.set(xscale="log", yscale="log")
+
+        ax.legend()
+        fig = ax.get_figure()
+        fig.savefig(os.path.join(self.folder, "predicated_values.png"))
+        fig.clf()
+
+    def plot_feature_importance(self, runtime: bool):
+        """
+        Plots the feature importance for each evaluation
+        """
+        if runtime:
+            if self.runtime_feature_importance.empty:
+                return
+            ax = sns.barplot(data=self.runtime_feature_importance)
+        else:
+            if self.memory_feature_importance.empty:
+                return
+            ax = sns.barplot(data=self.memory_feature_importance)
+
+        ax.set(xlabel='Feature', ylabel='Gini Index')
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
+        ax.legend()
+        fig = ax.get_figure()
+        # Save the fig
+        if runtime:
+            fig.savefig(os.path.join(self.folder, "runtime_feature_importance.png"), bbox_inches='tight')
+        else:
+            fig.savefig(os.path.join(self.folder, "memory_feature_importance.png"), bbox_inches='tight')
+        fig.clf()
