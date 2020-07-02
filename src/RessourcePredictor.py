@@ -47,7 +47,6 @@ if __name__ == '__main__':
         Folder_Management.create_evaluation_folder()
 
     Tool_Loader.load_tools()
-    Tool_Loader.prepare_verified_tools()
 
     logging.info("Starting tool evaluation...")
     print()

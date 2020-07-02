@@ -33,22 +33,6 @@ class Tool:
         else:
             self.verified = False
 
-        self.merged_files_raw_df = pd.DataFrame()
-        self.merged_files_preprocessed_df = pd.DataFrame()
-        # Setup required data sets
-        self.runtime_evaluation = pd.DataFrame(
-            columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
-                     'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
-        self.memory_evaluation = pd.DataFrame(
-            columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
-                     'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
-
-        self.predicted_runtime_values = pd.DataFrame(columns=['y', 'y_hat'])
-        self.predicted_memory_values = pd.DataFrame(columns=['y', 'y_hat'])
-
-        self.memory_feature_importance = pd.DataFrame()
-        self.runtime_feature_importance = pd.DataFrame()
-
     def __eq__(self, other):
         """
         Checks if another tool entity is equal to this one
@@ -70,6 +54,7 @@ class Tool:
         """
         Checks if the tool contains actual files and is therefore a valid /verified tool
         If no file is associated to the tool, the tool folder will be deleted.
+        If more than one file is associated to the tool a merged file will be added
         :return:
         """
         if len(self.all_files) == 0:
@@ -90,6 +75,10 @@ class Tool:
             logging.info(f"Tool {self.name} does not contain at least one file that is verified")
             logging.info(f"The tool will not evaluated and the folder will be cleanup up.")
 
+        # Add a merged file to the tool.
+        if len(self.all_files) > 1:
+            self.add_merged_file()
+
     def free_memory(self):
         """
         Frees memory if the memory saving mode is active
@@ -102,9 +91,6 @@ class Tool:
         logging.info("Freeing up memory...")
         for file in self.verified_files:
             file.free_memory()
-
-        self.merged_files_raw_df = None
-        self.merged_files_preprocessed_df = None
 
         sleep(1)
 
@@ -121,7 +107,6 @@ class Tool:
                 file.load_data()
 
         # Evaluate the files
-        self.__evaluate_merged_df()
         self.__evaluate_verified_files()
 
     def generate_reports(self):
@@ -142,31 +127,6 @@ class Tool:
             files_runtime_overview = files_runtime_overview.append(file.runtime_evaluation)
             files_memory_overview = files_memory_overview.append(file.memory_evaluation)
 
-        # Generate tool specific reports
-        if not self.runtime_evaluation.empty:
-            files_runtime_overview = files_runtime_overview.append(self.runtime_evaluation)
-
-        if not self.memory_evaluation.empty:
-            files_memory_overview = files_memory_overview.append(self.memory_evaluation)
-
-        if not files_runtime_overview.empty:
-            files_runtime_overview.to_csv(os.path.join(self.folder, "files_runtime_report.csv"), index=False)
-
-        if not files_memory_overview.empty:
-            files_memory_overview.to_csv(os.path.join(self.folder, "files_memory_report.csv"), index=False)
-
-        if not self.predicted_memory_values.empty:
-            self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.csv"),
-                                                index=False)
-            self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.tsv"),
-                                                index=False, sep=",")
-
-        if not self.predicted_runtime_values.empty:
-            self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_runtime_report.csv"),
-                                                 index=False)
-            self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_memory_report.tsv"),
-                                                 index=False, sep=",")
-
         logging.info("All reports generated.")
         sleep(1)
 
@@ -179,10 +139,6 @@ class Tool:
         # Generate plots for each file associated to the tool
         for file in self.verified_files:
             file.generate_plots()
-
-        self.plot_predicted_values()
-        self.plot_feature_importance(True)
-        self.plot_feature_importance(False)
 
     def __evaluate_verified_files(self):
         """
@@ -203,204 +159,19 @@ class Tool:
                 file.predict_row_removal(PredictiveColumn.MEMORY.value)
 
             # Copy the source file to the results folder
-            shutil.copy(file.path, file.folder)
+            if not file.merged_file:
+                shutil.copy(file.path, file.folder)
 
-    def __evaluate_merged_df(self):
+    def add_merged_file(self):
         """
-        Evaluates the merged data set
+        Merges the raw data sets of all files into a big one.
+        Assuming that all single files are valid this merged on should be valid too.
         :return:
         """
-
-        # Merge files now, because it was not done at the start because of saving memory
-        if Config.MEMORY_SAVING_MODE:
-            self.merge_files()
-
-        self.__predict_runtime()
-        self.__predict_memory()
-
-    def merge_files(self):
-        """
-        Merges the raw data sets of all files.
-        :return:
-        """
-
-        data_frames = []
+        raw_df = []
         for file in self.verified_files:
-            data_frames.append(file.raw_df)
+            raw_df.append(file.raw_df)
 
-        self.merged_files_raw_df = pd.concat(data_frames)
-        self.merged_files_preprocessed_df = PreProcessing.pre_process_data_set(self.merged_files_raw_df)
-
-    def __predict_runtime(self):
-        """
-        Predicts the runtime for a complete data set.
-        :return:
-        """
-        df = self.merged_files_preprocessed_df.copy()
-
-        if 'runtime' not in df:
-            return
-
-        model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
-
-        y = df['runtime']
-        del df['runtime']
-        X = df
-
-        source_row_count = len(X)
-
-        X_indexes = (X != 0).any(axis=1)
-
-        X = X.loc[X_indexes]
-        y = y.loc[X_indexes]
-
-        if source_row_count != len(X) and Config.VERBOSE:
-            logging.info(f"Removed {source_row_count - len(X)} rows. Source had {source_row_count}.")
-
-        X = PreProcessing.normalize_X(X)
-        X = PreProcessing.variance_selection(X)
-
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
-
-        model.fit(X_train, y_train)
-
-        # Calculate Feature importance
-        self.calculate_feature_importance(model, df, True)
-
-        y_test_hat = model.predict(X_test)
-        y_train_hat = model.predict(X_train)
-        test_score = r2_score(y_test, y_test_hat)
-        train_score = r2_score(y_train, y_train_hat)
-
-        over_fitting = False
-        if train_score > test_score * 2:
-            over_fitting = True
-
-        self.runtime_evaluation = self.runtime_evaluation.append(
-            {'File Name': f"{self.name}_merged", "Test Score": test_score,
-             "Train Score": train_score, "Potential Over Fitting": over_fitting,
-             "Initial Row Count": len(self.merged_files_raw_df.index),
-             "Initial Feature Count": len(self.merged_files_raw_df.columns) - 1, "Processed Row Count": len(X),
-             "Processed Feature Count": X.shape[1]}, ignore_index=True)
-
-        self.predicted_runtime_values = pd.concat([pd.Series(y_test).reset_index()['runtime'], pd.Series(y_test_hat)],
-                                                  axis=1)
-        self.predicted_runtime_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
-
-    def __predict_memory(self):
-        """
-        Predicts the memory usage for a complete data set.
-        :return:
-        """
-        df = self.merged_files_preprocessed_df.copy()
-
-        if 'memory.max_usage_in_bytes' not in df:
-            return
-
-        model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
-
-        y = df['memory.max_usage_in_bytes']
-        del df['memory.max_usage_in_bytes']
-        X = df
-
-        source_row_count = len(X)
-
-        X_indexes = (X != 0).any(axis=1)
-
-        X = X.loc[X_indexes]
-        y = y.loc[X_indexes]
-
-        if source_row_count != len(X) and Config.VERBOSE:
-            logging.info(f"Removed {source_row_count - len(X)} rows. Source had {source_row_count}.")
-
-        X = PreProcessing.normalize_X(X)
-        X = PreProcessing.variance_selection(X)
-
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=2)
-
-        model.fit(X_train, y_train)
-
-        # Calculate Feature importance
-        self.calculate_feature_importance(model, df, False)
-
-        y_test_hat = model.predict(X_test)
-        y_train_hat = model.predict(X_train)
-        test_score = r2_score(y_test, y_test_hat)
-        train_score = r2_score(y_train, y_train_hat)
-
-        over_fitting = False
-        if train_score > test_score * 2:
-            over_fitting = True
-
-        self.memory_evaluation = self.memory_evaluation.append(
-            {'File Name': f"{self.name}_merged", "Test Score": test_score,
-             "Train Score": train_score, "Potential Over Fitting": over_fitting,
-             "Initial Row Count": len(self.merged_files_raw_df.index),
-             "Initial Feature Count": len(self.merged_files_raw_df.columns) - 1, "Processed Row Count": len(X),
-             "Processed Feature Count": X.shape[1]}, ignore_index=True)
-
-        self.predicted_memory_values = pd.concat(
-            [pd.Series(y_test).reset_index()['memory.max_usage_in_bytes'], pd.Series(y_test_hat)],
-            axis=1)
-
-        self.predicted_memory_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
-
-    def calculate_feature_importance(self, model, df, runtime: bool):
-        """
-        Calculates the feature importance for the given model
-        """
-        feats = {}  # a dict to hold feature_name: feature_importance
-        for feature, importance in zip(df.columns, model.feature_importances_):
-            feats[feature] = importance  # add the name/value pair
-
-        importance = pd.DataFrame.from_dict(feats, orient='index').rename(columns={0: 'Gini-importance'})
-        importance.sort_values(by='Gini-importance', inplace=True, ascending=False)
-
-        importance_indices = importance[importance['Gini-importance'].gt(0.01)].index
-        if runtime:
-            self.runtime_feature_importance = importance.T[importance_indices]
-        else:
-            self.memory_feature_importance = importance.T[importance_indices]
-
-    def plot_predicted_values(self):
-        """
-        Plots the predicted values, without row removal
-        """
-        ax = None
-
-        if not self.predicted_memory_values.empty:
-            ax = sns.scatterplot(x='y', y='y_hat', label="memory", data=self.predicted_memory_values)
-            ax.set(xscale="log", yscale="log")
-
-        if not self.predicted_runtime_values.empty:
-            ax = sns.scatterplot(x='y', y='y_hat', label="runtime", data=self.predicted_runtime_values)
-            ax.set(xscale="log", yscale="log")
-
-        ax.legend()
-        fig = ax.get_figure()
-        fig.savefig(os.path.join(self.folder, "predicated_values.png"))
-        fig.clf()
-
-    def plot_feature_importance(self, runtime: bool):
-        """
-        Plots the feature importance for each evaluation
-        """
-        if runtime:
-            if self.runtime_feature_importance.empty:
-                return
-            ax = sns.barplot(data=self.runtime_feature_importance)
-        else:
-            if self.memory_feature_importance.empty:
-                return
-            ax = sns.barplot(data=self.memory_feature_importance)
-
-        ax.set(xlabel='Feature', ylabel='Gini Index')
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
-        ax.legend()
-        fig = ax.get_figure()
-        # Save the fig
-        if runtime:
-            fig.savefig(os.path.join(self.folder, "runtime_feature_importance.png"), bbox_inches='tight')
-        else:
-            fig.savefig(os.path.join(self.folder, "memory_feature_importance.png"), bbox_inches='tight')
-        fig.clf()
+        merged_files_raw_df = pd.concat(raw_df)
+        merged_file = File("merged_tool", self.folder, merged_files_raw_df)
+        self.verified_files.append(merged_file)

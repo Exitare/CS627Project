@@ -24,28 +24,45 @@ class PredictiveColumn(Enum):
 
 
 class File:
-    def __init__(self, full_name: str, tool_folder: Path):
+    def __init__(self, full_name: str, tool_folder: Path, raw_df=None):
         """
         the constructor for the class
-        :param path:
+        :param full_name:
         :param tool_folder:
+        :param merged_file:
         """
-        # Full path to the source file
-        self.path = Path(Config.DATA_RAW_DIRECTORY, full_name)
+        # Provides information whether the entity is a merged too file or a "real" file
+        if raw_df is not None:
+            self.merged_file = True
+        else:
+            self.merged_file = False
+
+        if not self.merged_file:
+            # Full path to the source file
+            self.path = Path(Config.DATA_RAW_DIRECTORY, full_name)
         # Name of file with extension
         self.full_name = full_name
-        # Name of file without extension
-        self.name = os.path.splitext(full_name)[0]
+
+        if not self.merged_file:
+            # Name of file without extension
+            self.name = os.path.splitext(full_name)[0]
+        else:
+            self.name = full_name
+
         self.verified = True
 
-        # Load data set depending on memory saving modes
-        if not Config.MEMORY_SAVING_MODE:
-            self.raw_df = File_Management.read_file(self.full_name)
-            if self.raw_df is None:
-                self.verified = False
-                return
+        # Check if its a merged file or not
+        if self.merged_file:
+            self.raw_df = raw_df
         else:
-            self.raw_df = pd.DataFrame()
+            # Load data set depending on memory saving modes
+            if not Config.MEMORY_SAVING_MODE:
+                self.raw_df = File_Management.read_file(self.full_name)
+                if self.raw_df is None:
+                    self.verified = False
+                    return
+            else:
+                self.raw_df = pd.DataFrame()
 
         # Pre process the raw data set
         self.preprocessed_df = PreProcessing.pre_process_data_set(self.raw_df)
@@ -98,13 +115,18 @@ class File:
         else:
             self.verified = False
 
+
     def load_data(self):
         """
         Loads the data set. Only used if memory saving mode is active
         :return:
         """
-        self.raw_df = File_Management.read_file(self.full_name)
-        self.preprocessed_df = PreProcessing.pre_process_data_set(self.raw_df)
+        if not self.merged_file:
+            self.raw_df = File_Management.read_file(self.full_name)
+            self.preprocessed_df = PreProcessing.pre_process_data_set(self.raw_df)
+            return
+        else:
+            return
 
     def get_raw_df_statistics(self):
         """
@@ -131,6 +153,10 @@ class File:
         Read the file into memory
         :return:
         """
+        # Merged files do not have a real path, so they can not be read from a csv file
+        if self.merged_file:
+            return
+
         try:
             self.raw_df = pd.read_csv(self.full_name)
         except OSError as ex:
@@ -411,7 +437,9 @@ class File:
         Generate file specific reports
         :return:
         """
-
+        print(self.folder)
+        print(self.runtime_evaluation)
+        input()
         # Predicted values
         if not self.runtime_evaluation.empty:
             self.runtime_evaluation.to_csv(os.path.join(self.folder, "runtime_evaluation_report.csv"), index=False)

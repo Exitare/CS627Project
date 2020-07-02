@@ -49,7 +49,10 @@ def load_tools():
     for tool in Runtime_Datasets.DETECTED_TOOLS:
         tool.verify()
         if Config.DEBUG_MODE:
-            logging.debug(f"Tool {tool.name} is verified {tool.verified}")
+            if tool.verified:
+                logging.debug(f"Tool {tool.name} is verified.")
+            else:
+                logging.debug(f"Tool {tool.name} is not verified.")
 
     Runtime_Datasets.VERIFIED_TOOLS = [tool for tool in Runtime_Datasets.DETECTED_TOOLS if tool.verified]
     Runtime_Datasets.EXCLUDED_TOOLS = [tool for tool in Runtime_Datasets.DETECTED_TOOLS if not tool.verified]
@@ -61,20 +64,3 @@ def load_tools():
     print()
     sleep(1)
 
-
-def prepare_verified_tools():
-    """
-    Prepare verified tools
-    :return:
-    """
-
-    logging.info("Preparing tools...")
-    if Config.MEMORY_SAVING_MODE:
-        return
-
-    for tool in Runtime_Datasets.VERIFIED_TOOLS:
-        tool.merge_files()
-
-    logging.info("Preparation complete.")
-    print()
-    sleep(1)
