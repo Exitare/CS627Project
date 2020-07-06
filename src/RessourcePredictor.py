@@ -9,7 +9,7 @@ import psutil
 import logging
 import time
 
-logging.basicConfig(filename='example.log', level=logging.DEBUG)
+logging.basicConfig(filename='log.log', level=logging.DEBUG)
 logging.getLogger().setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
 root = logging.getLogger()
@@ -65,11 +65,6 @@ if __name__ == '__main__':
         logging.info(f"Time passed: {(end_time - start_time) / 60} minutes.")
     else:
         logging.info(f"Time passed: {end_time - start_time} seconds.")
-    # Tasks.process_single_files()
-    # Tasks.process_merged_tool_version()
-    # Tasks.process_single_file_data_removal()
-    # Data_Set_Reporting.generate_file_report_files()
-    # Add plotting
     logging.info("Done")
 
     exit(0)

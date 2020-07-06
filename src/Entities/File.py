@@ -29,7 +29,7 @@ class File:
         the constructor for the class
         :param full_name:
         :param tool_folder:
-        :param merged_file:
+        :param raw_df:
         """
         # Provides information whether the entity is a merged too file or a "real" file
         if raw_df is not None:
@@ -40,6 +40,7 @@ class File:
         if not self.merged_file:
             # Full path to the source file
             self.path = Path(Config.DATA_RAW_DIRECTORY, full_name)
+
         # Name of file with extension
         self.full_name = full_name
 
@@ -65,7 +66,10 @@ class File:
                 self.raw_df = pd.DataFrame()
 
         # Pre process the raw data set
-        self.preprocessed_df = PreProcessing.pre_process_data_set(self.raw_df)
+        if not Config.MEMORY_SAVING_MODE:
+            self.preprocessed_df = PreProcessing.pre_process_data_set(self.raw_df)
+        else:
+            self.preprocessed_df = pd.DataFrame()
 
         # Setup required data sets
         self.runtime_evaluation = pd.DataFrame(
@@ -101,7 +105,8 @@ class File:
         self.runtime_feature_importance = pd.DataFrame()
         self.memory_feature_importance = pd.DataFrame()
 
-        self.verify_file()
+        if not Config.MEMORY_SAVING_MODE:
+            self.verify()
 
         # Return, because the file is not eligible to be evaluated.
         if not self.verified:
@@ -114,7 +119,6 @@ class File:
             self.verified = True
         else:
             self.verified = False
-
 
     def load_data(self):
         """
@@ -163,7 +167,7 @@ class File:
             logging.error(ex)
             self.raw_df = None
 
-    def verify_file(self):
+    def verify(self):
         """
         Check if the file passes all requirements to be able to be evaluated
         :return:
@@ -239,8 +243,9 @@ class File:
              "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
              "Processed Feature Count": X.shape[1]}, ignore_index=True)
 
-        self.predicted_runtime_values = pd.concat([pd.Series(y_test).reset_index()[Config.RUNTIME_LABEL], pd.Series(y_test_hat)],
-                                                  axis=1)
+        self.predicted_runtime_values = pd.concat(
+            [pd.Series(y_test).reset_index()[Config.RUNTIME_LABEL], pd.Series(y_test_hat)],
+            axis=1)
         self.predicted_runtime_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
 
     def predict_memory(self):
@@ -312,15 +317,15 @@ class File:
         self.raw_df = None
         self.preprocessed_df = None
 
-    def predict_row_removal(self, column: str):
+    def predict_row_removal(self, label: str):
         """
         Predict the value for the column specified, while removing data from the original df
-        :param column: the column that should be predicted.
+        :param label: the label that should be predicted.
         :return:
         """
         df = self.preprocessed_df.copy()
 
-        if column not in df:
+        if label not in df:
             return
 
         averages_per_repetition = pd.Series()
@@ -329,8 +334,8 @@ class File:
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
                      '95', '96', '97', '98', '99', 'Rows', 'Features'])
 
-        y = df[column]
-        del df[column]
+        y = df[label]
+        del df[label]
         X = df
 
         X = PreProcessing.normalize_X(X)
@@ -349,14 +354,14 @@ class File:
             averages_per_repetition = averages_per_repetition.fillna(0)
             final_evaluation = final_evaluation.append(averages_per_repetition, ignore_index=True)
 
-        if column == PredictiveColumn.MEMORY.value:
+        if label == PredictiveColumn.MEMORY.value:
             self.memory_evaluation_percentage_mean = pd.Series(final_evaluation.mean())
             self.memory_evaluation_percentage_mean['Rows'] = row_count
             self.memory_evaluation_percentage_mean['Features'] = feature_count
             self.memory_evaluation_percentage_var = pd.Series(final_evaluation.var())
             self.memory_evaluation_percentage_var['Rows'] = row_count
             self.memory_evaluation_percentage_var['Features'] = feature_count
-        elif column == PredictiveColumn.RUNTIME.value:
+        elif labelß == PredictiveColumn.RUNTIME.value:
             self.runtime_evaluation_percentage_mean = pd.Series(final_evaluation.mean())
             self.runtime_evaluation_percentage_mean['Rows'] = row_count
             self.runtime_evaluation_percentage_mean['Features'] = feature_count
@@ -473,15 +478,17 @@ class File:
         Helper to call all plotting functions
         :return:
         """
-        self.plot_predicted_values()
+        self.plot_predicted_values(True)
+        self.plot_predicted_values(False)
         self.plot_percentage_removal()
         self.plot_feature_importance(True)
         self.plot_feature_importance(False)
         self.plot_feature_to_label_correlation(True)
+        self.plot_feature_to_label_correlation(False)
 
-    def plot_predicted_values(self):
+    def plot_predicted_values(self, log_scale: bool):
         """
-        Plots the predicted values for the unmodified dataset
+        Plots the predicted values for the unmodified data set
         :return:
         """
 
@@ -489,28 +496,24 @@ class File:
 
         if not self.predicted_memory_values.empty:
             ax = sns.scatterplot(x='y', y='y_hat', label="memory", data=self.predicted_memory_values)
-            ax.set(xscale="log", yscale="log")
+            if log_scale:
+                ax.set(xscale="log", yscale="log")
 
         if not self.predicted_runtime_values.empty:
             ax = sns.scatterplot(x='y', y='y_hat', label="runtime", data=self.predicted_runtime_values)
-            ax.set(xscale="log", yscale="log")
+            if log_scale:
+                ax.set(xscale="log", yscale="log")
+
+        if ax is None:
+            logging.warning("Could not plot predicted values, because ax where None")
+            return
 
         ax.legend()
         fig = ax.get_figure()
-        fig.savefig(os.path.join(self.folder, "predicated_log_values.png"))
-        fig.clf()
-
-        ax = None
-
-        if not self.predicted_memory_values.empty:
-            ax = sns.scatterplot(x='y', y='y_hat', label="memory", data=self.predicted_memory_values)
-
-        if not self.predicted_runtime_values.empty:
-            ax = sns.scatterplot(x='y', y='y_hat', label="runtime", data=self.predicted_runtime_values)
-
-        ax.legend()
-        fig = ax.get_figure()
-        fig.savefig(os.path.join(self.folder, "predicated_values.png"))
+        if log_scale:
+            fig.savefig(os.path.join(self.folder, "predicated_log_values.png"))
+        else:
+            fig.savefig(os.path.join(self.folder, "predicated_values.png"))
         fig.clf()
 
     def plot_percentage_removal(self):
@@ -588,6 +591,9 @@ class File:
         important_features = []
 
         if runtime:
+            if self.runtime_feature_importance.empty or Config.RUNTIME_LABEL not in self.raw_df:
+                return
+
             for col in self.runtime_feature_importance.columns:
                 important_features.append(col)
 
@@ -596,23 +602,34 @@ class File:
             data = self.preprocessed_df[important_features]
             corr = data.corr()
 
-            # Generate a mask for the upper triangle
             mask = np.triu(np.ones_like(corr, dtype=np.bool))
-
-            # Set up the matplotlib figure
             f, ax = plt.subplots(figsize=(11, 9))
-
-            # Generate a custom diverging colormap
             cmap = sns.diverging_palette(220, 10, as_cmap=True)
-
-            # Draw the heatmap with the mask and correct aspect ratio
             sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
                         square=True, linewidths=.5, cbar_kws={"shrink": .5})
 
             fig = ax.get_figure()
-            if runtime:
-                fig.savefig(os.path.join(self.folder, "runtime_correlation_matrix.png"), bbox_inches='tight')
-            else:
-                fig.savefig(os.path.join(self.folder, "memory_correlation_matrix.png"), bbox_inches='tight')
+            fig.savefig(os.path.join(self.folder, "runtime_correlation_matrix.png"), bbox_inches='tight')
             fig.clf()
 
+        else:
+            if self.memory_feature_importance.empty or Config.MEMORY_LABEL not in self.raw_df:
+                return
+
+            for col in self.memory_feature_importance.columns:
+                important_features.append(col)
+
+            important_features.append(Config.MEMORY_LABEL)
+
+            data = self.preprocessed_df[important_features]
+            corr = data.corr()
+
+            mask = np.triu(np.ones_like(corr, dtype=np.bool))
+            f, ax = plt.subplots(figsize=(11, 9))
+            cmap = sns.diverging_palette(220, 10, as_cmap=True)
+            sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
+                        square=True, linewidths=.5, cbar_kws={"shrink": .5})
+
+            fig = ax.get_figure()
+            fig.savefig(os.path.join(self.folder, "memory_correlation_matrix.png"), bbox_inches='tight')
+            fig.clf()

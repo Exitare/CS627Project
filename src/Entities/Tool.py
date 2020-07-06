@@ -76,7 +76,7 @@ class Tool:
             logging.info(f"The tool will not evaluated and the folder will be cleanup up.")
 
         # Add a merged file to the tool.
-        if len(self.all_files) > 1:
+        if len(self.verified_files) > 1:
             self.add_merged_file()
 
     def free_memory(self):
@@ -88,7 +88,7 @@ class Tool:
         if not Config.MEMORY_SAVING_MODE:
             return
 
-        logging.info("Freeing up memory...")
+        logging.info("Cleaning memory...")
         for file in self.verified_files:
             file.free_memory()
 
@@ -105,6 +105,7 @@ class Tool:
         if Config.MEMORY_SAVING_MODE:
             for file in self.verified_files:
                 file.load_data()
+                file.verify()
 
         # Evaluate the files
         self.__evaluate_verified_files()
