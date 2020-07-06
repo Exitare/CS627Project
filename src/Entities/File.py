@@ -10,17 +10,10 @@ import logging
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.ensemble import RandomForestRegressor
-from enum import Enum
 import seaborn as sns
-from sklearn.feature_selection import SelectFromModel
 import matplotlib.pyplot as plt
 
 sns.set()
-
-
-class PredictiveColumn(Enum):
-    RUNTIME = 'runtime'
-    MEMORY = 'memory.max_usage_in_bytes'
 
 
 class File:
@@ -354,14 +347,14 @@ class File:
             averages_per_repetition = averages_per_repetition.fillna(0)
             final_evaluation = final_evaluation.append(averages_per_repetition, ignore_index=True)
 
-        if label == PredictiveColumn.MEMORY.value:
+        if label == Config.MEMORY_LABEL:
             self.memory_evaluation_percentage_mean = pd.Series(final_evaluation.mean())
             self.memory_evaluation_percentage_mean['Rows'] = row_count
             self.memory_evaluation_percentage_mean['Features'] = feature_count
             self.memory_evaluation_percentage_var = pd.Series(final_evaluation.var())
             self.memory_evaluation_percentage_var['Rows'] = row_count
             self.memory_evaluation_percentage_var['Features'] = feature_count
-        elif labelß == PredictiveColumn.RUNTIME.value:
+        elif label == Config.RUNTIME_LABEL:
             self.runtime_evaluation_percentage_mean = pd.Series(final_evaluation.mean())
             self.runtime_evaluation_percentage_mean['Rows'] = row_count
             self.runtime_evaluation_percentage_mean['Features'] = feature_count
@@ -369,7 +362,7 @@ class File:
             self.runtime_evaluation_percentage_var['Rows'] = row_count
             self.runtime_evaluation_percentage_var['Features'] = feature_count
         else:
-            logging.warning(f"Could not detect predictive column: {column}")
+            logging.warning(f"Could not detect predictive column: {label}")
 
     def k_folds(self, X, y):
         """
@@ -505,7 +498,7 @@ class File:
                 ax.set(xscale="log", yscale="log")
 
         if ax is None:
-            logging.warning("Could not plot predicted values, because ax where None")
+            logging.warning("Could not plot predicted values, because axis where None")
             return
 
         ax.legend()
@@ -539,8 +532,10 @@ class File:
 
         # Remove not required rows from dfs
 
-        ax.set(xlabel='% rows removed', ylabel='R^2 Score')
+        if ax is None:
+            return
 
+        ax.set(xlabel='% rows removed', ylabel='R^2 Score')
         ax.legend()
         fig = ax.get_figure()
         fig.savefig(os.path.join(self.folder, "percentage_removal_prediction.png"))

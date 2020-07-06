@@ -1,5 +1,5 @@
 import pandas as pd
-from Entities.File import File, PredictiveColumn
+from Entities.File import File
 from RuntimeContants import Runtime_Folders
 from Services.FileSystem import Folder_Management, File_Management
 from Services.Configuration.Config import Config
@@ -169,8 +169,8 @@ class Tool:
             file.predict_runtime()
             file.predict_memory()
             if Config.PERCENTAGE_REMOVAL:
-                file.predict_row_removal(PredictiveColumn.RUNTIME.value)
-                file.predict_row_removal(PredictiveColumn.MEMORY.value)
+                file.predict_row_removal(Config.RUNTIME_LABEL)
+                file.predict_row_removal(Config.MEMORY_LABEL)
 
             # Copy the source file to the results folder
             if not file.merged_file:
