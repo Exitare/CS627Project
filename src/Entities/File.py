@@ -195,13 +195,14 @@ class File:
         """
         df = self.preprocessed_df.copy()
 
-        if 'runtime' not in df:
+        if Config.RUNTIME_LABEL not in df:
+            logging.warning(f"Label {Config.RUNTIME_LABEL} could not be found!")
             return
 
         model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
 
-        y = df['runtime']
-        del df['runtime']
+        y = df[Config.RUNTIME_LABEL]
+        del df[Config.RUNTIME_LABEL]
         X = df
 
         source_row_count = len(X)
@@ -238,7 +239,7 @@ class File:
              "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
              "Processed Feature Count": X.shape[1]}, ignore_index=True)
 
-        self.predicted_runtime_values = pd.concat([pd.Series(y_test).reset_index()['runtime'], pd.Series(y_test_hat)],
+        self.predicted_runtime_values = pd.concat([pd.Series(y_test).reset_index()[Config.RUNTIME_LABEL], pd.Series(y_test_hat)],
                                                   axis=1)
         self.predicted_runtime_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
 
@@ -249,13 +250,14 @@ class File:
         """
         df = self.preprocessed_df.copy()
 
-        if 'memory.max_usage_in_bytes' not in df:
+        if Config.MEMORY_LABEL not in df:
+            logging.warning(f"Label {Config.MEMORY_LABEL} could not be found!")
             return
 
         model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
 
-        y = df['memory.max_usage_in_bytes']
-        del df['memory.max_usage_in_bytes']
+        y = df[Config.MEMORY_LABEL]
+        del df[Config.MEMORY_LABEL]
         X = df
 
         source_row_count = len(X)
@@ -295,7 +297,7 @@ class File:
              "Processed Feature Count": X.shape[1]}, ignore_index=True)
 
         self.predicted_memory_values = pd.concat(
-            [pd.Series(y_test).reset_index()['memory.max_usage_in_bytes'], pd.Series(y_test_hat)],
+            [pd.Series(y_test).reset_index()[Config.MEMORY_LABEL], pd.Series(y_test_hat)],
             axis=1)
         self.predicted_memory_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
 
@@ -437,9 +439,6 @@ class File:
         Generate file specific reports
         :return:
         """
-        print(self.folder)
-        print(self.runtime_evaluation)
-        input()
         # Predicted values
         if not self.runtime_evaluation.empty:
             self.runtime_evaluation.to_csv(os.path.join(self.folder, "runtime_evaluation_report.csv"), index=False)
@@ -478,6 +477,7 @@ class File:
         self.plot_percentage_removal()
         self.plot_feature_importance(True)
         self.plot_feature_importance(False)
+        self.plot_feature_to_label_correlation(True)
 
     def plot_predicted_values(self):
         """
@@ -514,6 +514,10 @@ class File:
         fig.clf()
 
     def plot_percentage_removal(self):
+
+        if not Config.PERCENTAGE_REMOVAL:
+            return
+
         ax = None
 
         if not self.runtime_evaluation_percentage_mean.empty:
@@ -579,3 +583,36 @@ class File:
         else:
             fig.savefig(os.path.join(self.folder, "memory_feature_importance.png"), bbox_inches='tight')
         fig.clf()
+
+    def plot_feature_to_label_correlation(self, runtime: bool):
+        important_features = []
+
+        if runtime:
+            for col in self.runtime_feature_importance.columns:
+                important_features.append(col)
+
+            important_features.append(Config.RUNTIME_LABEL)
+
+            data = self.preprocessed_df[important_features]
+            corr = data.corr()
+
+            # Generate a mask for the upper triangle
+            mask = np.triu(np.ones_like(corr, dtype=np.bool))
+
+            # Set up the matplotlib figure
+            f, ax = plt.subplots(figsize=(11, 9))
+
+            # Generate a custom diverging colormap
+            cmap = sns.diverging_palette(220, 10, as_cmap=True)
+
+            # Draw the heatmap with the mask and correct aspect ratio
+            sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
+                        square=True, linewidths=.5, cbar_kws={"shrink": .5})
+
+            fig = ax.get_figure()
+            if runtime:
+                fig.savefig(os.path.join(self.folder, "runtime_correlation_matrix.png"), bbox_inches='tight')
+            else:
+                fig.savefig(os.path.join(self.folder, "memory_correlation_matrix.png"), bbox_inches='tight')
+            fig.clf()
+

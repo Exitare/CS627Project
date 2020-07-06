@@ -45,7 +45,6 @@ def normalize_X(X):
     """
     Standard Scaler to normalize the data using z-scores
     """
-    X = preprocessing.normalize(X)
     # scaler = preprocessing.StandardScaler()
     # X = scaler.fit_transform(X)
     return X

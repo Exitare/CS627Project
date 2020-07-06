@@ -31,6 +31,8 @@ class Config:
     FOREST_ESTIMATORS = 0
     MINIMUM_ROW_COUNT = 50
     MINIMUM_COLUMN_COUNT = 2
+    RUNTIME_LABEL = ""
+    MEMORY_LABEL = ""
 
 
 def read_conf():
@@ -67,6 +69,8 @@ def read_conf():
         Config.FOREST_ESTIMATORS = int(config['ML']['forest_estimators'])
         Config.MINIMUM_ROW_COUNT = int(config['ML']['min_row_count_per_file'])
         Config.MINIMUM_COLUMN_COUNT = int(config['ML']['min_column_count_per_file'])
+        Config.RUNTIME_LABEL = str(config['ML']['runtime_label'])
+        Config.MEMORY_LABEL = str(config['ML']['memory_label'])
 
         validate_config()
         return True
@@ -135,5 +139,13 @@ def validate_config():
     if Config.MINIMUM_ROW_COUNT < 0:
         logging.warning(f"A negative value for the minimum row count is invalid. Setting to 50...")
         Config.MINIMUM_ROW_COUNT = 50
+
+    if not Config.MEMORY_LABEL:
+        logging.error("Please specify a valid label for memory prediction.")
+        sys.exit()
+
+    if not Config.RUNTIME_LABEL:
+        logging.error("Please specify a valid label for runtime prediction.")
+        sys.exit()
 
     # TODO: Add missing column check

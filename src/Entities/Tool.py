@@ -127,6 +127,19 @@ class Tool:
             files_runtime_overview = files_runtime_overview.append(file.runtime_evaluation)
             files_memory_overview = files_memory_overview.append(file.memory_evaluation)
 
+        # Generate file overview reports
+        files_runtime_overview = pd.DataFrame()
+        files_memory_overview = pd.DataFrame()
+        for file in self.verified_files:
+            files_runtime_overview = files_runtime_overview.append(file.runtime_evaluation)
+            files_memory_overview = files_memory_overview.append(file.memory_evaluation)
+
+        if not files_runtime_overview.empty:
+            files_runtime_overview.to_csv(os.path.join(self.folder, "overview_files_runtime_report.csv"), index=False)
+
+        if not files_memory_overview.empty:
+            files_memory_overview.to_csv(os.path.join(self.folder, "overview_files_memory_report.csv"), index=False)
+
         logging.info("All reports generated.")
         sleep(1)
 
