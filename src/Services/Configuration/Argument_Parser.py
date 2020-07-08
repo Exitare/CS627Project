@@ -16,7 +16,7 @@ def handle_args():
                         help="Enables the verbose mode. With active verbose mode additional information"
                              "is shown in the console")
     parser.add_argument('-mg', '--merge', dest='merge', required=False, action='store_true',
-                        help="Merges all available version of a tool together.")
+                        help="Merges all available versions of a tool together.")
     parser.add_argument('-r', '--remove', dest='remove', action='store_true', required=False,
                         help="Activates the removal of data for further evaluation of data sets")
     parser.add_argument('-m', '--memory', dest='memory', action='store_true', required=False,
