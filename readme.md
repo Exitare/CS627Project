@@ -24,6 +24,19 @@ This will result in a clean and easy to understand folder/file structure.
 
 A full list of a requirements is available in the requirements.txt
 
+### Mac:
+
+Use the start.sh to run the application. It will automatically create a virtual env,
+activates it, install the requirements, check your python version and afterwards starts the tool.
+
+
+### Windows:
+If you are using windows create a virtual environment, install all requirements and start the 
+applications main file ResourcePredictor.py
+
+
+
+
 
 ## Command Line Arguments
 
