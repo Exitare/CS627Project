@@ -50,6 +50,7 @@ if __name__ == '__main__':
 
     logging.info("Starting tool evaluation...")
     print()
+    # Tool evaluation workflow
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         tool.evaluate()
         tool.generate_reports()

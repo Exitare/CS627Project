@@ -15,7 +15,7 @@ if command -v python3 &>/dev/null; then
         source venv/bin/activate
         pip install --upgrade pip
         pip install -r requirements.txt
-        python3 ./src/RessourcePredictor.py $1 $2 $3 $4
+        python3 ./src/ResourcePredictor.py $1 $2 $3 $4 $5
     else
         echo "Could not execute python -m venv ./venv"
         echo "Edit the script. Change the 'python' command to the one calling python3."
