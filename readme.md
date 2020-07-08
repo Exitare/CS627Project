@@ -31,10 +31,9 @@ activates it, install the requirements, check your python version and afterwards
 
 
 ### Windows:
-If you are using windows create a virtual environment, install all requirements and start the 
-applications main file ResourcePredictor.py
-
-
+If you are using windows create a virtual environment, install all requirements, 
+create the config by copying the config.ini.dist and rename the copy to config.ini
+then start the applications main file ResourcePredictor.py.
 
 
 
