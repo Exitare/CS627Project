@@ -3,9 +3,8 @@ import sys
 from Services.Configuration import Config, Argument_Parser
 from Services.FileSystem import Folder_Management
 from Services.ToolLoader import Tool_Loader
-from RuntimeContants import Runtime_Datasets
-import os
-import psutil
+from RuntimeContants import Runtime_Datasets, Misc
+from Services.Statistics import Statistics
 import logging
 import time
 
@@ -33,7 +32,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 if __name__ == '__main__':
-    start_time = time.time()
+    Misc.application_start_time = time.time()
     Config.read_conf()
     Argument_Parser.handle_args()
 
@@ -52,20 +51,21 @@ if __name__ == '__main__':
     print()
     # Tool evaluation workflow
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
+        tool_start_time = time.time()
         tool.evaluate()
         tool.generate_reports()
         tool.generate_plots()
         tool.free_memory()
-        logging.info(f"Done.")
+        time_passed = Statistics.get_duration(tool_start_time)
+        print()
+        if time_passed > 60:
+            logging.info(f"Tool {tool.name} evaluated in {time_passed} minutes")
+        else:
+            logging.info(f"Tool {tool.name} evaluated in {time_passed} seconds")
         print()
 
-    process = psutil.Process(os.getpid())
-    logging.info(f"Memory used: {process.memory_info().rss / 1024 / 1024} mb.")
-    end_time = time.time()
-    if end_time - start_time > 60:
-        logging.info(f"Time passed: {(end_time - start_time) / 60} minutes.")
-    else:
-        logging.info(f"Time passed: {end_time - start_time} seconds.")
+    Statistics.get_application_stats()
+
     logging.info("Done")
 
     exit(0)
