@@ -43,19 +43,4 @@ def handle_args():
         Config.VERBOSE = True
         Config.DEBUG_MODE = True
 
-    if Config.PERCENTAGE_REMOVAL:
-        print("Data removal active")
-
-    if Config.MERGED_TOOL_EVALUATION:
-        print("Tool files will be merged and then evaluated")
-
-    if Config.MEMORY_SAVING_MODE:
-        print(f"Memory saving mode is active!")
-
-    if Config.DEBUG_MODE:
-        print(f"Debug mode is active!")
-
-    if Config.VERBOSE:
-        print("Verbose output active")
-
     sleep(1)

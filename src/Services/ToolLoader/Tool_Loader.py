@@ -35,8 +35,7 @@ def load_tools():
                 if tool_found:
                     continue
                 else:
-                    if Config.VERBOSE:
-                        logging.info(f"Detected tool {tool.name}")
+                    logging.info(f"Detected tool {tool.name}")
                     tool.add_file(file_path)
                     Runtime_Datasets.DETECTED_TOOLS.append(tool)
         except OSError as ex:

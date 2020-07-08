@@ -167,22 +167,25 @@ class File:
         """
         columns, rows, features = self.get_raw_df_statistics()
         if rows < Config.MINIMUM_ROW_COUNT:
-            logging.warning(f"{self.name} has not sufficient rows ({rows}).")
-            logging.warning("The file will not be evaluated.")
-            sleep(1)
+            if Config.VERBOSE:
+                logging.warning(f"{self.name} has insufficient rows ({rows}).")
+                logging.warning("The file will not be evaluated.")
+                sleep(1)
             self.verified = False
 
         if columns < Config.MINIMUM_COLUMN_COUNT:
-            logging.warning(f"{self.name} has not sufficient columns ({columns}).")
-            logging.warning("The file will not be evaluated.")
-            sleep(1)
+            if Config.VERBOSE:
+                logging.warning(f"{self.name} has insufficient columns ({columns}).")
+                logging.warning("The file will not be evaluated.")
+                sleep(1)
             self.verified = False
 
         # check for infinity values
         for column in self.preprocessed_df:
             if self.preprocessed_df[column].any() > np.iinfo('i').max:
-                logging.warning(f"Detected infinity values in preprocessed data set!")
-                logging.warning(f"File will not be evaluated.")
+                if Config.VERBOSE:
+                    logging.warning(f"Detected infinity values in preprocessed data set!")
+                    logging.warning(f"File will not be evaluated.")
                 self.verified = False
 
     def predict_runtime(self):
