@@ -196,7 +196,6 @@ class File:
         df = self.preprocessed_df.copy()
 
         if Config.RUNTIME_LABEL not in df:
-            logging.warning(f"Label {Config.RUNTIME_LABEL} could not be found!")
             return
 
         model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
@@ -252,7 +251,6 @@ class File:
         df = self.preprocessed_df.copy()
 
         if Config.MEMORY_LABEL not in df:
-            logging.warning(f"Label {Config.MEMORY_LABEL} could not be found!")
             return
 
         model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
