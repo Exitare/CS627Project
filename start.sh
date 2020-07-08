@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Creating config..."
-cp -u config.ini.dist config.ini
+cp -n ./src/config.ini.dist ./src/config.ini
 
 echo "Checking Python version..."
 
