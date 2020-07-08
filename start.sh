@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo "Creating config..."
+cp -u config.ini.dist config.ini
+
 echo "Checking Python version..."
 
 if command -v python3 &>/dev/null; then
