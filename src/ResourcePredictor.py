@@ -60,7 +60,7 @@ if __name__ == '__main__':
         time_passed = Runtime_Statistics.get_duration(tool_start_time)
         print()
         if time_passed > 60:
-            logging.info(f"Tool {tool.name} evaluated in {time_passed} minutes")
+            logging.info(f"Tool {tool.name} evaluated in {time_passed / 60} minutes")
         else:
             logging.info(f"Tool {tool.name} evaluated in {time_passed} seconds")
         print()

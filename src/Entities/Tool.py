@@ -162,8 +162,7 @@ class Tool:
        """
 
         for file in self.verified_files:
-            if Config.VERBOSE:
-                logging.info(f"Evaluating file {file.name}...")
+            logging.info(f"Evaluating file {file.name}...")
 
             # Predict values for single files
             file.predict(Config.RUNTIME_LABEL)
