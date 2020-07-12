@@ -166,8 +166,8 @@ class Tool:
                 logging.info(f"Evaluating file {file.name}...")
 
             # Predict values for single files
-            file.predict_runtime()
-            file.predict_memory()
+            file.predict(Config.RUNTIME_LABEL)
+            file.predict(Config.MEMORY_LABEL)
             if Config.PERCENTAGE_REMOVAL:
                 file.predict_row_removal(Config.RUNTIME_LABEL)
                 file.predict_row_removal(Config.MEMORY_LABEL)

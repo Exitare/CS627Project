@@ -188,20 +188,20 @@ class File:
                     logging.warning(f"File will not be evaluated.")
                 self.verified = False
 
-    def predict_runtime(self):
+    def predict(self, label: str):
         """
         Predicts the runtime for a complete data set.
         :return:
         """
         df = self.preprocessed_df.copy()
 
-        if Config.RUNTIME_LABEL not in df:
+        if label not in df:
             return
 
         model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
 
-        y = df[Config.RUNTIME_LABEL]
-        del df[Config.RUNTIME_LABEL]
+        y = df[label]
+        del df[label]
         X = df
 
         source_row_count = len(X)
@@ -231,74 +231,30 @@ class File:
         if train_score > test_score * 2:
             over_fitting = True
 
-        self.runtime_evaluation = self.runtime_evaluation.append(
-            {'File Name': self.name, "Test Score": test_score,
-             "Train Score": train_score, "Potential Over Fitting": over_fitting,
-             "Initial Row Count": len(self.raw_df.index),
-             "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
-             "Processed Feature Count": X.shape[1]}, ignore_index=True)
+        if label == Config.RUNTIME_LABEL:
+            self.runtime_evaluation = self.runtime_evaluation.append(
+                {'File Name': self.name, "Test Score": test_score,
+                 "Train Score": train_score, "Potential Over Fitting": over_fitting,
+                 "Initial Row Count": len(self.raw_df.index),
+                 "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
+                 "Processed Feature Count": X.shape[1]}, ignore_index=True)
 
-        self.predicted_runtime_values = pd.concat(
-            [pd.Series(y_test).reset_index()[Config.RUNTIME_LABEL], pd.Series(y_test_hat)],
-            axis=1)
-        self.predicted_runtime_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
+            self.predicted_runtime_values = pd.concat(
+                [pd.Series(y_test).reset_index()[Config.RUNTIME_LABEL], pd.Series(y_test_hat)],
+                axis=1)
+            self.predicted_runtime_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
+        else:
+            self.memory_evaluation = self.memory_evaluation.append(
+                {'File Name': self.name, "Test Score": test_score,
+                 "Train Score": train_score, "Potential Over Fitting": over_fitting,
+                 "Initial Row Count": len(self.raw_df.index),
+                 "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
+                 "Processed Feature Count": X.shape[1]}, ignore_index=True)
 
-    def predict_memory(self):
-        """
-        Predicts the memory usage for a complete data set.
-        :return:
-        """
-        df = self.preprocessed_df.copy()
-
-        if Config.MEMORY_LABEL not in df:
-            return
-
-        model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
-
-        y = df[Config.MEMORY_LABEL]
-        del df[Config.MEMORY_LABEL]
-        X = df
-
-        source_row_count = len(X)
-
-        X_indexes = (X != 0).any(axis=1)
-
-        X = X.loc[X_indexes]
-        y = y.loc[X_indexes]
-
-        if source_row_count != len(X) and Config.VERBOSE:
-            logging.info(f"Removed {source_row_count - len(X)} rows. Source had {source_row_count}.")
-
-        X = PreProcessing.normalize_X(X)
-        X = PreProcessing.variance_selection(X)
-
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=1)
-
-        model.fit(X_train, y_train)
-
-        # Feature importance
-        self.calculate_feature_importance(model, df, False)
-
-        y_test_hat = model.predict(X_test)
-        y_train_hat = model.predict(X_train)
-        test_score = r2_score(y_test, y_test_hat)
-        train_score = r2_score(y_train, y_train_hat)
-
-        over_fitting = False
-        if train_score > test_score * 2:
-            over_fitting = True
-
-        self.memory_evaluation = self.memory_evaluation.append(
-            {'File Name': self.name, "Test Score": test_score,
-             "Train Score": train_score, "Potential Over Fitting": over_fitting,
-             "Initial Row Count": len(self.raw_df.index),
-             "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
-             "Processed Feature Count": X.shape[1]}, ignore_index=True)
-
-        self.predicted_memory_values = pd.concat(
-            [pd.Series(y_test).reset_index()[Config.MEMORY_LABEL], pd.Series(y_test_hat)],
-            axis=1)
-        self.predicted_memory_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
+            self.predicted_memory_values = pd.concat(
+                [pd.Series(y_test).reset_index()[Config.MEMORY_LABEL], pd.Series(y_test_hat)],
+                axis=1)
+            self.predicted_memory_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
 
     def free_memory(self):
         """
