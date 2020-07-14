@@ -213,9 +213,8 @@ class File:
         if source_row_count != len(X) and Config.VERBOSE:
             logging.info(f"Removed {source_row_count - len(X)} row(s). Source had {source_row_count}.")
 
-        X = PreProcessing.normalize_X(X)
         X = PreProcessing.variance_selection(X)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=1)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 
         model.fit(X_train, y_train)
 
