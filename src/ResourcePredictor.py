@@ -4,7 +4,7 @@ from Services.Configuration import Config, Argument_Parser
 from Services.FileSystem import Folder_Management
 from Services.ToolLoader import Tool_Loader
 from RuntimeContants import Runtime_Datasets
-from Services.Statistics import Runtime_Statistics
+from Services.Statistics import Runtime_Statistics, Tool_Statistics
 import logging
 import time
 
@@ -66,7 +66,8 @@ if __name__ == '__main__':
         print()
 
     # TODO: Add best/worst performing tools
-
+    Tool_Statistics.get_best_performing_tools()
+    Tool_Statistics.get_worst_performing_tools()
     Runtime_Statistics.get_application_stats()
 
     logging.info("Done")

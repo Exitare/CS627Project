@@ -26,6 +26,9 @@ class Tool:
         self.excluded_files = []
         self.verified_files = []
 
+        self.files_runtime_overview = pd.DataFrame()
+        self.files_memory_overview = pd.DataFrame()
+
         # if all checks out, the tool will be flag as verified
         # Tools flagged as not verified will not be evaluated
         if self.folder is not None:
@@ -122,24 +125,17 @@ class Tool:
             file.generate_reports()
 
         # Generate file overview reports
-        files_runtime_overview = pd.DataFrame()
-        files_memory_overview = pd.DataFrame()
         for file in self.verified_files:
-            files_runtime_overview = files_runtime_overview.append(file.runtime_evaluation)
-            files_memory_overview = files_memory_overview.append(file.memory_evaluation)
+            self.files_runtime_overview = self.files_runtime_overview.append(file.runtime_evaluation)
+            self.files_memory_overview = self.files_memory_overview.append(file.memory_evaluation)
 
-        # Generate file overview reports
-        files_runtime_overview = pd.DataFrame()
-        files_memory_overview = pd.DataFrame()
-        for file in self.verified_files:
-            files_runtime_overview = files_runtime_overview.append(file.runtime_evaluation)
-            files_memory_overview = files_memory_overview.append(file.memory_evaluation)
+        if not self.files_runtime_overview.empty:
+            self.files_runtime_overview.to_csv(os.path.join(self.folder, "overview_files_runtime_report.csv"),
+                                               index=False)
 
-        if not files_runtime_overview.empty:
-            files_runtime_overview.to_csv(os.path.join(self.folder, "overview_files_runtime_report.csv"), index=False)
-
-        if not files_memory_overview.empty:
-            files_memory_overview.to_csv(os.path.join(self.folder, "overview_files_memory_report.csv"), index=False)
+        if not self.files_memory_overview.empty:
+            self.files_memory_overview.to_csv(os.path.join(self.folder, "overview_files_memory_report.csv"),
+                                              index=False)
 
         logging.info("All reports generated.")
         sleep(1)
@@ -188,3 +184,41 @@ class Tool:
         merged_files_raw_df = pd.concat(raw_df)
         merged_file = File("merged_tool", self.folder, merged_files_raw_df)
         self.verified_files.append(merged_file)
+
+    def get_best_performing_tool(self, runtime: bool):
+        """
+        Returns the best performing version of the tool
+        """
+        if runtime:
+            if self.files_runtime_overview.empty:
+                return None
+
+            self.files_runtime_overview = self.files_runtime_overview.reset_index()
+            row_id = self.files_runtime_overview['Test Score'].argmax()
+            return self.files_runtime_overview.loc[row_id]
+        else:
+            if self.files_memory_overview.empty:
+                return None
+
+            self.files_memory_overview = self.files_memory_overview.reset_index()
+            row_id = self.files_memory_overview['Test Score'].argmax()
+            return self.files_memory_overview.loc[row_id]
+
+    def get_worst_performing_tool(self, runtime: bool):
+        """
+        Returns the worst performing version of the tool
+        """
+        if runtime:
+            if self.files_runtime_overview.empty:
+                return None
+
+            self.files_runtime_overview = self.files_runtime_overview.reset_index()
+            row_id = self.files_runtime_overview['Test Score'].argmin()
+            return self.files_runtime_overview.loc[row_id]
+        else:
+            if self.files_memory_overview.empty:
+                return None
+
+            self.files_memory_overview = self.files_memory_overview.reset_index()
+            row_id = self.files_memory_overview['Test Score'].argmin()
+            return self.files_memory_overview.loc[row_id]
