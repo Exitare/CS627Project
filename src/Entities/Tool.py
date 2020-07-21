@@ -23,8 +23,12 @@ class Tool:
         # the tool folder
         self.folder = Folder_Management.create_tool_folder(self.name)
         self.all_files = []
+        # All files not eligible to be checked
         self.excluded_files = []
+        # All files eligible to be evaluated
         self.verified_files = []
+        # All files considered to be "best performing" aka equal or above our target parameters
+        self.best_performing_files = []
 
         self.files_runtime_overview = pd.DataFrame()
         self.files_memory_overview = pd.DataFrame()
@@ -80,7 +84,7 @@ class Tool:
 
         # Add a merged file to the tool.
         if len(self.verified_files) > 1:
-            self.add_merged_file()
+            self.__add_merged_file()
 
     def free_memory(self):
         """
@@ -112,6 +116,24 @@ class Tool:
 
         # Evaluate the files
         self.__evaluate_verified_files()
+        self.__generate_best_performing_merged_file(True)
+        self.__generate_best_performing_merged_file(False)
+
+    def evaluate_additional_files(self):
+        """
+        Evaluate all data sets and files which are create after the first evaluation
+        """
+        for file in self.best_performing_files:
+            pass
+
+    def generate_summarized_data_sets(self):
+        """
+        Generate summarized data sets to use them for further evaluation, BEFORE reports are generated.
+        """
+        # Generate file overview reports
+        for file in self.verified_files:
+            self.files_runtime_overview = self.files_runtime_overview.append(file.runtime_evaluation)
+            self.files_memory_overview = self.files_memory_overview.append(file.memory_evaluation)
 
     def generate_reports(self):
         """
@@ -123,11 +145,6 @@ class Tool:
         # Generate file specific reports
         for file in self.verified_files:
             file.generate_reports()
-
-        # Generate file overview reports
-        for file in self.verified_files:
-            self.files_runtime_overview = self.files_runtime_overview.append(file.runtime_evaluation)
-            self.files_memory_overview = self.files_memory_overview.append(file.memory_evaluation)
 
         if not self.files_runtime_overview.empty:
             self.files_runtime_overview.to_csv(os.path.join(self.folder, "overview_files_runtime_report.csv"),
@@ -166,14 +183,13 @@ class Tool:
             if Config.PERCENTAGE_REMOVAL:
                 file.predict_row_removal(Config.RUNTIME_LABEL)
                 file.predict_row_removal(Config.MEMORY_LABEL)
-
             # Copy the source file to the results folder
             if not file.merged_file:
                 shutil.copy(file.path, file.folder)
 
-    def add_merged_file(self):
+    def __add_merged_file(self):
         """
-        Merges the raw data sets of all files into a big one.
+        Merges the raw data sets of all verified versions into a big one.
         Assuming that all single files are valid this merged on should be valid too.
         :return:
         """
@@ -185,7 +201,24 @@ class Tool:
         merged_file = File("merged_tool", self.folder, merged_files_raw_df)
         self.verified_files.append(merged_file)
 
-    def get_best_performing_tool(self, runtime: bool):
+    def __generate_best_performing_merged_file(self, runtime: bool):
+        """
+        Generates a merged file which includes only the best performing versions of a tool
+        """
+
+        if runtime:
+            if self.files_runtime_overview.empty:
+                print("Runtime overview is empty")
+                input()
+                return
+            best_performing = self.files_runtime_overview[self.files_runtime_overview['Test Score'] >= 60]
+            print(best_performing)
+            input()
+        else:
+            if self.files_memory_overview.empty:
+                return
+
+    def get_best_performing_version(self, runtime: bool):
         """
         Returns the best performing version of the tool
         """
@@ -204,7 +237,7 @@ class Tool:
             row_id = self.files_memory_overview['Test Score'].argmax()
             return self.files_memory_overview.loc[row_id]
 
-    def get_worst_performing_tool(self, runtime: bool):
+    def get_worst_performing_version(self, runtime: bool):
         """
         Returns the worst performing version of the tool
         """

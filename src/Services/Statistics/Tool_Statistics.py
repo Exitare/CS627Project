@@ -11,8 +11,9 @@ def get_best_performing_tools():
     performance = pd.DataFrame()
 
     # Find best performing tool
+    # Runtime Performance
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
-        row = tool.get_best_performing_tool(True)
+        row = tool.get_best_performing_version(True)
 
         if row is None:
             continue
@@ -35,8 +36,9 @@ def get_best_performing_tools():
     performance = pd.DataFrame()
 
     # Find best performing tool
+    # Memory performance
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
-        row = tool.get_best_performing_tool(False)
+        row = tool.get_best_performing_version(False)
 
         if row is None:
             continue
@@ -61,12 +63,12 @@ def get_worst_performing_tools():
     """
     Get worst performing version of each tool, sort them and write them as csv file
     """
-    # Reset data frame
+    # Runtime Performance
     performance = pd.DataFrame()
 
     # Find worst performing tools
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
-        row = tool.get_worst_performing_tool(True)
+        row = tool.get_worst_performing_version(True)
 
         if row is None:
             continue
@@ -88,6 +90,7 @@ def get_worst_performing_tools():
 
     performance = pd.DataFrame()
 
+    # Memory performance
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         row = tool.get_worst_performing_tool(False)
 
@@ -112,7 +115,7 @@ def get_worst_performing_tools():
 
 def __row_helper(performance_df):
     """
-    Removes row, that shouldnt be in the data set.
+    Removes rows, which should not be in the data set.
     """
     if 'index' in performance_df:
         del performance_df['index']

@@ -53,6 +53,8 @@ if __name__ == '__main__':
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         tool_start_time = time.time()
         tool.evaluate()
+        tool.generate_summarized_data_sets()
+        tool.evaluate_additional_files()
         tool.generate_reports()
         tool.generate_plots()
         tool.free_memory()
