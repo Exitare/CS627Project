@@ -113,7 +113,7 @@ class File:
         else:
             self.verified = False
 
-    def load_data(self):
+    def load_raw_data(self):
         """
         Loads the data set. Only used if memory saving mode is active
         :return:
@@ -144,21 +144,6 @@ class File:
         rows: int = len(self.preprocessed_df.index)
         features: int = columns - 1
         return columns, rows, features
-
-    def read_raw_data(self):
-        """
-        Read the file into memory
-        :return:
-        """
-        # Merged files do not have a real path, so they can not be read from a csv file
-        if self.merged_file:
-            return
-
-        try:
-            self.raw_df = pd.read_csv(self.full_name)
-        except OSError as ex:
-            logging.error(ex)
-            self.raw_df = None
 
     def verify(self):
         """

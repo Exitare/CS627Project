@@ -111,7 +111,7 @@ class Tool:
         # Load data for each file of the tool because it was not loaded at the start
         if Config.MEMORY_SAVING_MODE:
             for file in self.verified_files:
-                file.load_data()
+                file.load_raw_data()
                 file.verify()
 
         # Evaluate the files
