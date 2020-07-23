@@ -92,7 +92,7 @@ def get_worst_performing_tools():
 
     # Memory performance
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
-        row = tool.get_worst_performing_tool(False)
+        row = tool.get_worst_performing_version(False)
 
         if row is None:
             continue

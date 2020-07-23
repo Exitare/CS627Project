@@ -113,6 +113,10 @@ class File:
         else:
             self.verified = False
 
+        # Determines if a file is already evaluated or not
+        self.evaluated = False
+
+    # Loading
     def load_raw_data(self):
         """
         Loads the data set. Only used if memory saving mode is active
@@ -173,6 +177,7 @@ class File:
                     logging.warning(f"File will not be evaluated.")
                 self.verified = False
 
+    # Prediction
     def predict(self, label: str):
         """
         Predicts the runtime for a complete data set.
@@ -239,17 +244,6 @@ class File:
                 [pd.Series(y_test).reset_index()[Config.MEMORY_LABEL], pd.Series(y_test_hat)],
                 axis=1)
             self.predicted_memory_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
-
-    def free_memory(self):
-        """
-        Release not required memory for memory saving mode.
-        :return:
-        """
-        if not Config.MEMORY_SAVING_MODE:
-            return
-
-        self.raw_df = None
-        self.preprocessed_df = None
 
     def predict_row_removal(self, label: str):
         """
@@ -373,6 +367,7 @@ class File:
         y_test_hat = model.predict(X_test)
         return r2_score(y_test, y_test_hat)
 
+    # Reports
     def generate_reports(self):
         """
         Generate file specific reports
@@ -407,6 +402,7 @@ class File:
             self.memory_evaluation_percentage_var.to_csv(os.path.join(self.folder, "memory_row_removal_var.csv"),
                                                          index=False)
 
+    # Plots
     def generate_plots(self):
         """
         Helper to call all plotting functions
@@ -569,3 +565,16 @@ class File:
             fig = ax.get_figure()
             fig.savefig(os.path.join(self.folder, "memory_correlation_matrix.png"), bbox_inches='tight')
             fig.clf()
+
+    # Cleanup
+
+    def free_memory(self):
+        """
+        Release not required memory for memory saving mode.
+        :return:
+        """
+        if not Config.MEMORY_SAVING_MODE:
+            return
+
+        self.raw_df = None
+        self.preprocessed_df = None

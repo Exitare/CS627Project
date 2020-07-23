@@ -27,8 +27,6 @@ class Tool:
         self.excluded_files = []
         # All files eligible to be evaluated
         self.verified_files = []
-        # All files considered to be "best performing" aka equal or above our target parameters
-        self.best_performing_files = []
 
         self.files_runtime_overview = pd.DataFrame()
         self.files_memory_overview = pd.DataFrame()
@@ -116,24 +114,53 @@ class Tool:
 
         # Evaluate the files
         self.__evaluate_verified_files()
-        self.__generate_best_performing_merged_file(True)
-        self.__generate_best_performing_merged_file(False)
 
     def evaluate_additional_files(self):
         """
         Evaluate all data sets and files which are create after the first evaluation
         """
-        for file in self.best_performing_files:
-            pass
-
-    def generate_summarized_data_sets(self):
-        """
-        Generate summarized data sets to use them for further evaluation, BEFORE reports are generated.
-        """
-        # Generate file overview reports
         for file in self.verified_files:
-            self.files_runtime_overview = self.files_runtime_overview.append(file.runtime_evaluation)
-            self.files_memory_overview = self.files_memory_overview.append(file.memory_evaluation)
+            if file.evaluated:
+                continue
+
+            logging.info(f"Evaluating file {file.name}...")
+
+            # Predict values for single files
+            file.predict(Config.RUNTIME_LABEL)
+            file.predict(Config.MEMORY_LABEL)
+            if Config.PERCENTAGE_REMOVAL:
+                file.predict_row_removal(Config.RUNTIME_LABEL)
+                file.predict_row_removal(Config.MEMORY_LABEL)
+
+            file.evaluated = True
+
+    def prepare_additional_files(self):
+        """
+        Prepare additional files after the first evaluation. E.g. merge only best performing versions instead of all.
+        """
+        if len(self.verified_files) <= 1:
+            return
+
+        print()
+        logging.info("preparing additional files...")
+
+        # Create merged files containing only data sets of version with a Test Score greated than 0.6
+
+        best_performing = self.files_runtime_overview[self.files_runtime_overview['Test Score'] > 0.6][
+            'File Name'].tolist()
+
+        best_versions_df = []
+        for file in self.verified_files:
+
+            if file.name in best_performing:
+                best_versions_df.append(file.raw_df)
+
+        if len(best_versions_df) <= 1:
+            return
+
+        best_version_files_raw_df = pd.concat(best_versions_df)
+        best_version_merged_file = File("best_version_merged_file", self.folder, best_version_files_raw_df)
+        self.verified_files.append(best_version_merged_file)
 
     def generate_reports(self):
         """
@@ -167,12 +194,23 @@ class Tool:
         for file in self.verified_files:
             file.generate_plots()
 
+    def generate_overview_data_sets(self):
+        """
+        Creates the overview data sets
+        """
+        self.files_runtime_overview = pd.DataFrame()
+        self.files_memory_overview = pd.DataFrame()
+
+        for file in self.verified_files:
+            self.files_runtime_overview = self.files_runtime_overview.append(file.runtime_evaluation)
+            self.files_memory_overview = self.files_memory_overview.append(file.memory_evaluation)
+
     def __evaluate_verified_files(self):
         """
         Evaluates all files associated to a tool.
-       Runtime and memory is evaluated
-       :return:
-       """
+        Runtime and memory is evaluated
+        :return:
+        """
 
         for file in self.verified_files:
             logging.info(f"Evaluating file {file.name}...")
@@ -187,6 +225,8 @@ class Tool:
             if not file.merged_file:
                 shutil.copy(file.path, file.folder)
 
+            file.evaluated = True
+
     def __add_merged_file(self):
         """
         Merges the raw data sets of all verified versions into a big one.
@@ -200,23 +240,6 @@ class Tool:
         merged_files_raw_df = pd.concat(raw_df)
         merged_file = File("merged_tool", self.folder, merged_files_raw_df)
         self.verified_files.append(merged_file)
-
-    def __generate_best_performing_merged_file(self, runtime: bool):
-        """
-        Generates a merged file which includes only the best performing versions of a tool
-        """
-
-        if runtime:
-            if self.files_runtime_overview.empty:
-                print("Runtime overview is empty")
-                input()
-                return
-            best_performing = self.files_runtime_overview[self.files_runtime_overview['Test Score'] >= 60]
-            print(best_performing)
-            input()
-        else:
-            if self.files_memory_overview.empty:
-                return
 
     def get_best_performing_version(self, runtime: bool):
         """
