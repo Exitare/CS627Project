@@ -313,7 +313,7 @@ class File:
             k_fold_scores = pd.DataFrame(
                 columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
                          '95', '96', '97', '98', '99'])
-            counter = 0
+
             for train_index, test_index in kf.split(X):
                 r2scores = []
                 # Iterate from 0 to 101. Ends @ 100, reduce by 1
@@ -329,8 +329,6 @@ class File:
                      '90': r2scores[9], '91': r2scores[10], '92': r2scores[11], '93': r2scores[12],
                      '94': r2scores[13], '95': r2scores[14], '96': r2scores[15], '97': r2scores[16],
                      '98': r2scores[17], '99': r2scores[18]}, ignore_index=True)
-
-                counter += 1
 
             return k_fold_scores
 
@@ -454,14 +452,14 @@ class File:
         ax = None
 
         if not self.runtime_evaluation_percentage_mean.empty:
-            mean = self.runtime_evaluation_percentage_mean
+            mean = self.runtime_evaluation_percentage_mean.copy()
             del mean['Rows']
             del mean['Features']
 
             ax = sns.lineplot(data=mean, label="mean", palette="tab10", linewidth=2.5)
 
         if not self.runtime_evaluation_percentage_var.empty:
-            var = self.runtime_evaluation_percentage_var
+            var = self.runtime_evaluation_percentage_var.copy()
             del var['Rows']
             del var['Features']
 
