@@ -21,7 +21,8 @@ excluded_files = Excluded_Files
 [ML]
 k_folds = 5
 repetitions = 5
-forest_estimators = 12
+forest_estimators = 100
+max_depth = 12
 min_row_count_per_file = 50
 min_column_count_per_file = 2
 runtime_label = runtime

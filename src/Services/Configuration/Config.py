@@ -28,7 +28,8 @@ class Config:
     # ML
     K_FOLDS = 0
     REPETITIONS = 0
-    FOREST_ESTIMATORS = 0
+    FOREST_ESTIMATORS = 100
+    FOREST_MAX_DEPTH = 12
     MINIMUM_ROW_COUNT = 50
     MINIMUM_COLUMN_COUNT = 2
     RUNTIME_LABEL = ""
@@ -67,6 +68,7 @@ def read_conf():
         Config.K_FOLDS = int(config['ML']['k_folds'])
         Config.REPETITIONS = int(config['ML']['repetitions'])
         Config.FOREST_ESTIMATORS = int(config['ML']['forest_estimators'])
+        Config.FOREST_MAX_DEPTH = int(config['ML']['max_depth'])
         Config.MINIMUM_ROW_COUNT = int(config['ML']['min_row_count_per_file'])
         Config.MINIMUM_COLUMN_COUNT = int(config['ML']['min_column_count_per_file'])
         Config.RUNTIME_LABEL = str(config['ML']['runtime_label'])
