@@ -152,7 +152,7 @@ class Tool:
         best_versions_df = []
         for file in self.verified_files:
 
-            if file.name in best_performing:
+            if file.name in best_performing and not file.merged_file:
                 best_versions_df.append(file.raw_df)
 
         if len(best_versions_df) <= 1:
@@ -221,9 +221,13 @@ class Tool:
             if Config.PERCENTAGE_REMOVAL:
                 file.predict_row_removal(Config.RUNTIME_LABEL)
                 file.predict_row_removal(Config.MEMORY_LABEL)
+
             # Copy the source file to the results folder
+            # If its a merged file use the virtual one.
             if not file.merged_file:
                 shutil.copy(file.path, file.folder)
+            else:
+                file.raw_df.to_csv(os.path.join(file.folder, "raw_df.csv"), index=False)
 
             file.evaluated = True
 

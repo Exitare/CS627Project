@@ -75,25 +75,25 @@ class File:
         self.predicted_runtime_values = pd.DataFrame(columns=['y', 'y_hat'])
         self.predicted_memory_values = pd.DataFrame(columns=['y', 'y_hat'])
 
-        self.runtime_evaluation_percentage_mean = pd.DataFrame(
+        self.runtime_evaluation_percentage_folds = pd.DataFrame(
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
                      '90', '91', '92', '93', '94', '95', '96', '97', '98',
                      '99', 'Rows', 'Features'])
 
-        self.runtime_evaluation_percentage_var = pd.DataFrame(
+        self.runtime_evaluation_percentage_rows = pd.DataFrame(
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
                      '90', '91', '92', '93', '94', '95', '96', '97', '98',
-                     '99', 'Rows', 'Features'])
+                     '99'])
 
-        self.memory_evaluation_percentage_mean = pd.DataFrame(
+        self.memory_evaluation_percentage_folds = pd.DataFrame(
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
                      '90', '91', '92', '93', '94', '95', '96', '97', '98',
-                     '99', 'Rows', 'Features'])
+                     '99'])
 
-        self.memory_evaluation_percentage_var = pd.DataFrame(
+        self.memory_evaluation_percentage_rows = pd.DataFrame(
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
                      '90', '91', '92', '93', '94', '95', '96', '97', '98',
-                     '99', 'Rows', 'Features'])
+                     '99'])
 
         self.runtime_feature_importance = pd.DataFrame()
         self.memory_feature_importance = pd.DataFrame()
@@ -188,7 +188,8 @@ class File:
         if label not in df:
             return
 
-        model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
+        model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, max_depth=Config.FOREST_MAX_DEPTH,
+                                      random_state=1)
 
         y = df[label]
         del df[label]
@@ -258,9 +259,11 @@ class File:
 
         averages_per_repetition = pd.Series()
 
-        final_evaluation = pd.DataFrame(
+        k_folds_evaluation = pd.DataFrame(
             columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
-                     '95', '96', '97', '98', '99', 'Rows', 'Features'])
+                     '95', '96', '97', '98', '99'])
+
+        k_folds_row_count = []
 
         y = df[label]
         del df[label]
@@ -269,37 +272,36 @@ class File:
         X = PreProcessing.normalize_X(X)
         X = PreProcessing.variance_selection(X)
 
-        column_count, row_count, feature_count = self.get_pre_processed_df_statistics()
-
         for i in range(0, Config.REPETITIONS, 1):
             if Config.VERBOSE:
                 logging.info(f"Started repetition # {i + 1}")
-            k_folds = self.k_folds(X, y)
+            k_folds, k_folds_row_count = self.__calculate_k_folds(X, y)
             averages_per_repetition = averages_per_repetition.append(k_folds).mean()
+
             # Remove the mean of the index column
             del averages_per_repetition[0]
 
             averages_per_repetition = averages_per_repetition.fillna(0)
-            final_evaluation = final_evaluation.append(averages_per_repetition, ignore_index=True)
+            k_folds_evaluation = k_folds_evaluation.append(averages_per_repetition, ignore_index=True)
 
         if label == Config.MEMORY_LABEL:
-            self.memory_evaluation_percentage_mean = pd.Series(final_evaluation.mean())
-            self.memory_evaluation_percentage_mean['Rows'] = row_count
-            self.memory_evaluation_percentage_mean['Features'] = feature_count
-            self.memory_evaluation_percentage_var = pd.Series(final_evaluation.var())
-            self.memory_evaluation_percentage_var['Rows'] = row_count
-            self.memory_evaluation_percentage_var['Features'] = feature_count
+            self.memory_evaluation_percentage_folds = k_folds_evaluation
+            self.memory_evaluation_percentage_folds = self.memory_evaluation_percentage_folds.append(
+                pd.Series(k_folds_evaluation.mean()), ignore_index=True)
+            self.memory_evaluation_percentage_folds = self.memory_evaluation_percentage_folds.append(
+                pd.Series(k_folds_evaluation.var()), ignore_index=True)
+            self.memory_evaluation_percentage_rows = k_folds_row_count.iloc[0]
         elif label == Config.RUNTIME_LABEL:
-            self.runtime_evaluation_percentage_mean = pd.Series(final_evaluation.mean())
-            self.runtime_evaluation_percentage_mean['Rows'] = row_count
-            self.runtime_evaluation_percentage_mean['Features'] = feature_count
-            self.runtime_evaluation_percentage_var = pd.Series(final_evaluation.var())
-            self.runtime_evaluation_percentage_var['Rows'] = row_count
-            self.runtime_evaluation_percentage_var['Features'] = feature_count
+            self.runtime_evaluation_percentage_folds = k_folds_evaluation
+            self.runtime_evaluation_percentage_folds = self.runtime_evaluation_percentage_folds.append(
+                pd.Series(k_folds_evaluation.mean()), ignore_index=True)
+            self.runtime_evaluation_percentage_folds = self.runtime_evaluation_percentage_folds.append(
+                pd.Series(k_folds_evaluation.var()), ignore_index=True)
+            self.runtime_evaluation_percentage_rows = k_folds_row_count.iloc[0]
         else:
             logging.warning(f"Could not detect predictive column: {label}")
 
-    def k_folds(self, X, y):
+    def __calculate_k_folds(self, X, y):
         """
         Trains the model to predict the total time
         :param X:
@@ -307,10 +309,12 @@ class File:
         :return:
         """
         try:
-            model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, random_state=1)
 
             kf = KFold(n_splits=Config.K_FOLDS)
             k_fold_scores = pd.DataFrame(
+                columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
+                         '95', '96', '97', '98', '99'])
+            k_fold_rows = pd.DataFrame(
                 columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
                          '95', '96', '97', '98', '99'])
 
@@ -319,30 +323,40 @@ class File:
                 # Iterate from 0 to 101. Ends @ 100, reduce by 1
                 for i in range(0, 101, 1):
                     if i <= 90 and i % 10 == 0:
-                        r2scores.append(self.calculate_fold(model, i, X, y, train_index, test_index))
+                        r2scores.append(self.__calculate_single_fold(i, X, y, train_index, test_index))
                     if 99 >= i > 90:
-                        r2scores.append(self.calculate_fold(model, i, X, y, train_index, test_index))
+                        r2scores.append(self.__calculate_single_fold(i, X, y, train_index, test_index))
 
                 k_fold_scores = k_fold_scores.append(
-                    {'0': r2scores[0], '10': r2scores[1], '20': r2scores[2], '30': r2scores[3], '40': r2scores[4],
-                     '50': r2scores[5], '60': r2scores[6], '70': r2scores[7], '80': r2scores[8],
-                     '90': r2scores[9], '91': r2scores[10], '92': r2scores[11], '93': r2scores[12],
-                     '94': r2scores[13], '95': r2scores[14], '96': r2scores[15], '97': r2scores[16],
-                     '98': r2scores[17], '99': r2scores[18]}, ignore_index=True)
+                    {'0': r2scores[0][0], '10': r2scores[1][0], '20': r2scores[2][0], '30': r2scores[3][0],
+                     '40': r2scores[4][0], '50': r2scores[5][0], '60': r2scores[6][0], '70': r2scores[7][0],
+                     '80': r2scores[8][0], '90': r2scores[9][0], '91': r2scores[10][0], '92': r2scores[11][0],
+                     '93': r2scores[12][0], '94': r2scores[13][0], '95': r2scores[14][0], '96': r2scores[15][0],
+                     '97': r2scores[16][0], '98': r2scores[17][0], '99': r2scores[18][0]}, ignore_index=True)
 
-            return k_fold_scores
+                k_fold_rows = k_fold_rows.append(
+                    {'0': r2scores[0][1], '10': r2scores[1][1], '20': r2scores[2][1], '30': r2scores[3][1],
+                     '40': r2scores[4][1], '50': r2scores[5][1], '60': r2scores[6][1], '70': r2scores[7][1],
+                     '80': r2scores[8][1], '90': r2scores[9][1], '91': r2scores[10][1], '92': r2scores[11][1],
+                     '93': r2scores[12][1], '94': r2scores[13][1], '95': r2scores[14][1], '96': r2scores[15][1],
+                     '97': r2scores[16][1], '98': r2scores[17][1], '99': r2scores[18][1]}, ignore_index=True)
+
+            return k_fold_scores, k_fold_rows
 
         except BaseException as ex:
             print(ex)
             k_fold_scores = pd.DataFrame(0, index=np.arange(Config.K_FOLDS),
                                          columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92',
                                                   '93', '94', '95', '96', '97', '98', '99'])
-            return k_fold_scores
+            k_fold_rows = pd.DataFrame(0, index=np.arange(Config.K_FOLDS),
+                                       columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92',
+                                                '93', '94',
+                                                '95', '96', '97', '98', '99'])
+            return k_fold_scores, k_fold_rows
 
-    def calculate_fold(self, model, i, X, y, train_index, test_index):
+    def __calculate_single_fold(self, i, X, y, train_index, test_index):
         """
         Calculates the r2 scores
-        :param model:
         :param i:
         :param X:
         :param y:
@@ -350,20 +364,19 @@ class File:
         :param test_index:
         :return:
         """
-        # Create a deep copy, to keep the original data set untouched
-        train_index_copy = train_index
+        model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, max_depth=Config.FOREST_MAX_DEPTH,
+                                      random_state=1)
 
         # Calculate amount of rows to be removed
-        rows = int(len(train_index_copy) * i / 100)
-
+        rows = int(len(train_index) * i / 100)
         # Remove rows by random index
-        train_index_copy = PreProcessing.remove_random_rows(train_index_copy, rows)
-        X_train, X_test = X[train_index_copy], X[test_index]
-        y_train, y_test = y[train_index_copy], y[test_index]
+        train_index = PreProcessing.remove_random_rows(train_index, rows)
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
 
         model.fit(X_train, y_train)
         y_test_hat = model.predict(X_test)
-        return r2_score(y_test, y_test_hat)
+        return r2_score(y_test, y_test_hat), len(train_index)
 
     # Reports
     def generate_reports(self):
@@ -384,21 +397,21 @@ class File:
         if not self.predicted_runtime_values.empty:
             self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_runtime_report.csv"), index=False)
 
-        if not self.runtime_evaluation_percentage_mean.empty:
-            self.runtime_evaluation_percentage_mean.to_csv(os.path.join(self.folder, "runtime_row_removal_mean.csv"),
-                                                           index=False)
+        if not self.runtime_evaluation_percentage_folds.empty:
+            self.runtime_evaluation_percentage_folds.to_csv(
+                os.path.join(self.folder, "runtime_row_removal_predictions.csv"), index=False)
 
-        if not self.runtime_evaluation_percentage_var.empty:
-            self.runtime_evaluation_percentage_var.to_csv(os.path.join(self.folder, "runtime_row_removal_var.csv"),
-                                                          index=False)
+        if not self.runtime_evaluation_percentage_rows.empty:
+            self.runtime_evaluation_percentage_rows.T.to_csv(os.path.join(self.folder, "row_removal_rows.csv"),
+                                                             index=False)
 
-        if not self.memory_evaluation_percentage_mean.empty:
-            self.memory_evaluation_percentage_mean.to_csv(os.path.join(self.folder, "memory_row_removal_mean.csv"),
-                                                          index=False)
+        if not self.memory_evaluation_percentage_folds.empty:
+            self.memory_evaluation_percentage_folds.to_csv(
+                os.path.join(self.folder, "memory_row_removal_predictions.csv"), index=False)
 
-        if not self.memory_evaluation_percentage_var.empty:
-            self.memory_evaluation_percentage_var.to_csv(os.path.join(self.folder, "memory_row_removal_var.csv"),
-                                                         index=False)
+        if not self.memory_evaluation_percentage_rows.empty:
+            self.memory_evaluation_percentage_rows.T.to_csv(os.path.join(self.folder, "row_removal_rows.csv"),
+                                                            index=False)
 
     # Plots
     def generate_plots(self):
@@ -451,26 +464,18 @@ class File:
 
         ax = None
 
-        if not self.runtime_evaluation_percentage_mean.empty:
-            mean = self.runtime_evaluation_percentage_mean.copy()
-            del mean['Rows']
-            del mean['Features']
+        if not self.runtime_evaluation_percentage_folds.empty:
+            ax = sns.lineplot(data=self.runtime_evaluation_percentage_folds, palette="tab10", linewidth=2.5,
+                              dashes=False)
 
-            ax = sns.lineplot(data=mean, label="mean", palette="tab10", linewidth=2.5)
-
-        if not self.runtime_evaluation_percentage_var.empty:
-            var = self.runtime_evaluation_percentage_var.copy()
-            del var['Rows']
-            del var['Features']
-
-            ax = sns.lineplot(data=var, label="var", palette="tab10", linewidth=2.5)
-
-        # Remove not required rows from dfs
+        if not self.memory_evaluation_percentage_folds.empty:
+            ax = sns.lineplot(data=self.memory_evaluation_percentage_folds, palette="tab10", linewidth=2.5,
+                              dashes=False)
 
         if ax is None:
             return
 
-        ax.set(xlabel='% rows removed', ylabel='R^2 Score')
+        ax.set(xlabel='Folds (Forelast is mean, last is var)', ylabel='R^2 Score')
         ax.legend()
         fig = ax.get_figure()
         fig.savefig(os.path.join(self.folder, "percentage_removal_prediction.png"))
@@ -518,6 +523,9 @@ class File:
         fig.clf()
 
     def plot_feature_to_label_correlation(self, runtime: bool):
+        """
+        Plots the correlation between the feature and labels
+        """
         important_features = []
 
         if runtime:
@@ -565,7 +573,6 @@ class File:
             fig.clf()
 
     # Cleanup
-
     def free_memory(self):
         """
         Release not required memory for memory saving mode.
