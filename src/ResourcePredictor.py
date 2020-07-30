@@ -72,6 +72,8 @@ if __name__ == '__main__':
     # TODO: Add best/worst performing tools
     Tool_Statistics.get_best_performing_tools()
     Tool_Statistics.get_worst_performing_tools()
+    Tool_Statistics.prediction_score_on_average_across_versions(True)
+    Tool_Statistics.prediction_score_on_average_across_versions(False)
     Runtime_Statistics.get_application_stats()
 
     logging.info("Done")
