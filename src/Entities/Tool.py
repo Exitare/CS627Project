@@ -158,7 +158,7 @@ class Tool:
         if len(best_versions_df) <= 1:
             return
 
-        best_version_files_raw_df = pd.concat(best_versions_df)
+        best_version_files_raw_df = pd.concat(best_versions_df, join='inner')
         best_version_merged_file = File("best_version_merged_file", self.folder, best_version_files_raw_df)
         self.verified_files.append(best_version_merged_file)
 
@@ -241,7 +241,7 @@ class Tool:
         for file in self.verified_files:
             raw_df.append(file.raw_df)
 
-        merged_files_raw_df = pd.concat(raw_df)
+        merged_files_raw_df = pd.concat(raw_df, join='inner')
         merged_file = File("merged_tool", self.folder, merged_files_raw_df)
         self.verified_files.append(merged_file)
 
