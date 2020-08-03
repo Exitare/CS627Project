@@ -149,9 +149,9 @@ class Tool:
         best_performing = self.files_runtime_overview[self.files_runtime_overview['Test Score'] > 0.6][
             'File Name'].tolist()
 
+        # Create a merged data set containing only versions which are performing good
         best_versions_df = []
         for file in self.verified_files:
-
             if file.name in best_performing and not file.merged_file:
                 best_versions_df.append(file.raw_df)
 
@@ -174,10 +174,12 @@ class Tool:
             file.generate_reports()
 
         if not self.files_runtime_overview.empty:
+            self.files_runtime_overview.sort_values(by='Test Score', ascending=False, inplace=True)
             self.files_runtime_overview.to_csv(os.path.join(self.folder, "overview_files_runtime_report.csv"),
                                                index=False)
 
         if not self.files_memory_overview.empty:
+            self.files_memory_overview.sort_values(by='Test Score', ascending=False, inplace=True)
             self.files_memory_overview.to_csv(os.path.join(self.folder, "overview_files_memory_report.csv"),
                                               index=False)
 
