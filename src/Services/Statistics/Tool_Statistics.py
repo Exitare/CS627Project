@@ -3,6 +3,7 @@ import pandas as pd
 import os
 from RuntimeContants import Runtime_Folders
 from pathlib import Path
+import logging
 
 
 def get_best_performing_tools():
@@ -128,25 +129,49 @@ def prediction_score_on_average_across_versions(runtime: bool):
 
         for tool in Runtime_Datasets.VERIFIED_TOOLS:
             test_scores = []
-            for file in tool.verified_files:
-                if not file.merged_file:
-                    if runtime:
+            # Get all files which are verified but not "merged" files
+            files = [file for file in tool.verified_files if not file.merged_file]
+            # helper for calculating the average row count of all versions
+            rows = 0
+            # how many files are added to the test scores, in case an evaluation is empty.
+            file_count = 0
+            for file in files:
+                if runtime:
+                    if not file.runtime_evaluation.empty:
                         test_scores.append(file.runtime_evaluation['Test Score'])
-                    else:
+                        rows += file.get_pre_processed_df_statistics()[1]
+                        file_count += 1
+                else:
+                    if not file.memory_evaluation.empty:
                         test_scores.append(file.memory_evaluation['Test Score'])
+                        rows += file.get_pre_processed_df_statistics()[1]
+                        file_count += 1
 
-            tool_scores = tool_scores.append({"Tool": tool.name, "Test Score (avg)": pd.Series(test_scores).mean()},
-                                             ignore_index=True)
+            # if no test scores are added, skip generating of the file
+            if len(test_scores) == 0:
+                return
+
+            tool_scores = tool_scores.append(
+                {"Tool": tool.name, "Test Score (avg)": pd.Series(test_scores).mean(), "Versions": int(file_count),
+                 "Average Rows": int(rows / file_count)}, ignore_index=True)
+
+        # Check if any tool scores where gathered
+        if len(tool_scores) == 0:
+            return
 
         if runtime:
+            tool_scores.sort_values(by="Test Score (avg)", ascending=False, inplace=True)
             tool_scores.to_csv(
                 Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, "tools_runtime_test_score_on_average.csv"),
                 index=False)
         else:
+            tool_scores.sort_values(by="Test Score (avg)", ascending=False, inplace=True)
             tool_scores.to_csv(
                 Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, "tools_memory_test_score_on_average.csv"),
                 index=False)
-    except:
+    except BaseException as ex:
+        print("Exception occurred in prediction_score_on_average_across_versions")
+        logging.error(ex)
         pass
 
 
