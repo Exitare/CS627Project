@@ -69,10 +69,12 @@ def read_conf():
         Config.REPETITIONS = int(config['ML']['repetitions'])
         Config.FOREST_ESTIMATORS = int(config['ML']['forest_estimators'])
         Config.FOREST_MAX_DEPTH = int(config['ML']['max_depth'])
-        Config.MINIMUM_ROW_COUNT = int(config['ML']['min_row_count_per_file'])
-        Config.MINIMUM_COLUMN_COUNT = int(config['ML']['min_column_count_per_file'])
-        Config.RUNTIME_LABEL = str(config['ML']['runtime_label'])
-        Config.MEMORY_LABEL = str(config['ML']['memory_label'])
+
+        # File Settings
+        Config.MINIMUM_ROW_COUNT = int(config['FILE_SETTINGS']['min_row_count_per_file'])
+        Config.MINIMUM_COLUMN_COUNT = int(config['FILE_SETTINGS']['min_column_count_per_file'])
+        Config.RUNTIME_LABEL = str(config['FILE_SETTINGS']['runtime_label'])
+        Config.MEMORY_LABEL = str(config['FILE_SETTINGS']['memory_label'])
 
         validate_config()
         return True

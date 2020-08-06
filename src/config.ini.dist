@@ -18,12 +18,14 @@ memory_mean_summary_name = Average_Memory_Mean-R2-Scores
 memory_var_summary_name = Average_Memory_Var-R2-Scores
 excluded_files = Excluded_Files
 
+[FILE_SETTINGS]
+min_row_count_per_file = 1000
+min_column_count_per_file = 2
+runtime_label = runtime
+memory_label = memory.max_usage_in_bytes
+
 [ML]
 k_folds = 5
 repetitions = 5
 forest_estimators = 100
 max_depth = 12
-min_row_count_per_file = 50
-min_column_count_per_file = 2
-runtime_label = runtime
-memory_label = memory.max_usage_in_bytes
