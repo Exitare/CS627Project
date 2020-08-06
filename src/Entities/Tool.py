@@ -142,7 +142,7 @@ class Tool:
             return
 
         print()
-        logging.info("preparing additional files...")
+        logging.info("Preparing additional files...")
 
         # Create merged files containing only data sets of version with a Test Score greated than 0.6
 
