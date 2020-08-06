@@ -13,3 +13,4 @@ six==1.14.0
 psutil==5.7.0
 seaborn==0.10.1
 streamlit==0.62.0
+wheel==0.34.2
