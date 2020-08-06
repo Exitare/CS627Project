@@ -456,6 +456,7 @@ class File:
         else:
             fig.savefig(os.path.join(self.folder, "predicated_values.png"))
         fig.clf()
+        plt.close('all')
 
     def plot_percentage_removal(self):
 
@@ -480,6 +481,7 @@ class File:
         fig = ax.get_figure()
         fig.savefig(os.path.join(self.folder, "percentage_removal_prediction.png"))
         fig.clf()
+        plt.close('all')
 
     def calculate_feature_importance(self, model, df, runtime: bool):
         """
@@ -521,6 +523,7 @@ class File:
         else:
             fig.savefig(os.path.join(self.folder, "memory_feature_importance.png"), bbox_inches='tight')
         fig.clf()
+        plt.close('all')
 
     def plot_feature_to_label_correlation(self, runtime: bool):
         """
@@ -571,6 +574,7 @@ class File:
             fig = ax.get_figure()
             fig.savefig(os.path.join(self.folder, "memory_correlation_matrix.png"), bbox_inches='tight')
             fig.clf()
+            plt.close('all')
 
     # Cleanup
     def free_memory(self):
