@@ -1,13 +1,10 @@
 import pandas as pd
 from Entities.File import File
 from RuntimeContants import Runtime_Folders
-from Services.FileSystem import Folder_Management, File_Management
+from Services.FileSystem import Folder_Management
 from Services.Configuration.Config import Config
-from Services.Processing import PreProcessing
+from pathlib import Path
 import logging
-from sklearn.metrics import r2_score
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
 from time import sleep
 import os
 import seaborn as sns
@@ -143,9 +140,13 @@ class Tool:
 
         print()
         logging.info("Preparing additional files...")
+        self.__prepare_best_performing_version_merged_file()
 
+    def __prepare_best_performing_version_merged_file(self):
+        """
+        Prepares a merged data set which contains only data from version with a test score > 0.6
+        """
         # Create merged files containing only data sets of version with a Test Score greated than 0.6
-
         best_performing = self.files_runtime_overview[self.files_runtime_overview['Test Score'] > 0.6][
             'File Name'].tolist()
 
@@ -161,6 +162,15 @@ class Tool:
         best_version_files_raw_df = pd.concat(best_versions_df, join='inner')
         best_version_merged_file = File("best_version_merged_file", self.folder, best_version_files_raw_df)
         self.verified_files.append(best_version_merged_file)
+
+    def __prepare_most_important_feature_data_set(self):
+        """
+        Generates a data set for each version which contains only the most important features for each version
+        """
+
+        for file in self.verified_files:
+            if file.merged_file:
+                continue
 
     def generate_reports(self):
         """

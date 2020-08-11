@@ -7,6 +7,8 @@ from RuntimeContants import Runtime_Datasets
 from Services.Statistics import Runtime_Statistics, Tool_Statistics
 import logging
 import time
+import os
+
 
 logging.basicConfig(filename='log.log', level=logging.DEBUG)
 logging.getLogger().setLevel(logging.DEBUG)
@@ -69,11 +71,7 @@ if __name__ == '__main__':
             logging.info(f"Tool {tool.name} evaluated in {time_passed} seconds")
         print()
 
-    # TODO: Add best/worst performing tools
-    Tool_Statistics.get_best_performing_tools()
-    Tool_Statistics.get_worst_performing_tools()
-    Tool_Statistics.prediction_score_on_average_across_versions(True)
-    Tool_Statistics.prediction_score_on_average_across_versions(False)
+    Tool_Statistics.generate_tool_statistics()
     Runtime_Statistics.get_application_stats()
 
     logging.info("Done")

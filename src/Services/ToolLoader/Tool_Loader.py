@@ -60,5 +60,5 @@ def load_tools():
         f" {len(Runtime_Datasets.EXCLUDED_TOOLS)} tools.")
 
     print()
-    sleep(1)
+    sleep(2)
 

@@ -4,9 +4,21 @@ import os
 from RuntimeContants import Runtime_Folders
 from pathlib import Path
 import logging
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set(style="whitegrid")
 
 
-def get_best_performing_tools():
+def generate_tool_statistics():
+    __get_best_performing_tools()
+    __get_worst_performing_tools()
+    __prediction_score_on_average_across_versions(True)
+    __prediction_score_on_average_across_versions(False)
+    __plot_predictions_result()
+
+
+def __get_best_performing_tools():
     """
     Get best performing version of each tool, sort them and write them as csv file
     """
@@ -63,7 +75,7 @@ def get_best_performing_tools():
         index=False)
 
 
-def get_worst_performing_tools():
+def __get_worst_performing_tools():
     """
     Get worst performing version of each tool, sort them and write them as csv file
     """
@@ -119,7 +131,7 @@ def get_worst_performing_tools():
         index=False)
 
 
-def prediction_score_on_average_across_versions(runtime: bool):
+def __prediction_score_on_average_across_versions(runtime: bool):
     """
     Calculates the average predication rate  (Test Score) across versions.
     NOT including the merged files
@@ -173,6 +185,64 @@ def prediction_score_on_average_across_versions(runtime: bool):
         print("Exception occurred in prediction_score_on_average_across_versions")
         logging.error(ex)
         pass
+
+
+def __plot_predictions_result():
+    """
+
+    """
+    # combined runtime data of all tools for plotting
+    combined_runtime_df = pd.DataFrame()
+    # combined memory data of all tools for plotting
+    combined_memory_df = pd.DataFrame()
+    temp_df = []
+    for tool in Runtime_Datasets.VERIFIED_TOOLS:
+
+        if not tool.files_runtime_overview.empty:
+            # Deep copy for manipulation
+            runtime_copy = tool.files_runtime_overview.copy()
+            runtime_copy['Tool'] = tool.name
+            temp_df.append(runtime_copy)
+
+    if len(temp_df) > 0:
+        combined_runtime_df = pd.concat(temp_df, join='inner')
+
+    # Clear temp_df
+    temp_df = []
+
+    for tool in Runtime_Datasets.VERIFIED_TOOLS:
+
+        if not tool.files_memory_overview.empty:
+            # Deep copy for manipulation
+            runtime_copy = tool.files_memory_overview.copy()
+            runtime_copy['Tool'] = tool.name
+            temp_df.append(runtime_copy)
+
+    if len(temp_df) > 0:
+        combined_memory_df = pd.concat(temp_df, join='inner')
+
+    if not combined_runtime_df.empty:
+        ax = sns.boxplot(x="Tool", y="Test Score", data=combined_runtime_df,
+                         palette="Set3")
+        ax = sns.swarmplot(x="Tool", y="Test Score", data=combined_runtime_df, color=".25")
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        fig = ax.get_figure()
+
+        fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, "runtime_prediction_overview"),
+                    bbox_inches="tight")
+        fig.clf()
+        plt.close('all')
+
+    if not combined_memory_df.empty:
+        ax = sns.boxplot(x="Tool", y="Test Score", data=combined_memory_df,
+                         palette="Set3")
+        ax = sns.swarmplot(x="Tool", y="Test Score", data=combined_memory_df, color=".25")
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        fig = ax.get_figure()
+        fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, "memory_prediction_overview"),
+                    bbox_inches="tight")
+        fig.clf()
+        plt.close('all')
 
 
 def __row_helper(performance_df):
