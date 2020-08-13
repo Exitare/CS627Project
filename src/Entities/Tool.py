@@ -110,7 +110,26 @@ class Tool:
                 file.verify()
 
         # Evaluate the files
-        self.__evaluate_verified_files()
+        for file in self.verified_files:
+            logging.info(f"Evaluating file {file.name}...")
+
+            # Predict values for single files
+            file.predict(Config.RUNTIME_LABEL)
+            file.predict(Config.MEMORY_LABEL)
+            if Config.PERCENTAGE_REMOVAL:
+                file.predict_row_removal(Config.RUNTIME_LABEL)
+                file.predict_row_removal(Config.MEMORY_LABEL)
+
+            file.pca_analysis(Config.RUNTIME_LABEL)
+
+            # Copy the source file to the results folder
+            # If its a merged file use the virtual one.
+            if not file.merged_file:
+                shutil.copy(file.path, file.folder)
+            else:
+                file.raw_df.to_csv(os.path.join(file.folder, "raw_df.csv"), index=False)
+
+            file.evaluated = True
 
     def evaluate_additional_files(self):
         """
@@ -129,6 +148,7 @@ class Tool:
                 file.predict_row_removal(Config.RUNTIME_LABEL)
                 file.predict_row_removal(Config.MEMORY_LABEL)
 
+            file.pca_analysis(Config.RUNTIME_LABEL)
             file.evaluated = True
 
     def prepare_additional_files(self):
@@ -216,32 +236,6 @@ class Tool:
         for file in self.verified_files:
             self.files_runtime_overview = self.files_runtime_overview.append(file.runtime_evaluation)
             self.files_memory_overview = self.files_memory_overview.append(file.memory_evaluation)
-
-    def __evaluate_verified_files(self):
-        """
-        Evaluates all files associated to a tool.
-        Runtime and memory is evaluated
-        :return:
-        """
-
-        for file in self.verified_files:
-            logging.info(f"Evaluating file {file.name}...")
-
-            # Predict values for single files
-            file.predict(Config.RUNTIME_LABEL)
-            file.predict(Config.MEMORY_LABEL)
-            if Config.PERCENTAGE_REMOVAL:
-                file.predict_row_removal(Config.RUNTIME_LABEL)
-                file.predict_row_removal(Config.MEMORY_LABEL)
-
-            # Copy the source file to the results folder
-            # If its a merged file use the virtual one.
-            if not file.merged_file:
-                shutil.copy(file.path, file.folder)
-            else:
-                file.raw_df.to_csv(os.path.join(file.folder, "raw_df.csv"), index=False)
-
-            file.evaluated = True
 
     def __add_merged_file(self):
         """

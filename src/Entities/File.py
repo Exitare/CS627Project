@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split, KFold
 from sklearn.ensemble import RandomForestRegressor
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 
 sns.set()
 
@@ -97,6 +98,9 @@ class File:
 
         self.runtime_feature_importance = pd.DataFrame()
         self.memory_feature_importance = pd.DataFrame()
+
+        self.pca_analysis_df = pd.DataFrame()
+        self.pca_model = None
 
         if not Config.MEMORY_SAVING_MODE:
             self.verify()
@@ -301,6 +305,23 @@ class File:
         else:
             logging.warning(f"Could not detect predictive column: {label}")
 
+    def pca_analysis(self, label: str):
+        """
+        Generates a pca analysis
+        """
+        df = self.preprocessed_df.copy()
+        del df[label]
+        X = df
+
+        X = PreProcessing.variance_selection(X)
+
+        self.pca_model = PCA()
+        self.pca_model.fit_transform(X)
+        self.pca_analysis_df = X
+
+        #loadings = pd.DataFrame(self.pca_model.components_.T, index=df.columns)
+        # loadings.to_csv(Path.joinpath(self.folder, "pca_eigenvecotors.csv"), index=True)
+
     def __calculate_k_folds(self, X, y):
         """
         Trains the model to predict the total time
@@ -426,6 +447,7 @@ class File:
         self.plot_feature_importance(False)
         self.plot_feature_to_label_correlation(True)
         self.plot_feature_to_label_correlation(False)
+        self.__plot_pca_analysis()
 
     def plot_predicted_values(self, log_scale: bool):
         """
@@ -575,6 +597,17 @@ class File:
             fig.savefig(os.path.join(self.folder, "memory_correlation_matrix.png"), bbox_inches='tight')
             fig.clf()
             plt.close('all')
+
+    def __plot_pca_analysis(self):
+        features = range(self.pca_model.n_components_)
+        plt.bar(features, self.pca_model.explained_variance_ratio_, color='black')
+        plt.xlabel('PCA features')
+        plt.ylabel('variance %')
+        plt.xticks(features)
+        plt.xticks(rotation=45)
+        plt.savefig(os.path.join(self.folder, "pca_features.png"), bbox_inches='tight')
+        plt.clf()
+        plt.close('all')
 
     # Cleanup
     def free_memory(self):
