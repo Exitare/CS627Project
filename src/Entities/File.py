@@ -319,7 +319,7 @@ class File:
         self.pca_model.fit_transform(X)
         self.pca_analysis_df = X
 
-        #loadings = pd.DataFrame(self.pca_model.components_.T, index=df.columns)
+        # loadings = pd.DataFrame(self.pca_model.components_.T, index=df.columns)
         # loadings.to_csv(Path.joinpath(self.folder, "pca_eigenvecotors.csv"), index=True)
 
     def __calculate_k_folds(self, X, y):
@@ -604,7 +604,8 @@ class File:
         plt.xlabel('PCA features')
         plt.ylabel('variance %')
         plt.xticks(features)
-        plt.xticks(rotation=45)
+        plt.xticks(rotation=90, fontsize=8)
+        plt.tight_layout()
         plt.savefig(os.path.join(self.folder, "pca_features.png"), bbox_inches='tight')
         plt.clf()
         plt.close('all')
