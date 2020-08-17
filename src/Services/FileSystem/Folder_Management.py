@@ -87,15 +87,13 @@ def create_file_folder(tool_path: Path, file_name: str):
     path = Path(tool_path, file_name)
     try:
         Path(path).mkdir(parents=True, exist_ok=True)
-
-    except OSError as ex:
-        folder_management.warning(f"The folder creation for file {file_name} failed.")
-        folder_management.warning("The file evaluation will be skipped!")
-        if Config.DEBUG_MODE:
-            folder_management.warning(ex)
-        return None
-    else:
         return path
+    except BaseException as ex:
+        logging.warning(f"The folder creation for file {file_name} failed.")
+        logging.warning("The file evaluation will be skipped!")
+        if Config.DEBUG_MODE:
+            logging.warning(ex)
+        return None
 
 
 def create_required_folders():
