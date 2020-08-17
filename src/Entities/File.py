@@ -210,6 +210,7 @@ class File:
                 logging.info(f"Removed {source_row_count - len(X)} row(s). Source had {source_row_count}.")
 
             X = PreProcessing.variance_selection(X)
+
             X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 
             model.fit(X_train, y_train)
@@ -618,6 +619,13 @@ class File:
             plt.xticks(rotation=90, fontsize=8)
             plt.tight_layout()
             plt.savefig(os.path.join(self.folder, "pca_features.png"), bbox_inches='tight')
+            plt.clf()
+            plt.close('all')
+
+            plt.scatter(self.pca_analysis_df[0], self.pca_analysis_df[1], alpha=.1, color='black')
+            plt.xlabel('PCA 1')
+            plt.ylabel('PCA 2')
+            plt.savefig(os.path.join(self.folder, "pca_cluster.png"), bbox_inches='tight')
             plt.clf()
             plt.close('all')
 
