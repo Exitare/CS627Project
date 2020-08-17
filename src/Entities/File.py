@@ -187,68 +187,74 @@ class File:
         Predicts the runtime for a complete data set.
         :return:
         """
-        df = self.preprocessed_df.copy()
+        try:
+            df = self.preprocessed_df.copy()
 
-        if label not in df:
-            return
+            if label not in df:
+                return
 
-        model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, max_depth=Config.FOREST_MAX_DEPTH,
-                                      random_state=1)
+            model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, max_depth=Config.FOREST_MAX_DEPTH,
+                                          random_state=1)
 
-        y = df[label]
-        del df[label]
-        X = df
+            y = df[label]
+            del df[label]
+            X = df
 
-        source_row_count = len(X)
+            source_row_count = len(X)
 
-        X_indices = (X != 0).any(axis=1)
-        X = X.loc[X_indices]
-        y = y.loc[X_indices]
+            X_indices = (X != 0).any(axis=1)
+            X = X.loc[X_indices]
+            y = y.loc[X_indices]
 
-        if source_row_count != len(X) and Config.VERBOSE:
-            logging.info(f"Removed {source_row_count - len(X)} row(s). Source had {source_row_count}.")
+            if source_row_count != len(X) and Config.VERBOSE:
+                logging.info(f"Removed {source_row_count - len(X)} row(s). Source had {source_row_count}.")
 
-        X = PreProcessing.variance_selection(X)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
+            X = PreProcessing.variance_selection(X)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 
-        model.fit(X_train, y_train)
+            model.fit(X_train, y_train)
 
-        # Feature importance
-        self.calculate_feature_importance(model, df, True)
+            # Feature importance
+            self.calculate_feature_importance(model, df, True)
 
-        y_test_hat = model.predict(X_test)
-        y_train_hat = model.predict(X_train)
-        train_score = r2_score(y_train, y_train_hat)
-        test_score = r2_score(y_test, y_test_hat)
+            y_test_hat = model.predict(X_test)
+            y_train_hat = model.predict(X_train)
+            train_score = r2_score(y_train, y_train_hat)
+            test_score = r2_score(y_test, y_test_hat)
 
-        over_fitting = False
-        if train_score > test_score * 2:
-            over_fitting = True
+            over_fitting = False
+            if train_score > test_score * 2:
+                over_fitting = True
 
-        if label == Config.RUNTIME_LABEL:
-            self.runtime_evaluation = self.runtime_evaluation.append(
-                {'File Name': self.name, "Test Score": test_score,
-                 "Train Score": train_score, "Potential Over Fitting": over_fitting,
-                 "Initial Row Count": len(self.raw_df.index),
-                 "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
-                 "Processed Feature Count": X.shape[1]}, ignore_index=True)
+            if label == Config.RUNTIME_LABEL:
+                self.runtime_evaluation = self.runtime_evaluation.append(
+                    {'File Name': self.name, "Test Score": test_score,
+                     "Train Score": train_score, "Potential Over Fitting": over_fitting,
+                     "Initial Row Count": len(self.raw_df.index),
+                     "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
+                     "Processed Feature Count": X.shape[1]}, ignore_index=True)
 
-            self.predicted_runtime_values = pd.concat(
-                [pd.Series(y_test).reset_index()[Config.RUNTIME_LABEL], pd.Series(y_test_hat)],
-                axis=1)
-            self.predicted_runtime_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
-        else:
-            self.memory_evaluation = self.memory_evaluation.append(
-                {'File Name': self.name, "Test Score": test_score,
-                 "Train Score": train_score, "Potential Over Fitting": over_fitting,
-                 "Initial Row Count": len(self.raw_df.index),
-                 "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
-                 "Processed Feature Count": X.shape[1]}, ignore_index=True)
+                self.predicted_runtime_values = pd.concat(
+                    [pd.Series(y_test).reset_index()[Config.RUNTIME_LABEL], pd.Series(y_test_hat)],
+                    axis=1)
+                self.predicted_runtime_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
+            else:
+                self.memory_evaluation = self.memory_evaluation.append(
+                    {'File Name': self.name, "Test Score": test_score,
+                     "Train Score": train_score, "Potential Over Fitting": over_fitting,
+                     "Initial Row Count": len(self.raw_df.index),
+                     "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
+                     "Processed Feature Count": X.shape[1]}, ignore_index=True)
 
-            self.predicted_memory_values = pd.concat(
-                [pd.Series(y_test).reset_index()[Config.MEMORY_LABEL], pd.Series(y_test_hat)],
-                axis=1)
-            self.predicted_memory_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
+                self.predicted_memory_values = pd.concat(
+                    [pd.Series(y_test).reset_index()[Config.MEMORY_LABEL], pd.Series(y_test_hat)],
+                    axis=1)
+                self.predicted_memory_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
+
+        except BaseException as ex:
+            logging.warning("Error occurred in file predict function")
+            logging.warning(ex)
+            input()
 
     def predict_row_removal(self, label: str):
         """
@@ -309,16 +315,20 @@ class File:
         """
         Generates a pca analysis
         """
-        df = self.preprocessed_df.copy()
-        del df[label]
-        X = df
+        try:
+            df = self.preprocessed_df.copy()
+            del df[label]
+            X = df
 
-        X = PreProcessing.variance_selection(X)
+            X = PreProcessing.variance_selection(X)
 
-        self.pca_model = PCA()
-        self.pca_model.fit_transform(X)
-        self.pca_analysis_df = X
+            self.pca_model = PCA()
+            self.pca_model.fit_transform(X)
+            self.pca_analysis_df = X
 
+        except BaseException as ex:
+            logging.warning('Execption occured in pca_analysis')
+            logging.warning(ex)
         # loadings = pd.DataFrame(self.pca_model.components_.T, index=df.columns)
         # loadings.to_csv(Path.joinpath(self.folder, "pca_eigenvecotors.csv"), index=True)
 
@@ -599,16 +609,23 @@ class File:
             plt.close('all')
 
     def __plot_pca_analysis(self):
-        features = range(self.pca_model.n_components_)
-        plt.bar(features, self.pca_model.explained_variance_ratio_, color='black')
-        plt.xlabel('PCA features')
-        plt.ylabel('variance %')
-        plt.xticks(features)
-        plt.xticks(rotation=90, fontsize=8)
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.folder, "pca_features.png"), bbox_inches='tight')
-        plt.clf()
-        plt.close('all')
+        try:
+            features = range(self.pca_model.n_components_)
+            plt.bar(features, self.pca_model.explained_variance_ratio_, color='black')
+            plt.xlabel('PCA features')
+            plt.ylabel('variance %')
+            plt.xticks(features)
+            plt.xticks(rotation=90, fontsize=8)
+            plt.tight_layout()
+            plt.savefig(os.path.join(self.folder, "pca_features.png"), bbox_inches='tight')
+            plt.clf()
+            plt.close('all')
+
+        except BaseException as ex:
+            logging.warning("Error in __plot_pca_analysis")
+            logging.warning(ex)
+            input()
+            return
 
     # Cleanup
     def free_memory(self):
