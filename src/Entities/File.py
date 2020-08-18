@@ -181,6 +181,15 @@ class File:
                     logging.warning(f"File will not be evaluated.")
                 self.verified = False
 
+        # Check if columns will pass variance selection
+        if Config.RUNTIME_LABEL in self.preprocessed_df:
+            check_df = self.preprocessed_df.copy()
+            del check_df[Config.RUNTIME_LABEL]
+            check_df = PreProcessing.variance_selection(check_df)
+
+            if 'numpy' not in str(type(check_df)):
+                self.verified = False
+
     # Prediction
     def predict(self, label: str):
         """
