@@ -460,16 +460,16 @@ class File:
         Helper to call all plotting functions
         :return:
         """
-        self.plot_predicted_values(True)
-        self.plot_predicted_values(False)
-        self.plot_percentage_removal()
-        self.plot_feature_importance(True)
-        self.plot_feature_importance(False)
-        self.plot_feature_to_label_correlation(True)
-        self.plot_feature_to_label_correlation(False)
+        self.__plot_predicted_values(True)
+        self.__plot_predicted_values(False)
+        self.__plot_percentage_removal()
+        self.__plot_feature_importance(True)
+        self.__plot_feature_importance(False)
+        self.__plot_feature_to_label_correlation(True)
+        self.__plot_feature_to_label_correlation(False)
         self.__plot_pca_analysis()
 
-    def plot_predicted_values(self, log_scale: bool):
+    def __plot_predicted_values(self, log_scale: bool):
         """
         Plots the predicted values for the unmodified data set
         :return:
@@ -500,7 +500,7 @@ class File:
         fig.clf()
         plt.close('all')
 
-    def plot_percentage_removal(self):
+    def __plot_percentage_removal(self):
 
         if not Config.PERCENTAGE_REMOVAL:
             return
@@ -542,7 +542,7 @@ class File:
         else:
             self.memory_feature_importance = importance.T[importance_indices]
 
-    def plot_feature_importance(self, runtime: bool):
+    def __plot_feature_importance(self, runtime: bool):
         """
         Plots the feature importance for each evaluation
         """
@@ -567,7 +567,7 @@ class File:
         fig.clf()
         plt.close('all')
 
-    def plot_feature_to_label_correlation(self, runtime: bool):
+    def __plot_feature_to_label_correlation(self, runtime: bool):
         """
         Plots the correlation between the feature and labels
         """
