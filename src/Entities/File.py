@@ -329,7 +329,7 @@ class File:
             df = self.preprocessed_df.copy()
             del df[label]
             X = df
-
+            X = PreProcessing.normalize_X(X)
             X = PreProcessing.variance_selection(X)
 
             self.pca_model = PCA()
@@ -339,8 +339,6 @@ class File:
         except BaseException as ex:
             logging.warning('Execption occured in pca_analysis')
             logging.warning(ex)
-        # loadings = pd.DataFrame(self.pca_model.components_.T, index=df.columns)
-        # loadings.to_csv(Path.joinpath(self.folder, "pca_eigenvecotors.csv"), index=True)
 
     def __calculate_k_folds(self, X, y):
         """
