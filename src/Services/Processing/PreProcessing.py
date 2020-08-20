@@ -1,7 +1,6 @@
 from sklearn import preprocessing
 from sklearn.feature_selection import VarianceThreshold
 import numpy as np
-
 np.random.seed(10)
 
 

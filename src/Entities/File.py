@@ -466,6 +466,7 @@ class File:
         self.__plot_feature_to_label_correlation(True)
         self.__plot_feature_to_label_correlation(False)
         self.__plot_pca_analysis()
+        self.__plot_pca_analysis_scatter()
 
     def __plot_predicted_values(self, log_scale: bool):
         """
@@ -617,6 +618,9 @@ class File:
             plt.close('all')
 
     def __plot_pca_analysis(self):
+        """
+        Plots all features and their weight
+        """
         try:
             features = range(self.pca_model.n_components_)
             plt.bar(features, self.pca_model.explained_variance_ratio_, color='black')
@@ -629,18 +633,21 @@ class File:
             plt.clf()
             plt.close('all')
 
-            plt.scatter(self.pca_analysis_df[0], self.pca_analysis_df[1], alpha=.1, color='black')
-            plt.xlabel('PCA 1')
-            plt.ylabel('PCA 2')
-            plt.savefig(os.path.join(self.folder, "pca_cluster.png"), bbox_inches='tight')
-            plt.clf()
-            plt.close('all')
-
         except BaseException as ex:
             logging.warning("Error in __plot_pca_analysis")
             logging.warning(ex)
-            input()
             return
+
+    def __plot_pca_analysis_scatter(self):
+        """
+        Plots the clustering of the first most important pca components
+        """
+        plt.scatter(self.pca_analysis_df[0], self.pca_analysis_df[1], alpha=.1, color='black')
+        plt.xlabel('Component 1')
+        plt.ylabel('Component 2')
+        plt.savefig(os.path.join(self.folder, "pca_cluster.png"), bbox_inches='tight')
+        plt.clf()
+        plt.close('all')
 
     # Cleanup
     def free_memory(self):
