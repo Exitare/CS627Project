@@ -99,8 +99,10 @@ class File:
         self.runtime_feature_importance = pd.DataFrame()
         self.memory_feature_importance = pd.DataFrame()
 
-        self.pca_analysis_df = pd.DataFrame()
-        self.pca_model = None
+        # Contains the pca components as df
+        self.pca_components_df = pd.DataFrame()
+        # Contains the pca components with supporting functions
+        self.pca_components = None
 
         if not Config.MEMORY_SAVING_MODE:
             self.verify()
@@ -327,18 +329,20 @@ class File:
         """
         try:
             df = self.preprocessed_df.copy()
+            Y = df[label]
             del df[label]
             X = df
             X = PreProcessing.normalize_X(X)
             X = PreProcessing.variance_selection(X)
 
-            self.pca_model = PCA()
-            self.pca_model.fit_transform(X)
-            self.pca_analysis_df = X
+            self.pca_components = PCA()
+            X = self.pca_components.fit_transform(X)
+            self.pca_components_df = pd.DataFrame(X)
+            self.pca_components_df['Label'] = pd.Series(Y.values)
 
         except BaseException as ex:
-            logging.warning('Execption occured in pca_analysis')
             logging.warning(ex)
+            logging.exception(ex)
 
     def __calculate_k_folds(self, X, y):
         """
@@ -622,8 +626,8 @@ class File:
         Plots all features and their weight
         """
         try:
-            features = range(self.pca_model.n_components_)
-            plt.bar(features, self.pca_model.explained_variance_ratio_, color='black')
+            features = range(self.pca_components.n_components_)
+            plt.bar(features, self.pca_components.explained_variance_ratio_, color='black')
             plt.xlabel('PCA features')
             plt.ylabel('variance %')
             plt.xticks(features)
@@ -642,12 +646,23 @@ class File:
         """
         Plots the clustering of the first most important pca components
         """
-        plt.scatter(self.pca_analysis_df[0], self.pca_analysis_df[1], alpha=.1, color='black')
-        plt.xlabel('Component 1')
-        plt.ylabel('Component 2')
-        plt.savefig(os.path.join(self.folder, "pca_cluster.png"), bbox_inches='tight')
-        plt.clf()
+        ax = sns.scatterplot(x=self.pca_components_df[0], y=self.pca_components_df[1], hue="Label",
+                             data=self.pca_components_df)
+
+        ax.set(xlabel='Component 1', ylabel='Component 2')
+        ax.legend()
+        fig = ax.get_figure()
+        fig.savefig(Path(self.folder, "pca_cluster.png"), bbox_inches='tight')
+        fig.clf()
         plt.close('all')
+
+        # plt.scatter(self.pca_components_df[0], self.pca_components_df[1], hue=self.pca_components_df['Label'], alpha=.1,
+        # color='black')
+        # plt.xlabel('Component 1')
+        # plt.ylabel('Component 2')
+        # plt.savefig(os.path.join(self.folder, "pca_cluster.png"), bbox_inches='tight')
+        # plt.clf()
+        # plt.close('all')
 
     # Cleanup
     def free_memory(self):
