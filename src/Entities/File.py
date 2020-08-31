@@ -99,10 +99,15 @@ class File:
         self.runtime_feature_importance = pd.DataFrame()
         self.memory_feature_importance = pd.DataFrame()
 
-        # Contains the pca components as df
-        self.pca_components_df = pd.DataFrame()
-        # Contains the pca components with supporting functions
-        self.pca_components = None
+        # Contains the runtime pca components as df
+        self.runtime_pca_components_df = pd.DataFrame()
+        # Contains the runtime pca components with supporting functions
+        self.runtime_pca_components = None
+
+        # Contains the memory pca components as df
+        self.memory_pca_components_df = pd.DataFrame()
+        # Contains the memory pca components with supporting functions
+        self.memory_pca_components = None
 
         if not Config.MEMORY_SAVING_MODE:
             self.verify()
@@ -265,7 +270,7 @@ class File:
 
         except BaseException as ex:
             logging.warning("Error occurred in file predict function")
-            logging.warning(ex)
+            logging.exception(ex)
             input()
 
     def predict_row_removal(self, label: str):
@@ -323,25 +328,43 @@ class File:
         else:
             logging.warning(f"Could not detect predictive column: {label}")
 
-    def pca_analysis(self, label: str):
+    def pca_analysis(self, runtime: bool):
         """
         Generates a pca analysis
         """
+
         try:
             df = self.preprocessed_df.copy()
-            Y = df[label]
-            del df[label]
+            if runtime:
+                if not self.__label_present(df, Config.RUNTIME_LABEL):
+                    return
+
+                Y = df[Config.RUNTIME_LABEL]
+                del df[Config.RUNTIME_LABEL]
+            else:
+
+                if not self.__label_present(df, Config.MEMORY_LABEL):
+                    return
+
+                Y = df[Config.MEMORY_LABEL]
+                del df[Config.MEMORY_LABEL]
+
             X = df
             X = PreProcessing.normalize_X(X)
             X = PreProcessing.variance_selection(X)
 
-            self.pca_components = PCA()
-            X = self.pca_components.fit_transform(X)
-            self.pca_components_df = pd.DataFrame(X)
-            self.pca_components_df['Label'] = pd.Series(Y.values)
+            if runtime:
+                self.runtime_pca_components = PCA()
+                X = self.runtime_pca_components.fit_transform(X)
+                self.runtime_pca_components_df = pd.DataFrame(X)
+                self.runtime_pca_components_df['Runtime'] = pd.Series(Y.values)
+            else:
+                self.memory_pca_components = PCA()
+                X = self.memory_pca_components.fit_transform(X)
+                self.memory_pca_components_df = pd.DataFrame(X)
+                self.memory_pca_components_df['Memory'] = pd.Series(Y.values)
 
         except BaseException as ex:
-            logging.warning(ex)
             logging.exception(ex)
 
     def __calculate_k_folds(self, X, y):
@@ -626,43 +649,68 @@ class File:
         Plots all features and their weight
         """
         try:
-            features = range(self.pca_components.n_components_)
-            plt.bar(features, self.pca_components.explained_variance_ratio_, color='black')
+            # Runtime
+            if self.runtime_pca_components is None:
+                return
+            features = range(self.runtime_pca_components.n_components_)
+            plt.bar(features, self.runtime_pca_components.explained_variance_ratio_, color='black')
             plt.xlabel('PCA features')
             plt.ylabel('variance %')
             plt.xticks(features)
             plt.xticks(rotation=90, fontsize=8)
             plt.tight_layout()
-            plt.savefig(os.path.join(self.folder, "pca_features.png"), bbox_inches='tight')
+            plt.savefig(os.path.join(self.folder, "runtime_pca_features.png"), bbox_inches='tight')
+            plt.clf()
+            plt.close('all')
+
+            # Memory
+
+            if self.memory_pca_components is None:
+                return
+
+            features = range(self.memory_pca_components.n_components_)
+            plt.bar(features, self.memory_pca_components.explained_variance_ratio_, color='black')
+            plt.xlabel('PCA features')
+            plt.ylabel('variance %')
+            plt.xticks(features)
+            plt.xticks(rotation=90, fontsize=8)
+            plt.tight_layout()
+            plt.savefig(os.path.join(self.folder, "memory_pca_features.png"), bbox_inches='tight')
             plt.clf()
             plt.close('all')
 
         except BaseException as ex:
-            logging.warning("Error in __plot_pca_analysis")
-            logging.warning(ex)
+            logging.exception(ex)
             return
 
     def __plot_pca_analysis_scatter(self):
         """
         Plots the clustering of the first most important pca components
         """
-        ax = sns.scatterplot(x=self.pca_components_df[0], y=self.pca_components_df[1], hue="Label",
-                             data=self.pca_components_df)
 
-        ax.set(xlabel='Component 1', ylabel='Component 2')
-        ax.legend()
-        fig = ax.get_figure()
-        fig.savefig(Path(self.folder, "pca_cluster.png"), bbox_inches='tight')
-        fig.clf()
-        plt.close('all')
+        # Runtime
+        if not self.runtime_pca_components_df.empty:
+            ax = sns.scatterplot(x=self.runtime_pca_components_df[0], y=self.runtime_pca_components_df[1],
+                                 hue="Runtime",
+                                 data=self.runtime_pca_components_df)
+            ax.set(xlabel='Component 1', ylabel='Component 2')
+            ax.legend()
+            fig = ax.get_figure()
+            fig.savefig(Path(self.folder, "runtime_pca_cluster.png"), bbox_inches='tight')
+            fig.clf()
+            plt.close('all')
 
-        # plt.scatter(self.pca_components_df[0], self.pca_components_df[1], hue=self.pca_components_df['Label'], alpha=.1,
-        # color='black')
-        # plt.xlabel('Component 1')
-        # plt.ylabel('Component 2')
-        # plt.savefig(os.path.join(self.folder, "pca_cluster.png"), bbox_inches='tight')
-        # plt.clf()
-        # plt.close('all')
+        # Memory
+        if not self.memory_pca_components_df.empty:
+            ax = sns.scatterplot(x=self.memory_pca_components_df[0], y=self.memory_pca_components_df[1],
+                                 hue="Memory",
+                                 data=self.memory_pca_components_df)
+            ax.set(xlabel='Component 1', ylabel='Component 2')
+            ax.legend()
+            fig = ax.get_figure()
+            fig.savefig(Path(self.folder, "memory_pca_cluster.png"), bbox_inches='tight')
+            fig.clf()
+            plt.close('all')
 
     # Cleanup
     def free_memory(self):
@@ -675,3 +723,12 @@ class File:
 
         self.raw_df = None
         self.preprocessed_df = None
+
+    def __label_present(self, df, label: str) -> bool:
+        """
+        Checks if the specific label is present
+        """
+        if label in df:
+            return True
+        else:
+            return False

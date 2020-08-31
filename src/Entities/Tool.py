@@ -121,6 +121,7 @@ class Tool:
                 file.predict_row_removal(Config.MEMORY_LABEL)
 
             file.pca_analysis(Config.RUNTIME_LABEL)
+            file.pca_analysis(Config.MEMORY_LABEL)
 
             # Copy the source file to the results folder
             # If its a merged file use the virtual one.
