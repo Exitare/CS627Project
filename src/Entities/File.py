@@ -279,10 +279,11 @@ class File:
             self.pca_components[label] = PCA()
             X = self.pca_components[label].fit_transform(X)
             self.pca_components_data_frames[label] = pd.DataFrame(X)
-            self.pca_components_data_frames[label] = pd.Series(y.values)
+            self.pca_components_data_frames[label][label] = pd.Series(y.values)
 
         except BaseException as ex:
             logging.exception(ex)
+            input()
 
     # Reports
     def generate_reports(self):
@@ -348,7 +349,7 @@ class File:
         Plots the feature importance for each evaluation
         """
 
-        for label, data in self.predicted_results.items():
+        for label, data in self.feature_importances.items():
             if data.empty:
                 continue
 

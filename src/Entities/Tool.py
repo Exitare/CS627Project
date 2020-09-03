@@ -228,6 +228,9 @@ class Tool:
         Creates the overview data sets
         """
 
+        # Clean dictionary
+        self.files_label_overview.clear()
+
         for file in self.verified_files:
             for label, data in file.evaluation_results.items():
                 if label in self.files_label_overview:
@@ -255,6 +258,9 @@ class Tool:
         Returns the best performing version of the tool for the specific label
         """
 
+        if label not in self.files_label_overview:
+            return None
+
         if self.files_label_overview[label].empty:
             return None
 
@@ -268,6 +274,9 @@ class Tool:
         """
         Returns the worst performing version of the tool
         """
+
+        if label not in self.files_label_overview:
+            return None
 
         if self.files_label_overview[label].empty:
             return None

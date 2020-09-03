@@ -65,7 +65,7 @@ def __get_worst_performing_tools():
 
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         for label in Config.LABELS:
-            version = tool.get_best_performing_version(label)
+            version = tool.get_worst_performing_version(label)
 
             if version is None:
                 continue
@@ -117,31 +117,32 @@ def __prediction_score_on_average_across_versions():
                 for label in file.detected_labels:
                     # Check if label is present in test_scores
                     if label not in test_scores:
-                        test_scores[label] = []
+                        test_scores[label] = pd.Series()
 
                     if label in file.evaluation_results:
                         test_scores[label] = test_scores[label].append(file.evaluation_results[label]['Test Score'])
                         rows += file.get_pre_processed_df_statistics()[1]
                         file_count += 1
 
+            # Merge gathered data together
             for label in Config.LABELS:
                 if label not in test_scores:
                     continue
 
                 if label not in tool_scores:
-                    tool_scores[label] = pd.DataFrame(columns=["Tool", "Test Score (avg)", "Versions", " Average Rows"])
+                    tool_scores[label] = pd.DataFrame(columns=["Tool", "Test Score (avg)", "Versions", "Average Rows"])
                     tool_scores[label] = tool_scores[label].append(
-                        {"Tool": tool.name, "Test Score (avg)": pd.Series(test_scores[label]).mean(),
+                        {"Tool": tool.name, "Test Score (avg)": test_scores[label].mean(),
                          "Versions": int(file_count),
                          "Average Rows": int(rows / file_count)}, ignore_index=True)
                 else:
                     tool_scores[label] = tool_scores[label].append(
-                        {"Tool": tool.name, "Test Score (avg)": pd.Series(test_scores[label]).mean(),
+                        {"Tool": tool.name, "Test Score (avg)": test_scores[label].mean(),
                          "Versions": int(file_count),
                          "Average Rows": int(rows / file_count)}, ignore_index=True)
 
         for label in tool_scores:
-            if len(tool_scores[label]) == 0:
+            if tool_scores[label].empty:
                 continue
 
             tool_scores[label].sort_values(by="Test Score (avg)", ascending=False, inplace=True)
@@ -169,17 +170,20 @@ def __plot_predictions_result():
             data = tool.files_label_overview[label].copy()
             data['Tool'] = tool.name
 
-            if label in temp_data_sets:
+            if label not in temp_data_sets:
+                temp_data_sets[label] = list()
                 temp_data_sets[label].append(data)
             else:
-                temp_data_sets[label] = []
-                temp_data_sets[label] = temp_data_sets[label].append(data)
+                temp_data_sets[label].append(data)
 
     for label in Config.LABELS:
-        if len(temp_data_sets[label]) == 0:
+        if label not in temp_data_sets or len(temp_data_sets[label]) == 0:
             continue
 
-        predictions_per_label[label] = pd.concat(temp_data_sets[label], join='inner')
+        if label not in predictions_per_label:
+            predictions_per_label[label] = pd.DataFrame()
+
+        predictions_per_label[label] = pd.concat(temp_data_sets[label], ignore_index=True)
 
     for label in Config.LABELS:
         if label not in predictions_per_label:
