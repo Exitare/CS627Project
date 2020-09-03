@@ -44,6 +44,9 @@ class File:
         else:
             self.name = full_name
 
+        # List of labels present in the data set. The list is ideally a copy of the list specific in the config.ini
+        # If a label is missing the data set it will not be present in here, and therefore not evaluated
+        self.detected_labels = []
         self.verified = True
 
         # Check if its a merged file or not
@@ -62,52 +65,23 @@ class File:
         # Pre process the raw data set
         if not Config.MEMORY_SAVING_MODE:
             self.preprocessed_df = PreProcessing.pre_process_data_set(self.raw_df)
+            self.detect_labels()
         else:
             self.preprocessed_df = pd.DataFrame()
 
-        # Setup required data sets
-        self.runtime_evaluation = pd.DataFrame(
-            columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
-                     'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
-        self.memory_evaluation = pd.DataFrame(
-            columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
-                     'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
+        # Contains the test, train score, name of the file, and additional data for each file
+        self.evaluation_results = dict()
+        # Contains y and y_hat values
+        self.predicted_results = dict()
+        # Contains the features importances for each file
+        self.feature_importances = dict()
+        # Contains the pca components with supporting functions for all labels
+        self.pca_components = dict()
+        # Contains all pca components as df for each label
+        self.pca_components_data_frames = dict()
 
-        self.predicted_runtime_values = pd.DataFrame(columns=['y', 'y_hat'])
-        self.predicted_memory_values = pd.DataFrame(columns=['y', 'y_hat'])
-
-        self.runtime_evaluation_percentage_folds = pd.DataFrame(
-            columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
-                     '90', '91', '92', '93', '94', '95', '96', '97', '98',
-                     '99', 'Rows', 'Features'])
-
-        self.runtime_evaluation_percentage_rows = pd.DataFrame(
-            columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
-                     '90', '91', '92', '93', '94', '95', '96', '97', '98',
-                     '99'])
-
-        self.memory_evaluation_percentage_folds = pd.DataFrame(
-            columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
-                     '90', '91', '92', '93', '94', '95', '96', '97', '98',
-                     '99'])
-
-        self.memory_evaluation_percentage_rows = pd.DataFrame(
-            columns=['0', '10', '20', '30', '40', '50', '60', '70', '80',
-                     '90', '91', '92', '93', '94', '95', '96', '97', '98',
-                     '99'])
-
-        self.runtime_feature_importance = pd.DataFrame()
-        self.memory_feature_importance = pd.DataFrame()
-
-        # Contains the runtime pca components as df
-        self.runtime_pca_components_df = pd.DataFrame()
-        # Contains the runtime pca components with supporting functions
-        self.runtime_pca_components = None
-
-        # Contains the memory pca components as df
-        self.memory_pca_components_df = pd.DataFrame()
-        # Contains the memory pca components with supporting functions
-        self.memory_pca_components = None
+        # Prepare the internal data structure
+        self.prepare_internal_data_structure()
 
         if not Config.MEMORY_SAVING_MODE:
             self.verify()
@@ -127,10 +101,33 @@ class File:
         # Determines if a file is already evaluated or not
         self.evaluated = False
 
-    # Loading
-    def load_raw_data(self):
+    def load_memory_sensitive_data(self):
         """
-        Loads the data set. Only used if memory saving mode is active
+        Loads all the data and prepares data sets, which was skipped due to memory saving mode
+        """
+        self.__load_preprocess_raw_data()
+        self.detect_labels()
+        self.prepare_internal_data_structure()
+
+    def prepare_internal_data_structure(self):
+        """
+        Prepares initial values for evaluation data
+        """
+        for label in self.detected_labels:
+            self.evaluation_results[label] = pd.DataFrame(
+                columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
+                         'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
+            self.predicted_results[label] = pd.DataFrame(columns=['y', 'y_hat'])
+
+            self.feature_importances[label] = pd.DataFrame()
+            self.pca_components[label] = None
+            self.pca_components_data_frames[label] = pd.DataFrame()
+
+    # Loading and preprocessing
+    def __load_preprocess_raw_data(self):
+        """
+        Loads the data set and preprocesses it
+        Only used if memory saving mode is active
         :return:
         """
         if not self.merged_file:
@@ -149,6 +146,14 @@ class File:
         rows: int = len(self.raw_df.index)
         features: int = columns - 1
         return columns, rows, features
+
+    def detect_labels(self):
+        """
+        Detects if the labels specified in the config.ini are present for the preproccesed data set
+        """
+        for label in Config.LABELS:
+            if label in self.preprocessed_df:
+                self.detected_labels.append(label)
 
     def get_pre_processed_df_statistics(self):
         """
@@ -189,13 +194,14 @@ class File:
                 self.verified = False
 
         # Check if columns will pass variance selection
-        if Config.RUNTIME_LABEL in self.preprocessed_df:
-            check_df = self.preprocessed_df.copy()
-            del check_df[Config.RUNTIME_LABEL]
-            check_df = PreProcessing.variance_selection(check_df)
+        for label in self.detected_labels:
+            if label in self.preprocessed_df:
+                check_df = self.preprocessed_df.copy()
+                del check_df[label]
+                check_df = PreProcessing.variance_selection(check_df)
 
-            if 'numpy' not in str(type(check_df)):
-                self.verified = False
+                if 'numpy' not in str(type(check_df)):
+                    self.verified = False
 
     # Prediction
     def predict(self, label: str):
@@ -205,9 +211,6 @@ class File:
         """
         try:
             df = self.preprocessed_df.copy()
-
-            if label not in df:
-                return
 
             model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, max_depth=Config.FOREST_MAX_DEPTH,
                                           random_state=1)
@@ -232,7 +235,7 @@ class File:
             model.fit(X_train, y_train)
 
             # Feature importance
-            self.calculate_feature_importance(model, df, True)
+            self.__calculate_feature_importance(label, model, df)
 
             y_test_hat = model.predict(X_test)
             y_train_hat = model.predict(X_train)
@@ -243,206 +246,43 @@ class File:
             if train_score > test_score * 2:
                 over_fitting = True
 
-            if label == Config.RUNTIME_LABEL:
-                self.runtime_evaluation = self.runtime_evaluation.append(
-                    {'File Name': self.name, "Test Score": test_score,
-                     "Train Score": train_score, "Potential Over Fitting": over_fitting,
-                     "Initial Row Count": len(self.raw_df.index),
-                     "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
-                     "Processed Feature Count": X.shape[1]}, ignore_index=True)
+            self.evaluation_results[label] = self.evaluation_results[label].append(
+                {'File Name': self.name, "Test Score": test_score,
+                 "Train Score": train_score, "Potential Over Fitting": over_fitting,
+                 "Initial Row Count": len(self.raw_df.index),
+                 "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
+                 "Processed Feature Count": X.shape[1]}, ignore_index=True)
+            self.predicted_results[label] = pd.concat(
+                [pd.Series(y_test).reset_index()[label], pd.Series(y_test_hat)],
+                axis=1)
+            self.predicted_results[label].rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
 
-                self.predicted_runtime_values = pd.concat(
-                    [pd.Series(y_test).reset_index()[Config.RUNTIME_LABEL], pd.Series(y_test_hat)],
-                    axis=1)
-                self.predicted_runtime_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
-            else:
-                self.memory_evaluation = self.memory_evaluation.append(
-                    {'File Name': self.name, "Test Score": test_score,
-                     "Train Score": train_score, "Potential Over Fitting": over_fitting,
-                     "Initial Row Count": len(self.raw_df.index),
-                     "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
-                     "Processed Feature Count": X.shape[1]}, ignore_index=True)
-
-                self.predicted_memory_values = pd.concat(
-                    [pd.Series(y_test).reset_index()[Config.MEMORY_LABEL], pd.Series(y_test_hat)],
-                    axis=1)
-                self.predicted_memory_values.rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
 
         except BaseException as ex:
-            logging.warning("Error occurred in file predict function")
             logging.exception(ex)
             input()
 
-    def predict_row_removal(self, label: str):
-        """
-        Predict the value for the column specified, while removing data from the original df
-        :param label: the label that should be predicted.
-        :return:
-        """
-        df = self.preprocessed_df.copy()
-
-        if label not in df:
-            return
-
-        averages_per_repetition = pd.Series()
-
-        k_folds_evaluation = pd.DataFrame(
-            columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
-                     '95', '96', '97', '98', '99'])
-
-        k_folds_row_count = []
-
-        y = df[label]
-        del df[label]
-        X = df
-
-        X = PreProcessing.normalize_X(X)
-        X = PreProcessing.variance_selection(X)
-
-        for i in range(0, Config.REPETITIONS, 1):
-            if Config.VERBOSE:
-                logging.info(f"Started repetition # {i + 1}")
-            k_folds, k_folds_row_count = self.__calculate_k_folds(X, y)
-            averages_per_repetition = averages_per_repetition.append(k_folds).mean()
-
-            # Remove the mean of the index column
-            del averages_per_repetition[0]
-
-            averages_per_repetition = averages_per_repetition.fillna(0)
-            k_folds_evaluation = k_folds_evaluation.append(averages_per_repetition, ignore_index=True)
-
-        if label == Config.MEMORY_LABEL:
-            self.memory_evaluation_percentage_folds = k_folds_evaluation
-            self.memory_evaluation_percentage_folds = self.memory_evaluation_percentage_folds.append(
-                pd.Series(k_folds_evaluation.mean()), ignore_index=True)
-            self.memory_evaluation_percentage_folds = self.memory_evaluation_percentage_folds.append(
-                pd.Series(k_folds_evaluation.var()), ignore_index=True)
-            self.memory_evaluation_percentage_rows = k_folds_row_count.iloc[0]
-        elif label == Config.RUNTIME_LABEL:
-            self.runtime_evaluation_percentage_folds = k_folds_evaluation
-            self.runtime_evaluation_percentage_folds = self.runtime_evaluation_percentage_folds.append(
-                pd.Series(k_folds_evaluation.mean()), ignore_index=True)
-            self.runtime_evaluation_percentage_folds = self.runtime_evaluation_percentage_folds.append(
-                pd.Series(k_folds_evaluation.var()), ignore_index=True)
-            self.runtime_evaluation_percentage_rows = k_folds_row_count.iloc[0]
-        else:
-            logging.warning(f"Could not detect predictive column: {label}")
-
-    def pca_analysis(self, runtime: bool):
+    def pca_analysis(self, label: str):
         """
         Generates a pca analysis
         """
 
         try:
             df = self.preprocessed_df.copy()
-            if runtime:
-                if not self.__label_present(df, Config.RUNTIME_LABEL):
-                    return
 
-                Y = df[Config.RUNTIME_LABEL]
-                del df[Config.RUNTIME_LABEL]
-            else:
-
-                if not self.__label_present(df, Config.MEMORY_LABEL):
-                    return
-
-                Y = df[Config.MEMORY_LABEL]
-                del df[Config.MEMORY_LABEL]
-
+            y = df[label]
+            del df[label]
             X = df
             X = PreProcessing.normalize_X(X)
             X = PreProcessing.variance_selection(X)
 
-            if runtime:
-                self.runtime_pca_components = PCA()
-                X = self.runtime_pca_components.fit_transform(X)
-                self.runtime_pca_components_df = pd.DataFrame(X)
-                self.runtime_pca_components_df['Runtime'] = pd.Series(Y.values)
-            else:
-                self.memory_pca_components = PCA()
-                X = self.memory_pca_components.fit_transform(X)
-                self.memory_pca_components_df = pd.DataFrame(X)
-                self.memory_pca_components_df['Memory'] = pd.Series(Y.values)
+            self.pca_components[label] = PCA()
+            X = self.pca_components[label].fit_transform(X)
+            self.pca_components_data_frames[label] = pd.DataFrame(X)
+            self.pca_components_data_frames[label] = pd.Series(y.values)
 
         except BaseException as ex:
             logging.exception(ex)
-
-    def __calculate_k_folds(self, X, y):
-        """
-        Trains the model to predict the total time
-        :param X:
-        :param y:
-        :return:
-        """
-        try:
-
-            kf = KFold(n_splits=Config.K_FOLDS)
-            k_fold_scores = pd.DataFrame(
-                columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
-                         '95', '96', '97', '98', '99'])
-            k_fold_rows = pd.DataFrame(
-                columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92', '93', '94',
-                         '95', '96', '97', '98', '99'])
-
-            for train_index, test_index in kf.split(X):
-                r2scores = []
-                # Iterate from 0 to 101. Ends @ 100, reduce by 1
-                for i in range(0, 101, 1):
-                    if i <= 90 and i % 10 == 0:
-                        r2scores.append(self.__calculate_single_fold(i, X, y, train_index, test_index))
-                    if 99 >= i > 90:
-                        r2scores.append(self.__calculate_single_fold(i, X, y, train_index, test_index))
-
-                k_fold_scores = k_fold_scores.append(
-                    {'0': r2scores[0][0], '10': r2scores[1][0], '20': r2scores[2][0], '30': r2scores[3][0],
-                     '40': r2scores[4][0], '50': r2scores[5][0], '60': r2scores[6][0], '70': r2scores[7][0],
-                     '80': r2scores[8][0], '90': r2scores[9][0], '91': r2scores[10][0], '92': r2scores[11][0],
-                     '93': r2scores[12][0], '94': r2scores[13][0], '95': r2scores[14][0], '96': r2scores[15][0],
-                     '97': r2scores[16][0], '98': r2scores[17][0], '99': r2scores[18][0]}, ignore_index=True)
-
-                k_fold_rows = k_fold_rows.append(
-                    {'0': r2scores[0][1], '10': r2scores[1][1], '20': r2scores[2][1], '30': r2scores[3][1],
-                     '40': r2scores[4][1], '50': r2scores[5][1], '60': r2scores[6][1], '70': r2scores[7][1],
-                     '80': r2scores[8][1], '90': r2scores[9][1], '91': r2scores[10][1], '92': r2scores[11][1],
-                     '93': r2scores[12][1], '94': r2scores[13][1], '95': r2scores[14][1], '96': r2scores[15][1],
-                     '97': r2scores[16][1], '98': r2scores[17][1], '99': r2scores[18][1]}, ignore_index=True)
-
-            return k_fold_scores, k_fold_rows
-
-        except BaseException as ex:
-            print(ex)
-            k_fold_scores = pd.DataFrame(0, index=np.arange(Config.K_FOLDS),
-                                         columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92',
-                                                  '93', '94', '95', '96', '97', '98', '99'])
-            k_fold_rows = pd.DataFrame(0, index=np.arange(Config.K_FOLDS),
-                                       columns=['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '91', '92',
-                                                '93', '94',
-                                                '95', '96', '97', '98', '99'])
-            return k_fold_scores, k_fold_rows
-
-    def __calculate_single_fold(self, i, X, y, train_index, test_index):
-        """
-        Calculates the r2 scores
-        :param i:
-        :param X:
-        :param y:
-        :param train_index:
-        :param test_index:
-        :return:
-        """
-        model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, max_depth=Config.FOREST_MAX_DEPTH,
-                                      random_state=1)
-
-        # Calculate amount of rows to be removed
-        rows = int(len(train_index) * i / 100)
-        # Remove rows by random index
-        train_index = PreProcessing.remove_random_rows(train_index, rows)
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-
-        model.fit(X_train, y_train)
-        y_test_hat = model.predict(X_test)
-        return r2_score(y_test, y_test_hat), len(train_index)
 
     # Reports
     def generate_reports(self):
@@ -450,34 +290,15 @@ class File:
         Generate file specific reports
         :return:
         """
-        # Predicted values
-        if not self.runtime_evaluation.empty:
-            self.runtime_evaluation.to_csv(os.path.join(self.folder, "runtime_evaluation_report.csv"), index=False)
 
-        if not self.memory_evaluation.empty:
-            self.memory_evaluation.to_csv(os.path.join(self.folder, "memory_evaluation_report.csv"), index=False)
+        # TODO: Reimplement for use with labels
+        for label, value in self.evaluation_results.items():
+            if not value.empty:
+                value.to_csv(Path.joinpath(self.folder, f"{label}_evaluation_report.csv"), index=False)
 
-        if not self.predicted_memory_values.empty:
-            self.predicted_memory_values.to_csv(os.path.join(self.folder, "predicted_memory_report.csv"), index=False)
-
-        if not self.predicted_runtime_values.empty:
-            self.predicted_runtime_values.to_csv(os.path.join(self.folder, "predicted_runtime_report.csv"), index=False)
-
-        if not self.runtime_evaluation_percentage_folds.empty:
-            self.runtime_evaluation_percentage_folds.to_csv(
-                os.path.join(self.folder, "runtime_row_removal_predictions.csv"), index=False)
-
-        if not self.runtime_evaluation_percentage_rows.empty:
-            self.runtime_evaluation_percentage_rows.T.to_csv(os.path.join(self.folder, "row_removal_rows.csv"),
-                                                             index=False)
-
-        if not self.memory_evaluation_percentage_folds.empty:
-            self.memory_evaluation_percentage_folds.to_csv(
-                os.path.join(self.folder, "memory_row_removal_predictions.csv"), index=False)
-
-        if not self.memory_evaluation_percentage_rows.empty:
-            self.memory_evaluation_percentage_rows.T.to_csv(os.path.join(self.folder, "row_removal_rows.csv"),
-                                                            index=False)
+        for label, value in self.predicted_results.items():
+            if not value.empty:
+                value.to_csv(Path.joinpath(self.folder, f"{label}_predicted_values_report.csv"), index=False)
 
     # Plots
     def generate_plots(self):
@@ -487,11 +308,8 @@ class File:
         """
         self.__plot_predicted_values(True)
         self.__plot_predicted_values(False)
-        self.__plot_percentage_removal()
-        self.__plot_feature_importance(True)
-        self.__plot_feature_importance(False)
-        self.__plot_feature_to_label_correlation(True)
-        self.__plot_feature_to_label_correlation(False)
+        self.__plot_feature_importance()
+        self.__plot_feature_to_label_correlation()
         self.__plot_pca_analysis()
         self.__plot_pca_analysis_scatter()
 
@@ -500,58 +318,125 @@ class File:
         Plots the predicted values for the unmodified data set
         :return:
         """
+        try:
+            for label, data in self.predicted_results.items():
+                if data.empty:
+                    continue
 
-        ax = None
+                ax = sns.scatterplot(x='y', y='y_hat', label=label, data=data)
 
-        if not self.predicted_memory_values.empty:
-            ax = sns.scatterplot(x='y', y='y_hat', label="memory", data=self.predicted_memory_values)
-            if log_scale:
-                ax.set(xscale="log", yscale="log")
+                if log_scale:
+                    ax.set(xscale="log", yscale="log")
 
-        if not self.predicted_runtime_values.empty:
-            ax = sns.scatterplot(x='y', y='y_hat', label="runtime", data=self.predicted_runtime_values)
-            if log_scale:
-                ax.set(xscale="log", yscale="log")
+                if ax is None:
+                    logging.warning("Could not plot predicted values, because axis where None")
+                    return
 
-        if ax is None:
-            logging.warning("Could not plot predicted values, because axis where None")
+                ax.legend()
+                fig = ax.get_figure()
+                if log_scale:
+                    fig.savefig(os.path.join(self.folder, f"{label}_predicated_log_values.png"))
+                else:
+                    fig.savefig(os.path.join(self.folder, f"{label}_predicated_values.png"))
+                fig.clf()
+                plt.close('all')
+        except BaseException as ex:
+            logging.exception(ex)
+
+    def __plot_feature_importance(self):
+        """
+        Plots the feature importance for each evaluation
+        """
+
+        for label, data in self.predicted_results.items():
+            if data.empty:
+                continue
+
+            ax = sns.barplot(data=data)
+            ax.set(xlabel='Feature', ylabel='Gini Index')
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
+            ax.legend()
+            fig = ax.get_figure()
+            fig.savefig(os.path.join(self.folder, f"{label}_feature_importance.png"), bbox_inches='tight')
+            fig.clf()
+            plt.close('all')
+
+    def __plot_feature_to_label_correlation(self):
+        """
+        Plots the correlation between the feature and labels
+        """
+
+        for label, data in self.feature_importances.items():
+            if data.empty:
+                continue
+
+            important_features = []
+            for col in data.columns:
+                important_features.append(col)
+
+            important_features.append(label)
+
+            data = self.preprocessed_df[important_features]
+            corr = data.corr()
+
+            mask = np.triu(np.ones_like(corr, dtype=np.bool))
+            f, ax = plt.subplots(figsize=(11, 9))
+            cmap = sns.diverging_palette(220, 10, as_cmap=True)
+            sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
+                        square=True, linewidths=.5, cbar_kws={"shrink": .5})
+
+            fig = ax.get_figure()
+            fig.savefig(os.path.join(self.folder, f"{label}_correlation_matrix.png"), bbox_inches='tight')
+            fig.clf()
+
+    def __plot_pca_analysis(self):
+        """
+        Plots all features and their weight
+        """
+        try:
+            for label, data in self.pca_components.items():
+                if data is None:
+                    continue
+
+                features = range(data.n_components_)
+                plt.bar(features, data.explained_variance_ratio_, color='black')
+                plt.xlabel('PCA features')
+                plt.ylabel('variance %')
+                plt.xticks(features)
+                plt.xticks(rotation=90, fontsize=8)
+                plt.tight_layout()
+                plt.savefig(Path.joinpath(self.folder, f"{label}_pca_features.png"), bbox_inches='tight')
+                plt.clf()
+                plt.close('all')
+
+        except BaseException as ex:
+            logging.exception(ex)
             return
 
-        ax.legend()
-        fig = ax.get_figure()
-        if log_scale:
-            fig.savefig(os.path.join(self.folder, "predicated_log_values.png"))
-        else:
-            fig.savefig(os.path.join(self.folder, "predicated_values.png"))
-        fig.clf()
-        plt.close('all')
+    def __plot_pca_analysis_scatter(self):
+        """
+        Plots the clustering of the first most important pca components
+        """
 
-    def __plot_percentage_removal(self):
+        try:
+            for label, data in self.pca_components_data_frames.items():
+                if data.empty:
+                    continue
 
-        if not Config.PERCENTAGE_REMOVAL:
-            return
+                ax = sns.scatterplot(x=data[0], y=data[1],
+                                     hue=label,
+                                     data=data)
+                ax.set(xlabel='Component 1', ylabel='Component 2')
+                ax.legend()
+                fig = ax.get_figure()
+                fig.savefig(Path(self.folder, f"{label}_pca_cluster.png"), bbox_inches='tight')
+                fig.clf()
+                plt.close('all')
+        except BaseException as ex:
+            logging.exception(ex)
+            input()
 
-        ax = None
-
-        if not self.runtime_evaluation_percentage_folds.empty:
-            ax = sns.lineplot(data=self.runtime_evaluation_percentage_folds, palette="tab10", linewidth=2.5,
-                              dashes=False)
-
-        if not self.memory_evaluation_percentage_folds.empty:
-            ax = sns.lineplot(data=self.memory_evaluation_percentage_folds, palette="tab10", linewidth=2.5,
-                              dashes=False)
-
-        if ax is None:
-            return
-
-        ax.set(xlabel='Folds (Forelast is mean, last is var)', ylabel='R^2 Score')
-        ax.legend()
-        fig = ax.get_figure()
-        fig.savefig(os.path.join(self.folder, "percentage_removal_prediction.png"))
-        fig.clf()
-        plt.close('all')
-
-    def calculate_feature_importance(self, model, df, runtime: bool):
+    def __calculate_feature_importance(self, label: str, model, df):
         """
         Calculates the feature importance for the given model
         """
@@ -563,154 +448,8 @@ class File:
         importance.sort_values(by='Gini-importance', inplace=True, ascending=False)
 
         importance_indices = importance[importance['Gini-importance'].gt(0.01)].index
-        if runtime:
-            self.runtime_feature_importance = importance.T[importance_indices]
-        else:
-            self.memory_feature_importance = importance.T[importance_indices]
 
-    def __plot_feature_importance(self, runtime: bool):
-        """
-        Plots the feature importance for each evaluation
-        """
-        if runtime:
-            if self.runtime_feature_importance.empty:
-                return
-            ax = sns.barplot(data=self.runtime_feature_importance)
-        else:
-            if self.memory_feature_importance.empty:
-                return
-            ax = sns.barplot(data=self.memory_feature_importance)
-
-        ax.set(xlabel='Feature', ylabel='Gini Index')
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
-        ax.legend()
-        fig = ax.get_figure()
-        # Save the fig
-        if runtime:
-            fig.savefig(os.path.join(self.folder, "runtime_feature_importance.png"), bbox_inches='tight')
-        else:
-            fig.savefig(os.path.join(self.folder, "memory_feature_importance.png"), bbox_inches='tight')
-        fig.clf()
-        plt.close('all')
-
-    def __plot_feature_to_label_correlation(self, runtime: bool):
-        """
-        Plots the correlation between the feature and labels
-        """
-        important_features = []
-
-        if runtime:
-            if self.runtime_feature_importance.empty or Config.RUNTIME_LABEL not in self.raw_df:
-                return
-
-            for col in self.runtime_feature_importance.columns:
-                important_features.append(col)
-
-            important_features.append(Config.RUNTIME_LABEL)
-
-            data = self.preprocessed_df[important_features]
-            corr = data.corr()
-
-            mask = np.triu(np.ones_like(corr, dtype=np.bool))
-            f, ax = plt.subplots(figsize=(11, 9))
-            cmap = sns.diverging_palette(220, 10, as_cmap=True)
-            sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
-                        square=True, linewidths=.5, cbar_kws={"shrink": .5})
-
-            fig = ax.get_figure()
-            fig.savefig(os.path.join(self.folder, "runtime_correlation_matrix.png"), bbox_inches='tight')
-            fig.clf()
-
-        else:
-            if self.memory_feature_importance.empty or Config.MEMORY_LABEL not in self.raw_df:
-                return
-
-            for col in self.memory_feature_importance.columns:
-                important_features.append(col)
-
-            important_features.append(Config.MEMORY_LABEL)
-
-            data = self.preprocessed_df[important_features]
-            corr = data.corr()
-
-            mask = np.triu(np.ones_like(corr, dtype=np.bool))
-            f, ax = plt.subplots(figsize=(11, 9))
-            cmap = sns.diverging_palette(220, 10, as_cmap=True)
-            sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
-                        square=True, linewidths=.5, cbar_kws={"shrink": .5})
-
-            fig = ax.get_figure()
-            fig.savefig(os.path.join(self.folder, "memory_correlation_matrix.png"), bbox_inches='tight')
-            fig.clf()
-            plt.close('all')
-
-    def __plot_pca_analysis(self):
-        """
-        Plots all features and their weight
-        """
-        try:
-            # Runtime
-            if self.runtime_pca_components is None:
-                return
-            features = range(self.runtime_pca_components.n_components_)
-            plt.bar(features, self.runtime_pca_components.explained_variance_ratio_, color='black')
-            plt.xlabel('PCA features')
-            plt.ylabel('variance %')
-            plt.xticks(features)
-            plt.xticks(rotation=90, fontsize=8)
-            plt.tight_layout()
-            plt.savefig(os.path.join(self.folder, "runtime_pca_features.png"), bbox_inches='tight')
-            plt.clf()
-            plt.close('all')
-
-            # Memory
-
-            if self.memory_pca_components is None:
-                return
-
-            features = range(self.memory_pca_components.n_components_)
-            plt.bar(features, self.memory_pca_components.explained_variance_ratio_, color='black')
-            plt.xlabel('PCA features')
-            plt.ylabel('variance %')
-            plt.xticks(features)
-            plt.xticks(rotation=90, fontsize=8)
-            plt.tight_layout()
-            plt.savefig(os.path.join(self.folder, "memory_pca_features.png"), bbox_inches='tight')
-            plt.clf()
-            plt.close('all')
-
-        except BaseException as ex:
-            logging.exception(ex)
-            return
-
-    def __plot_pca_analysis_scatter(self):
-        """
-        Plots the clustering of the first most important pca components
-        """
-
-        # Runtime
-        if not self.runtime_pca_components_df.empty:
-            ax = sns.scatterplot(x=self.runtime_pca_components_df[0], y=self.runtime_pca_components_df[1],
-                                 hue="Runtime",
-                                 data=self.runtime_pca_components_df)
-            ax.set(xlabel='Component 1', ylabel='Component 2')
-            ax.legend()
-            fig = ax.get_figure()
-            fig.savefig(Path(self.folder, "runtime_pca_cluster.png"), bbox_inches='tight')
-            fig.clf()
-            plt.close('all')
-
-        # Memory
-        if not self.memory_pca_components_df.empty:
-            ax = sns.scatterplot(x=self.memory_pca_components_df[0], y=self.memory_pca_components_df[1],
-                                 hue="Memory",
-                                 data=self.memory_pca_components_df)
-            ax.set(xlabel='Component 1', ylabel='Component 2')
-            ax.legend()
-            fig = ax.get_figure()
-            fig.savefig(Path(self.folder, "memory_pca_cluster.png"), bbox_inches='tight')
-            fig.clf()
-            plt.close('all')
+        self.feature_importances[label] = importance.T[importance_indices]
 
     # Cleanup
     def free_memory(self):
@@ -723,12 +462,3 @@ class File:
 
         self.raw_df = None
         self.preprocessed_df = None
-
-    def __label_present(self, df, label: str) -> bool:
-        """
-        Checks if the specific label is present
-        """
-        if label in df:
-            return True
-        else:
-            return False

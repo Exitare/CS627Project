@@ -25,8 +25,8 @@ class Tool:
         # All files eligible to be evaluated
         self.verified_files = []
 
-        self.files_runtime_overview = pd.DataFrame()
-        self.files_memory_overview = pd.DataFrame()
+        # Overview for all evaluated labels
+        self.files_label_overview = dict()
 
         # if all checks out, the tool will be flag as verified
         # Tools flagged as not verified will not be evaluated
@@ -106,22 +106,19 @@ class Tool:
         # Load data for each file of the tool because it was not loaded at the start
         if Config.MEMORY_SAVING_MODE:
             for file in self.verified_files:
-                file.load_raw_data()
-                file.verify()
+                file.load_memory_sensitive_data()
 
         # Evaluate the files
         for file in self.verified_files:
             logging.info(f"Evaluating file {file.name}...")
 
-            # Predict values for single files
-            file.predict(Config.RUNTIME_LABEL)
-            file.predict(Config.MEMORY_LABEL)
-            if Config.PERCENTAGE_REMOVAL:
-                file.predict_row_removal(Config.RUNTIME_LABEL)
-                file.predict_row_removal(Config.MEMORY_LABEL)
+            # Iterate through all label that are present in the df
+            for label in file.detected_labels:
+                file.predict(label)
+                file.pca_analysis(label)
 
-            file.pca_analysis(Config.RUNTIME_LABEL)
-            file.pca_analysis(Config.MEMORY_LABEL)
+                if Config.PERCENTAGE_REMOVAL:
+                    file.predict_row_removal(label)
 
             # Copy the source file to the results folder
             # If its a merged file use the virtual one.
@@ -141,16 +138,16 @@ class Tool:
                 continue
 
             logging.info(f"Evaluating file {file.name}...")
+            for label in file.detected_labels:
+                # Predict values for single files
+                file.predict(label)
+                if Config.PERCENTAGE_REMOVAL:
+                    # file.predict_row_removal(Config.RUNTIME_LABEL)
+                    # file.predict_row_removal(Config.MEMORY_LABEL)
+                    pass
 
-            # Predict values for single files
-            file.predict(Config.RUNTIME_LABEL)
-            file.predict(Config.MEMORY_LABEL)
-            if Config.PERCENTAGE_REMOVAL:
-                file.predict_row_removal(Config.RUNTIME_LABEL)
-                file.predict_row_removal(Config.MEMORY_LABEL)
-
-            file.pca_analysis(Config.RUNTIME_LABEL)
-            file.evaluated = True
+                file.pca_analysis(label)
+                file.evaluated = True
 
     def prepare_additional_files(self):
         """
@@ -167,22 +164,23 @@ class Tool:
         """
         Prepares a merged data set which contains only data from version with a test score > 0.6
         """
-        # Create merged files containing only data sets of version with a Test Score greated than 0.6
-        best_performing = self.files_runtime_overview[self.files_runtime_overview['Test Score'] > 0.6][
-            'File Name'].tolist()
 
-        # Create a merged data set containing only versions which are performing good
-        best_versions_df = []
-        for file in self.verified_files:
-            if file.name in best_performing and not file.merged_file:
-                best_versions_df.append(file.raw_df)
+        for label in self.files_label_overview:
+            best_versions_df = []
 
-        if len(best_versions_df) <= 1:
-            return
+            best_performing = self.files_label_overview[label][self.files_label_overview[label]['Test Score'] > 0.6][
+                'File Name'].tolist()
 
-        best_version_files_raw_df = pd.concat(best_versions_df, join='inner')
-        best_version_merged_file = File("best_version_merged_file", self.folder, best_version_files_raw_df)
-        self.verified_files.append(best_version_merged_file)
+            for file in self.verified_files:
+                if file.name in best_performing and not file.merged_file:
+                    best_versions_df.append(file.raw_df)
+
+            if len(best_versions_df) <= 1:
+                return
+
+            best_version_files_raw_df = pd.concat(best_versions_df, join='inner')
+            best_version_merged_file = File(f"{label}_best_version_merged_file", self.folder, best_version_files_raw_df)
+            self.verified_files.append(best_version_merged_file)
 
     def __prepare_most_important_feature_data_set(self):
         """
@@ -204,15 +202,13 @@ class Tool:
         for file in self.verified_files:
             file.generate_reports()
 
-        if not self.files_runtime_overview.empty:
-            self.files_runtime_overview.sort_values(by='Test Score', ascending=False, inplace=True)
-            self.files_runtime_overview.to_csv(os.path.join(self.folder, "overview_files_runtime_report.csv"),
-                                               index=False)
+        for label in self.files_label_overview:
+            if self.files_label_overview[label].empty:
+                continue
 
-        if not self.files_memory_overview.empty:
-            self.files_memory_overview.sort_values(by='Test Score', ascending=False, inplace=True)
-            self.files_memory_overview.to_csv(os.path.join(self.folder, "overview_files_memory_report.csv"),
-                                              index=False)
+            self.files_label_overview[label].sort_values(by='Test Score', ascending=False, inplace=True)
+            self.files_label_overview[label].to_csv(os.path.join(self.folder, f"{label}_overview_files_report.csv"),
+                                                    index=False)
 
         logging.info("All reports generated.")
         sleep(1)
@@ -231,12 +227,14 @@ class Tool:
         """
         Creates the overview data sets
         """
-        self.files_runtime_overview = pd.DataFrame()
-        self.files_memory_overview = pd.DataFrame()
 
         for file in self.verified_files:
-            self.files_runtime_overview = self.files_runtime_overview.append(file.runtime_evaluation)
-            self.files_memory_overview = self.files_memory_overview.append(file.memory_evaluation)
+            for label, data in file.evaluation_results.items():
+                if label in self.files_label_overview:
+                    self.files_label_overview[label] = self.files_label_overview[label].append(data)
+                else:
+                    self.files_label_overview[label] = pd.DataFrame()
+                    self.files_label_overview[label] = self.files_label_overview[label].append(data)
 
     def __add_merged_file(self):
         """
@@ -252,40 +250,30 @@ class Tool:
         merged_file = File("merged_tool", self.folder, merged_files_raw_df)
         self.verified_files.append(merged_file)
 
-    def get_best_performing_version(self, runtime: bool):
+    def get_best_performing_version(self, label: str):
         """
-        Returns the best performing version of the tool
+        Returns the best performing version of the tool for the specific label
         """
-        if runtime:
-            if self.files_runtime_overview.empty:
-                return None
 
-            self.files_runtime_overview = self.files_runtime_overview.reset_index()
-            row_id = self.files_runtime_overview['Test Score'].argmax()
-            return self.files_runtime_overview.loc[row_id]
-        else:
-            if self.files_memory_overview.empty:
-                return None
+        if self.files_label_overview[label].empty:
+            return None
 
-            self.files_memory_overview = self.files_memory_overview.reset_index()
-            row_id = self.files_memory_overview['Test Score'].argmax()
-            return self.files_memory_overview.loc[row_id]
+        # Create a copy to manipulate the data
+        temp_data = self.files_label_overview[label].copy()
+        temp_data = temp_data.reset_index()
+        row_id = temp_data['Test Score'].argmax()
+        return temp_data.loc[row_id]
 
-    def get_worst_performing_version(self, runtime: bool):
+    def get_worst_performing_version(self, label: str):
         """
         Returns the worst performing version of the tool
         """
-        if runtime:
-            if self.files_runtime_overview.empty:
-                return None
 
-            self.files_runtime_overview = self.files_runtime_overview.reset_index()
-            row_id = self.files_runtime_overview['Test Score'].argmin()
-            return self.files_runtime_overview.loc[row_id]
-        else:
-            if self.files_memory_overview.empty:
-                return None
+        if self.files_label_overview[label].empty:
+            return None
 
-            self.files_memory_overview = self.files_memory_overview.reset_index()
-            row_id = self.files_memory_overview['Test Score'].argmin()
-            return self.files_memory_overview.loc[row_id]
+            # Create a copy to manipulate the data
+        temp_data = self.files_label_overview[label].copy()
+        temp_data = temp_data.reset_index()
+        row_id = temp_data['Test Score'].argmin()
+        return temp_data.loc[row_id]
