@@ -9,6 +9,7 @@ from time import sleep
 import os
 import seaborn as sns
 import shutil
+import matplotlib.pyplot as plt
 
 
 class Tool:
@@ -223,6 +224,8 @@ class Tool:
         for file in self.verified_files:
             file.generate_plots()
 
+        self.__plot_prediction_score()
+
     def generate_overview_data_sets(self):
         """
         Creates the overview data sets
@@ -286,3 +289,20 @@ class Tool:
         temp_data = temp_data.reset_index()
         row_id = temp_data['Test Score'].argmin()
         return temp_data.loc[row_id]
+
+    def __plot_prediction_score(self):
+        for label in Config.LABELS:
+            if label not in self.files_label_overview:
+                continue
+
+            data = self.files_label_overview[label]
+            ax = sns.boxplot(x="File Name", y="Test Score", data=data,
+                             palette="Set3")
+            ax = sns.swarmplot(x="File Name", y="Test Score", data=data, color=".25")
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+            fig = ax.get_figure()
+
+            fig.savefig(Path.joinpath(self.folder, f"{label}_prediction_overview"),
+                        bbox_inches="tight")
+            fig.clf()
+            plt.close('all')
