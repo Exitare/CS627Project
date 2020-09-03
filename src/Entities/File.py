@@ -424,9 +424,12 @@ class File:
                 if data.empty:
                     continue
 
+                temp_data = data.copy()
+                temp_data[label] = np.log(temp_data[label])
+
                 ax = sns.scatterplot(x=data[0], y=data[1],
                                      hue=label,
-                                     data=data)
+                                     data=temp_data)
                 ax.set(xlabel='Component 1', ylabel='Component 2')
                 ax.legend()
                 fig = ax.get_figure()
