@@ -119,7 +119,8 @@ class Tool:
                 file.pca_analysis(label)
 
                 if Config.PERCENTAGE_REMOVAL:
-                    file.predict_row_removal(label)
+                    # file.predict_row_removal(label)
+                    pass
 
             # Copy the source file to the results folder
             # If its a merged file use the virtual one.
