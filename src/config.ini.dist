@@ -21,8 +21,7 @@ excluded_files = Excluded_Files
 [FILE_SETTINGS]
 min_row_count_per_file = 1000
 min_column_count_per_file = 2
-runtime_label = runtime
-memory_label = memory.max_usage_in_bytes
+labels = runtime, memory, memory.max_usage_in_bytes
 
 [ML]
 k_folds = 5
