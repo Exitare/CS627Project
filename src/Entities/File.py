@@ -124,7 +124,7 @@ class File:
             self.feature_importances[label] = pd.DataFrame()
             self.pca_components[label] = None
             self.pca_components_data_frames[label] = pd.DataFrame()
-            self.evaluation_results[label] = []
+            self.split_evaluation_results[label] = pd.DataFrame()
 
     # Loading and preprocessing
     def __load_preprocess_raw_data(self):
@@ -297,7 +297,7 @@ class File:
                 X = data_frame
 
                 source_row_count = len(X)
-
+                source_feature_count = len(X.columns) - 1
                 X_indices = (X != 0).any(axis=1)
                 X = X.loc[X_indices]
                 y = y.loc[X_indices]
@@ -320,15 +320,9 @@ class File:
                 self.split_evaluation_results[label] = self.split_evaluation_results[label].append(
                     {'File Name': self.name, "Test Score": test_score,
                      "Train Score": train_score, "Potential Over Fitting": over_fitting,
-                     "Initial Row Count": len(self.raw_df.index),
-                     "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
+                     "Initial Row Count": source_row_count,
+                     "Initial Feature Count": source_feature_count, "Processed Row Count": len(X),
                      "Processed Feature Count": X.shape[1]}, ignore_index=True)
-
-            for label in self.split_evaluation_results:
-                for data in self.split_evaluation_results[label]:
-                    print(data)
-
-            input()
 
         except BaseException as ex:
             logging.exception(ex)
@@ -354,7 +348,6 @@ class File:
 
         except BaseException as ex:
             logging.exception(ex)
-            input()
 
     # Reports
     def generate_reports(self):
@@ -363,14 +356,22 @@ class File:
         :return:
         """
 
-        # TODO: Reimplement for use with labels
         for label, value in self.evaluation_results.items():
-            if not value.empty:
-                value.to_csv(Path.joinpath(self.folder, f"{label}_evaluation_report.csv"), index=False)
+            if value.empty:
+                continue
+
+            value.to_csv(Path.joinpath(self.folder, f"{label}_evaluation_report.csv"), index=False)
 
         for label, value in self.predicted_results.items():
-            if not value.empty:
-                value.to_csv(Path.joinpath(self.folder, f"{label}_predicted_values_report.csv"), index=False)
+            if value.empty:
+                continue
+
+            value.to_csv(Path.joinpath(self.folder, f"{label}_predicted_values_report.csv"), index=False)
+
+        for label, value in self.split_evaluation_results.items():
+            if value.empty:
+                continue
+            value.to_csv(Path.joinpath(self.folder, f"{label}_split_evaluation_report.csv"), index=False)
 
     # Plots
     def generate_plots(self):
