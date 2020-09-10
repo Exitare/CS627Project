@@ -71,6 +71,8 @@ class File:
 
         # Contains the test, train score, name of the file, and additional data for each file
         self.evaluation_results = dict()
+        # Contains the test, train score, name of the file, and additional data for each file and each split
+        self.split_evaluation_results = dict()
         # Contains y and y_hat values
         self.predicted_results = dict()
         # Contains the features importances for each file
@@ -122,6 +124,7 @@ class File:
             self.feature_importances[label] = pd.DataFrame()
             self.pca_components[label] = None
             self.pca_components_data_frames[label] = pd.DataFrame()
+            self.evaluation_results[label] = []
 
     # Loading and preprocessing
     def __load_preprocess_raw_data(self):
@@ -257,10 +260,78 @@ class File:
                 axis=1)
             self.predicted_results[label].rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
 
+        except BaseException as ex:
+            logging.exception(ex)
+
+    def predict_partial(self, label: str):
+        """
+        Split the data into parts, and predicts results using only one part after another.
+        """
+        try:
+            df = self.preprocessed_df.copy()
+
+            model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, max_depth=Config.FOREST_MAX_DEPTH,
+                                          random_state=1)
+
+            # How many parts minimum. 3 is default.
+            parts: int = 3
+            if len(df) > 10000:
+                while len(df) / parts > 3333:
+                    parts += 1
+
+            # how many rows should one part contain
+            parts_row_count: int = int(len(df) / parts)
+
+            data_frames = []
+            for part in range(parts):
+                if part == 0:
+                    data_frames.append(pd.DataFrame(df[:parts_row_count]))
+                elif 0 < part < parts - 1:
+                    data_frames.append(pd.DataFrame(df[(parts_row_count * part): (parts_row_count * (part + 1))]))
+                else:
+                    data_frames.append(pd.DataFrame(df[parts_row_count * part:]))
+
+            for data_frame in data_frames:
+                y = data_frame[label]
+                del data_frame[label]
+                X = data_frame
+
+                source_row_count = len(X)
+
+                X_indices = (X != 0).any(axis=1)
+                X = X.loc[X_indices]
+                y = y.loc[X_indices]
+
+                X = PreProcessing.variance_selection(X)
+
+                X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
+
+                model.fit(X_train, y_train)
+
+                y_test_hat = model.predict(X_test)
+                y_train_hat = model.predict(X_train)
+                train_score = r2_score(y_train, y_train_hat)
+                test_score = r2_score(y_test, y_test_hat)
+
+                over_fitting = False
+                if train_score > test_score * 2:
+                    over_fitting = True
+
+                self.split_evaluation_results[label] = self.split_evaluation_results[label].append(
+                    {'File Name': self.name, "Test Score": test_score,
+                     "Train Score": train_score, "Potential Over Fitting": over_fitting,
+                     "Initial Row Count": len(self.raw_df.index),
+                     "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
+                     "Processed Feature Count": X.shape[1]}, ignore_index=True)
+
+            for label in self.split_evaluation_results:
+                for data in self.split_evaluation_results[label]:
+                    print(data)
+
+            input()
 
         except BaseException as ex:
             logging.exception(ex)
-            input()
 
     def pca_analysis(self, label: str):
         """
