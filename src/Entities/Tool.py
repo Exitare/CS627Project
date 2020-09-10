@@ -116,11 +116,8 @@ class Tool:
             # Iterate through all label that are present in the df
             for label in file.detected_labels:
                 file.predict(label)
+                file.predict_partial(label)
                 file.pca_analysis(label)
-
-                if Config.PERCENTAGE_REMOVAL:
-                    # file.predict_row_removal(label)
-                    pass
 
             # Copy the source file to the results folder
             # If its a merged file use the virtual one.
@@ -143,11 +140,7 @@ class Tool:
             for label in file.detected_labels:
                 # Predict values for single files
                 file.predict(label)
-                if Config.PERCENTAGE_REMOVAL:
-                    # file.predict_row_removal(Config.RUNTIME_LABEL)
-                    # file.predict_row_removal(Config.MEMORY_LABEL)
-                    pass
-
+                file.predict_partial(label)
                 file.pca_analysis(label)
                 file.evaluated = True
 
