@@ -280,6 +280,7 @@ class File:
                     parts += 1
 
             # how many rows should one part contain
+            total_rows = int(len(df))
             parts_row_count: int = int(len(df) / parts)
 
             data_frames = []
@@ -322,7 +323,9 @@ class File:
                      "Train Score": train_score, "Potential Over Fitting": over_fitting,
                      "Initial Row Count": source_row_count,
                      "Initial Feature Count": source_feature_count, "Processed Row Count": len(X),
-                     "Processed Feature Count": X.shape[1]}, ignore_index=True)
+                     "Processed Feature Count": X.shape[1], "Total rows": total_rows}, ignore_index=True)
+
+            self.split_evaluation_results[label].sort_values(by='Test Score', ascending=False, inplace=True)
 
         except BaseException as ex:
             logging.exception(ex)
@@ -356,22 +359,60 @@ class File:
         :return:
         """
 
-        for label, value in self.evaluation_results.items():
-            if value.empty:
+        for label, data in self.evaluation_results.items():
+            if data.empty:
                 continue
 
-            value.to_csv(Path.joinpath(self.folder, f"{label}_evaluation_report.csv"), index=False)
+            data.to_csv(Path.joinpath(self.folder, f"{label}_evaluation_report.csv"), index=False)
 
-        for label, value in self.predicted_results.items():
-            if value.empty:
+        for label, data in self.predicted_results.items():
+            if data.empty:
                 continue
 
-            value.to_csv(Path.joinpath(self.folder, f"{label}_predicted_values_report.csv"), index=False)
+            data.to_csv(Path.joinpath(self.folder, f"{label}_predicted_values_report.csv"), index=False)
 
-        for label, value in self.split_evaluation_results.items():
-            if value.empty:
+        for label, data in self.split_evaluation_results.items():
+            if data.empty:
                 continue
-            value.to_csv(Path.joinpath(self.folder, f"{label}_split_evaluation_report.csv"), index=False)
+            data.to_csv(Path.joinpath(self.folder, f"{label}_split_evaluation_report.csv"), index=False)
+
+        for label, data in self.__create_combined_evaluation_data_set().items():
+            if data is None or data.empty:
+                continue
+
+            data.to_csv(Path.joinpath(self.folder, f"{label}_compared_evaluation_report.csv"), index=False)
+
+    def __create_combined_evaluation_data_set(self) -> dict:
+        """
+        Creates a data set containing the full evaluation and the splits
+        """
+        compare_evaluations = dict()
+
+        for label, data in self.split_evaluation_results.items():
+            if data.empty:
+                continue
+
+            if label in compare_evaluations:
+                data['split'] = True
+                compare_evaluations[label] = compare_evaluations[label].append(data)
+            else:
+                compare_evaluations[label] = pd.DataFrame()
+                data['split'] = True
+                compare_evaluations[label] = compare_evaluations[label].append(data)
+
+        for label, data in self.evaluation_results.items():
+            if data.empty:
+                continue
+
+            if label in compare_evaluations:
+                data['split'] = False
+                compare_evaluations[label] = compare_evaluations[label].append(data)
+            else:
+                compare_evaluations[label] = pd.DataFrame()
+                data['split'] = False
+                compare_evaluations[label] = compare_evaluations[label].append(data)
+
+        return compare_evaluations
 
     # Plots
     def generate_plots(self):
