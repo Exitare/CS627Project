@@ -297,8 +297,8 @@ class File:
                 del data_frame[label]
                 X = data_frame
 
-                source_row_count = len(X)
-                source_feature_count = len(X.columns) - 1
+                source_row_count = int(len(X))
+                source_feature_count = int(len(X.columns))
                 X_indices = (X != 0).any(axis=1)
                 X = X.loc[X_indices]
                 y = y.loc[X_indices]
@@ -359,28 +359,32 @@ class File:
         :return:
         """
 
+        # Report for evaluation results based on the whole data set
         for label, data in self.evaluation_results.items():
             if data.empty:
                 continue
 
             data.to_csv(Path.joinpath(self.folder, f"{label}_evaluation_report.csv"), index=False)
 
+        # Report for y and y_hat
         for label, data in self.predicted_results.items():
             if data.empty:
                 continue
 
             data.to_csv(Path.joinpath(self.folder, f"{label}_predicted_values_report.csv"), index=False)
 
+        # Report for the split evaluation
         for label, data in self.split_evaluation_results.items():
             if data.empty:
                 continue
             data.to_csv(Path.joinpath(self.folder, f"{label}_split_evaluation_report.csv"), index=False)
 
+        # Report for combined datasets (whole, splits)
         for label, data in self.__create_combined_evaluation_data_set().items():
             if data is None or data.empty:
                 continue
 
-            data.to_csv(Path.joinpath(self.folder, f"{label}_compared_evaluation_report.csv"), index=False)
+            data.to_csv(Path.joinpath(self.folder, f"{label}_combined_evaluation_report.csv"), index=False)
 
     def __create_combined_evaluation_data_set(self) -> dict:
         """
