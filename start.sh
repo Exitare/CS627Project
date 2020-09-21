@@ -14,6 +14,7 @@ if command -v python3 &>/dev/null; then
         echo OK
         source venv/bin/activate
         pip install --upgrade pip
+        pip install --upgrade setuptools
         pip install -r requirements.txt
         python3 ./src/ResourcePredictor.py $1 $2 $3 $4 $5
     else

@@ -1,8 +1,10 @@
+wheel==0.34.2
+Cython==0.29.21
 cycler==0.10.0
 joblib==0.14.1
 kiwisolver==1.1.0
-matplotlib==3.2.0
 numpy==1.18.1
+matplotlib==3.2.0
 pandas==1.0.1
 pyparsing==2.4.6
 python-dateutil==2.8.1
@@ -13,4 +15,3 @@ six==1.14.0
 psutil==5.7.0
 seaborn==0.10.1
 streamlit==0.62.0
-wheel==0.34.2
