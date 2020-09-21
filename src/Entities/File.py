@@ -240,6 +240,9 @@ class File:
             # Feature importance
             self.__calculate_feature_importance(label, model, df)
 
+            print(X_test)
+            input()
+
             y_test_hat = model.predict(X_test)
             y_train_hat = model.predict(X_train)
             train_score = r2_score(y_train, y_train_hat)
@@ -348,6 +351,27 @@ class File:
             X = self.pca_components[label].fit_transform(X)
             self.pca_components_data_frames[label] = pd.DataFrame(X)
             self.pca_components_data_frames[label][label] = pd.Series(y.values)
+
+        except BaseException as ex:
+            logging.exception(ex)
+
+    def create_simple_data_set(self, label: str):
+        """
+        Creates a simple data set from the existing one
+        """
+
+        try:
+            df = self.preprocessed_df.copy()
+
+            simple_df = pd.DataFrame()
+            simple_df[label] = label
+
+            for data in self.feature_importances[label]:
+                print(data)
+
+            input()
+
+
 
         except BaseException as ex:
             logging.exception(ex)

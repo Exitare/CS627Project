@@ -112,12 +112,13 @@ class Tool:
         # Evaluate the files
         for file in self.verified_files:
             logging.info(f"Evaluating file {file.name}...")
-
             # Iterate through all label that are present in the df
             for label in file.detected_labels:
                 file.predict(label)
                 file.predict_partial(label)
                 file.pca_analysis(label)
+                file.create_simple_data_set(label)
+
 
             # Copy the source file to the results folder
             # If its a merged file use the virtual one.
@@ -219,7 +220,6 @@ class Tool:
             file.generate_plots()
 
         self.__plot_prediction_score()
-
 
     def generate_overview_data_sets(self):
         """
