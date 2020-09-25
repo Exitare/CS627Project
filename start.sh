@@ -13,9 +13,9 @@ if command -v python3 &>/dev/null; then
     if [ $? -eq 0 ]; then
         echo OK
         source venv/bin/activate
-        pip install --upgrade pip
-        pip install --upgrade setuptools
-        pip install -r requirements.txt
+        pip install --upgrade pip  --no-cache-dir
+        pip install --upgrade setuptools  --no-cache-dir
+        pip install -r requirements.txt  --no-cache-dir
         python3 ./src/ResourcePredictor.py $1 $2 $3 $4 $5
     else
         echo "Could not execute python -m venv ./venv"

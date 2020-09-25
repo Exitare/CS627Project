@@ -294,6 +294,10 @@ class Tool:
                 continue
 
             data = self.files_label_overview[label]
+
+            if data.empty:
+                continue
+
             ax = sns.barplot(x="File Name", y="Test Score", data=data,
                              palette="Set3")
             ax.set_xticklabels(ax.get_xticklabels(), rotation=90)

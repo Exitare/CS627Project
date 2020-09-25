@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestRegressor
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
+from Services.Predictions import Predictions
 
 sns.set()
 
@@ -81,6 +82,8 @@ class File:
         self.pca_components = dict()
         # Contains all pca components as df for each label
         self.pca_components_data_frames = dict()
+        # Contains all simple dfs
+        self.simple_dfs = dict()
 
         # Prepare the internal data structure
         self.prepare_internal_data_structure()
@@ -213,44 +216,12 @@ class File:
         :return:
         """
         try:
-            df = self.preprocessed_df.copy()
 
-            model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, max_depth=Config.FOREST_MAX_DEPTH,
-                                          random_state=1)
+            model, train_score, test_score, over_fitting, X, y_test, y_test_hat \
+                = Predictions.predict(label, self.preprocessed_df.copy())
 
-            y = df[label]
-            del df[label]
-            X = df
-
-            source_row_count = len(X)
-
-            X_indices = (X != 0).any(axis=1)
-            X = X.loc[X_indices]
-            y = y.loc[X_indices]
-
-            if source_row_count != len(X) and Config.VERBOSE:
-                logging.info(f"Removed {source_row_count - len(X)} row(s). Source had {source_row_count}.")
-
-            X = PreProcessing.variance_selection(X)
-
-            X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
-
-            model.fit(X_train, y_train)
-
-            # Feature importance
-            self.__calculate_feature_importance(label, model, df)
-
-            print(X_test)
-            input()
-
-            y_test_hat = model.predict(X_test)
-            y_train_hat = model.predict(X_train)
-            train_score = r2_score(y_train, y_train_hat)
-            test_score = r2_score(y_test, y_test_hat)
-
-            over_fitting = False
-            if train_score > test_score * 2:
-                over_fitting = True
+            # Calculate feature importances
+            self.__calculate_feature_importance(label, model, self.preprocessed_df)
 
             self.evaluation_results[label] = self.evaluation_results[label].append(
                 {'File Name': self.name, "Test Score": test_score,
@@ -357,21 +328,32 @@ class File:
 
     def create_simple_data_set(self, label: str):
         """
-        Creates a simple data set from the existing one
+        Creates a simple data set based on the feature importances
         """
 
         try:
             df = self.preprocessed_df.copy()
 
             simple_df = pd.DataFrame()
-            simple_df[label] = label
+            simple_df[label] = df[label]
+            features = []
 
-            for data in self.feature_importances[label]:
-                print(data)
+            for label, feature_importance in self.feature_importances.items():
+                if feature_importance.empty:
+                    continue
 
+                indices = feature_importance[feature_importance['Gini-importance'].gt(0.01)].index
+                features = feature_importance.T[indices]
+
+            for feature in features:
+                print(feature)
+                simple_df[feature] = df[feature]
+
+            
+
+            self.simple_dfs[label] = simple_df
+            print(self.simple_dfs[label])
             input()
-
-
 
         except BaseException as ex:
             logging.exception(ex)
@@ -490,11 +472,14 @@ class File:
         Plots the feature importance for each evaluation
         """
 
-        for label, data in self.feature_importances.items():
-            if data.empty:
+        for label, feature_importance in self.feature_importances.items():
+            if feature_importance.empty:
                 continue
 
-            ax = sns.barplot(data=data)
+            indices = feature_importance[feature_importance['Gini-importance'].gt(0.01)].index
+            feature_importance = feature_importance.T[indices]
+
+            ax = sns.barplot(data=feature_importance)
             ax.set(xlabel='Feature', ylabel='Gini Index')
             ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
             ax.legend()
@@ -508,12 +493,15 @@ class File:
         Plots the correlation between the feature and labels
         """
 
-        for label, data in self.feature_importances.items():
-            if data.empty:
+        for label, feature_importance in self.feature_importances.items():
+            if feature_importance.empty:
                 continue
 
+            indices = feature_importance[feature_importance['Gini-importance'].gt(0.01)].index  #
+            feature_importance = feature_importance.T[indices]
+
             important_features = []
-            for col in data.columns:
+            for col in feature_importance.columns:
                 important_features.append(col)
 
             important_features.append(label)
@@ -592,9 +580,7 @@ class File:
         importance = pd.DataFrame.from_dict(feats, orient='index').rename(columns={0: 'Gini-importance'})
         importance.sort_values(by='Gini-importance', inplace=True, ascending=False)
 
-        importance_indices = importance[importance['Gini-importance'].gt(0.01)].index
-
-        self.feature_importances[label] = importance.T[importance_indices]
+        self.feature_importances[label] = importance
 
     # Cleanup
     def free_memory(self):
