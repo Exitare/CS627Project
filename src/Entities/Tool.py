@@ -117,17 +117,26 @@ class Tool:
                 file.predict(label)
                 file.predict_partial(label)
                 file.pca_analysis(label)
-                file.create_simple_data_set(label)
-
 
             # Copy the source file to the results folder
             # If its a merged file use the virtual one.
             if not file.merged_file:
                 shutil.copy(file.path, file.folder)
             else:
-                file.raw_df.to_csv(os.path.join(file.folder, "raw_df.csv"), index=False)
+                file.raw_df.to_csv(Path.joinpath(file.folder, "raw_df.csv"), index=False)
 
             file.evaluated = True
+
+    def prepare_additional_files(self):
+        """
+        Prepare additional files after the first evaluation. E.g. merge only best performing versions instead of all.
+        """
+        if len(self.verified_files) <= 1:
+            return
+
+        print()
+        logging.info("Preparing additional files...")
+        self.__prepare_best_performing_version_merged_file()
 
     def evaluate_additional_files(self):
         """
@@ -145,16 +154,17 @@ class Tool:
                 file.pca_analysis(label)
                 file.evaluated = True
 
-    def prepare_additional_files(self):
+    def create_simple_data_frames(self):
         """
-        Prepare additional files after the first evaluation. E.g. merge only best performing versions instead of all.
+        Creates the simple data frame for each file, using the best performing tool as reference
         """
-        if len(self.verified_files) <= 1:
-            return
+        for file in self.verified_files:
+            print(f"Creating simple data from for file {file.name}")
+            for label in file.detected_labels:
+                if self.get_best_performing_version(label) is None:
+                    continue
 
-        print()
-        logging.info("Preparing additional files...")
-        self.__prepare_best_performing_version_merged_file()
+                file.create_simple_data_set(label, self.get_best_performing_version(label)['Train Score'])
 
     def __prepare_best_performing_version_merged_file(self):
         """
@@ -251,6 +261,7 @@ class Tool:
         merged_file = File("merged_tool", self.folder, merged_files_raw_df)
         self.verified_files.append(merged_file)
 
+    # TODO: Return the file instead of the data row
     def get_best_performing_version(self, label: str):
         """
         Returns the best performing version of the tool for the specific label
@@ -268,6 +279,7 @@ class Tool:
         row_id = temp_data['Test Score'].argmax()
         return temp_data.loc[row_id]
 
+    # TODO: Return the file instead of the data row
     def get_worst_performing_version(self, label: str):
         """
         Returns the worst performing version of the tool

@@ -84,6 +84,7 @@ class File:
         self.pca_components_data_frames = dict()
         # Contains all simple dfs
         self.simple_dfs = dict()
+        self.simple_dfs_evaluation = dict()
 
         # Prepare the internal data structure
         self.prepare_internal_data_structure()
@@ -103,6 +104,7 @@ class File:
         else:
             self.verified = False
 
+        self.simple_df_folder = Folder_Management.create_folder(Path.joinpath(self.folder, "Simple"))
         # Determines if a file is already evaluated or not
         self.evaluated = False
 
@@ -128,6 +130,8 @@ class File:
             self.pca_components[label] = None
             self.pca_components_data_frames[label] = pd.DataFrame()
             self.split_evaluation_results[label] = pd.DataFrame()
+            self.simple_dfs_evaluation[label] = pd.DataFrame(columns=['Test Score', 'Features', 'Feature Count'])
+            self.simple_dfs[label] = pd.DataFrame()
 
     # Loading and preprocessing
     def __load_preprocess_raw_data(self):
@@ -221,7 +225,9 @@ class File:
                 = Predictions.predict(label, self.preprocessed_df.copy())
 
             # Calculate feature importances
-            self.__calculate_feature_importance(label, model, self.preprocessed_df)
+            temp_df = self.preprocessed_df.copy()
+            del temp_df[label]
+            self.__calculate_feature_importance(label, model, temp_df)
 
             self.evaluation_results[label] = self.evaluation_results[label].append(
                 {'File Name': self.name, "Test Score": test_score,
@@ -233,9 +239,9 @@ class File:
                 [pd.Series(y_test).reset_index()[label], pd.Series(y_test_hat)],
                 axis=1)
             self.predicted_results[label].rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
-
         except BaseException as ex:
             logging.exception(ex)
+            input()
 
     def predict_partial(self, label: str):
         """
@@ -326,34 +332,84 @@ class File:
         except BaseException as ex:
             logging.exception(ex)
 
-    def create_simple_data_set(self, label: str):
+    def create_simple_data_set(self, label: str, test_score_threshold):
         """
-        Creates a simple data set based on the feature importances
+        Creates simple data sets based on the feature importances
         """
+
+        # All simple dataframes will be stored in here
+        simple_dfs = []
 
         try:
             df = self.preprocessed_df.copy()
+            feature_importances = self.feature_importances[label].copy()
 
+            if feature_importances.empty:
+                return
+
+            # Transpose and remove the label from feature importances
+            feature_importances = feature_importances.T
+
+            if label in feature_importances:
+                del feature_importances[label]
+
+            feature_importances = feature_importances.T
+
+            previous_feature_count = 0
+            # Todo: Add config
+            threshold: float = 0.5
+            test_score = 0
+
+            # Create dataframe
             simple_df = pd.DataFrame()
-            simple_df[label] = df[label]
-            features = []
 
-            for label, feature_importance in self.feature_importances.items():
-                if feature_importance.empty:
+            while threshold > 0.00:
+                indices = feature_importances[feature_importances['Gini-importance'].gt(threshold)].index
+                features = feature_importances.T[indices]
+
+                feature_count = len(features.columns)
+                # Check if the number of features changed.
+                # If not continue
+                if previous_feature_count == feature_count:
+                    if Config.VERBOSE:
+                        logging.info("Skipping because of same feature count")
+                    threshold = self.__lower_threshold(threshold)
                     continue
 
-                indices = feature_importance[feature_importance['Gini-importance'].gt(0.01)].index
-                features = feature_importance.T[indices]
+                if feature_count == 0:
+                    if Config.VERBOSE:
+                        logging.info("Skipping because no features found")
+                    continue
 
-            for feature in features:
-                print(feature)
-                simple_df[feature] = df[feature]
+                # Create new dataframe
+                simple_df = pd.DataFrame()
+                simple_df[label] = df[label]
+                for feature in features:
+                    simple_df[feature] = df[feature]
 
-            
+                # Check if there is more than just one column
+                if len(simple_df.columns) <= 1:
+                    if Config.VERBOSE:
+                        logging.info("Skipping because df has only one column")
+                    threshold = self.__lower_threshold(threshold)
+                    continue
 
-            self.simple_dfs[label] = simple_df
-            print(self.simple_dfs[label])
-            input()
+                # Train model
+                _, train_score, test_score, _, _, _, _ = Predictions.predict(label, simple_df)
+                # Store the simple df evaluation in a dataframe and in a list
+                self.simple_dfs_evaluation[label] = self.simple_dfs_evaluation[label].append(
+                    {'Test Score': test_score, 'Features': [feature for feature in features],
+                     'Feature Count': len(features.columns)}, ignore_index=True)
+
+                # Store the simple df in a list
+                simple_df[label] = df[label]
+                simple_dfs.append(simple_df)
+
+                threshold = self.__lower_threshold(threshold)
+                previous_feature_count = feature_count
+
+            self.simple_dfs[label] = simple_dfs
+            self.simple_dfs_evaluation[label].sort_values(by='Test Score', ascending=False, inplace=True)
 
         except BaseException as ex:
             logging.exception(ex)
@@ -391,6 +447,32 @@ class File:
                 continue
 
             data.to_csv(Path.joinpath(self.folder, f"{label}_combined_evaluation_report.csv"), index=False)
+
+        # Report the dataframes for simple df
+        for label, data in self.simple_dfs.items():
+            if data is None:
+                continue
+
+            if self.simple_df_folder is None:
+                continue
+
+            counter = 0
+            for simple_df in data:
+                if simple_df.empty:
+                    continue
+
+                simple_df.to_csv(Path.joinpath(self.simple_df_folder, f"{label}_simple_df_{counter}.csv"))
+                counter += 1
+
+        # Report the evaluations for simple df
+        for label, data in self.simple_dfs_evaluation.items():
+            if data is None or data.empty:
+                continue
+
+            if self.simple_df_folder is None:
+                continue
+
+            data.to_csv(Path.joinpath(self.simple_df_folder, f"{label}_simple_df_evaluation.csv"))
 
     def __create_combined_evaluation_data_set(self) -> dict:
         """
@@ -436,6 +518,30 @@ class File:
         self.__plot_feature_to_label_correlation()
         self.__plot_pca_analysis()
         self.__plot_pca_analysis_scatter()
+        self.__plot_simple_df_test_scores()
+
+    def __plot_simple_df_test_scores(self):
+        """
+        Plots the test scores for all simple df
+        """
+
+        try:
+            for label, data in self.simple_dfs_evaluation.items():
+
+                if data.empty:
+                    continue
+
+                ax = sns.barplot(x="Feature Count", y="Test Score", data=data)
+                ax.set(xlabel='Features', ylabel='Test Score')
+                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
+                ax.legend()
+                fig = ax.get_figure()
+                fig.savefig(os.path.join(self.simple_df_folder, f"{label}_test_scores.png"), bbox_inches='tight')
+                fig.clf()
+                plt.close('all')
+
+        except BaseException as ex:
+            logging.exception(ex)
 
     def __plot_predicted_values(self, log_scale: bool):
         """
@@ -567,7 +673,6 @@ class File:
                 plt.close('all')
         except BaseException as ex:
             logging.exception(ex)
-            input()
 
     def __calculate_feature_importance(self, label: str, model, df):
         """
@@ -593,3 +698,12 @@ class File:
 
         self.raw_df = None
         self.preprocessed_df = None
+
+    @staticmethod
+    def __lower_threshold(threshold: float) -> float:
+        if threshold > 0.1:
+            threshold -= 0.1
+        elif 0.1 >= threshold > 0:
+            threshold -= 0.01
+
+        return round(threshold, 2)

@@ -96,6 +96,24 @@ def create_file_folder(tool_path: Path, file_name: str):
         return None
 
 
+def create_folder(path: Path):
+    """
+    Creates a folder with the specified path
+    :param path:
+    :return:
+    """
+
+    try:
+        Path(path).mkdir(parents=True, exist_ok=True)
+        return path
+    except BaseException as ex:
+        logging.warning(f"The folder creation for file {path} failed.")
+        logging.warning("The file evaluation will be skipped!")
+        if Config.DEBUG_MODE:
+            logging.warning(ex)
+        return None
+
+
 def create_required_folders():
     """
     Checks if the Data folder structure is up to date given the options from the config
