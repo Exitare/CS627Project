@@ -276,36 +276,19 @@ class File:
                     data_frames.append(pd.DataFrame(df[parts_row_count * part:]))
 
             for data_frame in data_frames:
-                y = data_frame[label]
-                del data_frame[label]
-                X = data_frame
+                model, train_score, test_score, over_fitting, X, y_test, y_test_hat \
+                    = Predictions.predict(label, data_frame.copy())
 
-                source_row_count = int(len(X))
-                source_feature_count = int(len(X.columns))
-                X_indices = (X != 0).any(axis=1)
-                X = X.loc[X_indices]
-                y = y.loc[X_indices]
-
-                X = PreProcessing.variance_selection(X)
-
-                X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
-
-                model.fit(X_train, y_train)
-
-                y_test_hat = model.predict(X_test)
-                y_train_hat = model.predict(X_train)
-                train_score = r2_score(y_train, y_train_hat)
-                test_score = r2_score(y_test, y_test_hat)
-
-                over_fitting = False
-                if train_score > test_score * 2:
-                    over_fitting = True
+                # Calculate feature importances
+                temp_df = data_frame.copy()
+                del temp_df[label]
+                self.__calculate_feature_importance(label, model, temp_df)
 
                 self.split_evaluation_results[label] = self.split_evaluation_results[label].append(
                     {'File Name': self.name, "Test Score": test_score,
                      "Train Score": train_score, "Potential Over Fitting": over_fitting,
-                     "Initial Row Count": source_row_count,
-                     "Initial Feature Count": source_feature_count, "Processed Row Count": len(X),
+                     "Initial Row Count": len(data_frame),
+                     "Initial Feature Count": len(data_frame.columns), "Processed Row Count": len(X),
                      "Processed Feature Count": X.shape[1], "Total rows": total_rows}, ignore_index=True)
 
             self.split_evaluation_results[label].sort_values(by='Test Score', ascending=False, inplace=True)
