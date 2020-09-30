@@ -105,6 +105,7 @@ class File:
             self.verified = False
 
         self.simple_df_folder = Folder_Management.create_folder(Path.joinpath(self.folder, "Simple"))
+        self.split_folder = Folder_Management.create_folder(Path.joinpath(self.folder, "Splits"))
         # Determines if a file is already evaluated or not
         self.evaluated = False
 
@@ -130,7 +131,9 @@ class File:
             self.pca_components[label] = None
             self.pca_components_data_frames[label] = pd.DataFrame()
             self.split_evaluation_results[label] = pd.DataFrame()
-            self.simple_dfs_evaluation[label] = pd.DataFrame(columns=['Test Score', 'Features', 'Feature Count'])
+            self.simple_dfs_evaluation[label] = pd.DataFrame(
+                columns=['File Name', 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
+                         'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count', 'Features'])
             self.simple_dfs[label] = pd.DataFrame()
 
     # Loading and preprocessing
@@ -395,11 +398,16 @@ class File:
                     continue
 
                 # Train model
-                _, train_score, test_score, _, _, _, _ = Predictions.predict(label, simple_df)
+                model, train_score, test_score, over_fitting, X, y_test, y_test_hat = Predictions.predict(label,
+                                                                                                          simple_df)
                 # Store the simple df evaluation in a dataframe and in a list
                 self.simple_dfs_evaluation[label] = self.simple_dfs_evaluation[label].append(
-                    {'Test Score': test_score, 'Features': [feature for feature in features],
-                     'Feature Count': len(features.columns)}, ignore_index=True)
+                    {'File Name': self.name, "Test Score": test_score,
+                     "Train Score": train_score, "Potential Over Fitting": over_fitting,
+                     "Initial Row Count": len(self.raw_df.index),
+                     "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
+                     "Processed Feature Count": X.shape[1], "Features": [feature for feature in features]},
+                    ignore_index=True)
 
                 # Store the simple df in a list
                 simple_df[label] = df[label]
@@ -439,7 +447,7 @@ class File:
         for label, data in self.split_evaluation_results.items():
             if data.empty:
                 continue
-            data.to_csv(Path.joinpath(self.folder, f"{label}_split_evaluation_report.csv"), index=False)
+            data.to_csv(Path.joinpath(self.split_folder, f"{label}_split_evaluation_report.csv"), index=False)
 
         # Report for combined datasets (whole, splits)
         for label, data in self.__create_combined_evaluation_data_set().items():
@@ -504,6 +512,18 @@ class File:
                 data['split'] = False
                 compare_evaluations[label] = compare_evaluations[label].append(data)
 
+        for label, data in self.simple_dfs_evaluation.items():
+            if data.empty:
+                continue
+
+            if label in compare_evaluations:
+                data['split'] = False
+                compare_evaluations[label] = compare_evaluations[label].append(data)
+            else:
+                compare_evaluations[label] = pd.DataFrame()
+                data['split'] = False
+                compare_evaluations[label] = compare_evaluations[label].append(data)
+
         return compare_evaluations
 
     # Plots
@@ -531,10 +551,11 @@ class File:
                 if data.empty:
                     continue
                 data = data.copy()
-                data = data.append({'Test Score': self.evaluation_results[label]['Test Score'].values[0], 'Features': "",
-                                    'Feature Count': self.evaluation_results[label]['Processed Feature Count'].values[0]},
-                                   ignore_index=True)
-                ax = sns.barplot(x="Feature Count", y="Test Score", data=data)
+                data = data.append(
+                    {'Test Score': self.evaluation_results[label]['Test Score'].values[0], 'Features': "",
+                     'Processed Feature Count': self.evaluation_results[label]['Processed Feature Count'].values[0]},
+                    ignore_index=True)
+                ax = sns.barplot(x="Processed Feature Count", y="Test Score", data=data)
                 ax.set(xlabel='Features', ylabel='Test Score')
                 ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
                 fig = ax.get_figure()
