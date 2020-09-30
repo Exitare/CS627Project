@@ -530,11 +530,13 @@ class File:
 
                 if data.empty:
                     continue
-
+                data = data.copy()
+                data = data.append({'Test Score': self.evaluation_results[label]['Test Score'].values[0], 'Features': "",
+                                    'Feature Count': self.evaluation_results[label]['Processed Feature Count'].values[0]},
+                                   ignore_index=True)
                 ax = sns.barplot(x="Feature Count", y="Test Score", data=data)
                 ax.set(xlabel='Features', ylabel='Test Score')
                 ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
-                ax.legend()
                 fig = ax.get_figure()
                 fig.savefig(os.path.join(self.simple_df_folder, f"{label}_test_scores.png"), bbox_inches='tight')
                 fig.clf()
