@@ -7,9 +7,12 @@ import logging
 
 
 def predict(label: str, dataframe):
+    """
 
+    """
     if label not in dataframe:
-        logging.warn(f"Label {label} is not present in provided dataframe!")
+        logging.warning(f"Label {label} is not present in provided dataframe!")
+        logging.warning("Prediction stopped")
         input()
 
     model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, max_depth=Config.FOREST_MAX_DEPTH,

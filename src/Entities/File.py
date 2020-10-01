@@ -166,6 +166,8 @@ class File:
         """
         for label in Config.LABELS:
             if label in self.preprocessed_df:
+                if Config.VERBOSE:
+                    logging.info(f"Found label {label} in file {self.name}")
                 self.detected_labels.append(label)
 
     def get_pre_processed_df_statistics(self):
@@ -241,7 +243,11 @@ class File:
             self.predicted_results[label] = pd.concat(
                 [pd.Series(y_test).reset_index()[label], pd.Series(y_test_hat)],
                 axis=1)
-            self.predicted_results[label].rename(columns={"runtime": "y", 0: "y_hat"}, inplace=True)
+
+            self.predicted_results[label].rename(
+                columns={self.predicted_results[label].columns[0]: "y",
+                         self.predicted_results[label].columns[1]: "y_hat"},
+                inplace=True)
         except BaseException as ex:
             logging.exception(ex)
             input()

@@ -113,6 +113,10 @@ class Tool:
         for file in self.verified_files:
             logging.info(f"Evaluating file {file.name}...")
             # Iterate through all label that are present in the df
+
+            if len(file.detected_labels) == 0:
+                logging.warn(f"No labels detected for file {file.name}")
+
             for label in file.detected_labels:
                 file.predict(label)
                 file.predict_partial(label)
@@ -315,7 +319,6 @@ class Tool:
             ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
             fig = ax.get_figure()
 
-            fig.savefig(Path.joinpath(self.folder, f"{label}_prediction_overview"),
-                        bbox_inches="tight")
+            fig.savefig(Path.joinpath(self.folder, f"{label}_prediction_overview.jpg"), bbox_inches="tight")
             fig.clf()
             plt.close('all')

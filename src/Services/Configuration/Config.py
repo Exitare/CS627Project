@@ -74,6 +74,7 @@ def read_conf():
         Config.MINIMUM_COLUMN_COUNT = int(config['FILE_SETTINGS']['min_column_count_per_file'])
 
         Config.LABELS = str(config.get('FILE_SETTINGS', 'labels')).split(',')
+        Config.LABELS = [label.strip() for label in Config.LABELS]
 
         validate_config()
         return True

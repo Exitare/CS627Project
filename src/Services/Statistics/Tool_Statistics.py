@@ -195,7 +195,7 @@ def __plot_predictions_result():
         ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
         fig = ax.get_figure()
 
-        fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_prediction_overview"),
+        fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_prediction_overview.jpg"),
                     bbox_inches="tight")
         fig.clf()
         plt.close('all')
