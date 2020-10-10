@@ -6,6 +6,7 @@ from Services.Processing import PreProcessing
 import logging
 
 
+
 def predict(label: str, dataframe):
     """
 
@@ -32,6 +33,10 @@ def predict(label: str, dataframe):
         logging.info(f"Removed {source_row_count - len(X)} row(s). Source had {source_row_count}.")
 
     X = PreProcessing.variance_selection(X)
+
+    # TODO: Improve ugly solution
+    if type(X) is int:
+        return None, None, None, None, None, None, None
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, random_state=1)
 

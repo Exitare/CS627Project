@@ -233,7 +233,7 @@ class Tool:
         for file in self.verified_files:
             file.generate_plots()
 
-        self.__plot_prediction_score()
+        self.__plot_prediction_score_overview()
 
     def generate_overview_data_sets(self):
         """
@@ -301,7 +301,7 @@ class Tool:
         row_id = temp_data['Test Score'].argmin()
         return temp_data.loc[row_id]
 
-    def __plot_prediction_score(self):
+    def __plot_prediction_score_overview(self):
         """"
         Plots an overview
         """
@@ -313,6 +313,8 @@ class Tool:
 
             if data.empty:
                 continue
+
+            
 
             ax = sns.barplot(x="File Name", y="Test Score", data=data,
                              palette="Set3")

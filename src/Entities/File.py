@@ -250,7 +250,6 @@ class File:
                 inplace=True)
         except BaseException as ex:
             logging.exception(ex)
-            input()
 
     def predict_partial(self, label: str):
         """
@@ -258,9 +257,6 @@ class File:
         """
         try:
             df = self.preprocessed_df.copy()
-
-            model = RandomForestRegressor(n_estimators=Config.FOREST_ESTIMATORS, max_depth=Config.FOREST_MAX_DEPTH,
-                                          random_state=1)
 
             # How many parts minimum. 3 is default.
             parts: int = 3
@@ -285,6 +281,10 @@ class File:
                 model, train_score, test_score, over_fitting, X, y_test, y_test_hat \
                     = Predictions.predict(label, data_frame.copy())
 
+                if model is None:
+                    logging.warning("Could not create predictions because of insufficient data!")
+                    continue
+
                 # Calculate feature importances
                 temp_df = data_frame.copy()
                 del temp_df[label]
@@ -301,6 +301,7 @@ class File:
 
         except BaseException as ex:
             logging.exception(ex)
+            input()
 
     def pca_analysis(self, label: str):
         """
@@ -350,10 +351,6 @@ class File:
             previous_feature_count = 0
             # Todo: Add config
             threshold: float = 0.5
-            test_score = 0
-
-            # Create dataframe
-            simple_df = pd.DataFrame()
 
             while threshold > 0.00:
                 indices = feature_importances[feature_importances['Gini-importance'].gt(threshold)].index
@@ -389,6 +386,11 @@ class File:
                 # Train model
                 model, train_score, test_score, over_fitting, X, y_test, y_test_hat = Predictions.predict(label,
                                                                                                           simple_df)
+
+                if model is None:
+                    threshold = self.__lower_threshold(threshold)
+                    continue
+
                 # Store the simple df evaluation in a dataframe and in a list
                 self.simple_dfs_evaluation[label] = self.simple_dfs_evaluation[label].append(
                     {'File Name': self.name, "Test Score": test_score,
@@ -596,6 +598,9 @@ class File:
 
             indices = feature_importance[feature_importance['Gini-importance'].gt(0.01)].index
             feature_importance = feature_importance.T[indices]
+
+            if feature_importance.empty:
+                continue
 
             ax = sns.barplot(data=feature_importance)
             ax.set(xlabel='Feature', ylabel='Gini Index')
