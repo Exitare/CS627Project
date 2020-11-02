@@ -325,6 +325,21 @@ class File:
         except BaseException as ex:
             logging.exception(ex)
 
+    def get_best_performing_split(self, label: str):
+        """
+        Returns the best performing split
+        """
+
+        if label not in self.split_evaluation_results:
+            return None
+
+        if self.split_evaluation_results[label].empty:
+            return None
+
+        data = self.split_evaluation_results[label]
+        index = data.loc[data['Test Score'].idxmax()]
+        return index.name
+
     def create_simple_data_set(self, label: str, test_score_threshold):
         """
         Creates simple data sets based on the feature importances
@@ -703,6 +718,8 @@ class File:
         importance.sort_values(by='Gini-importance', inplace=True, ascending=False)
 
         self.feature_importances[label] = importance
+
+
 
     # Cleanup
     def free_memory(self):

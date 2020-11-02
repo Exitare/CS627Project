@@ -12,13 +12,14 @@ sns.set(style="whitegrid")
 
 
 def generate_tool_statistics():
-    __get_best_performing_tools()
-    __get_worst_performing_tools()
+    __count_best_split()
+    __get_best_performing_version_per_tool()
+    __get_worst_performing_version_per_tool()
     __prediction_score_on_average_across_versions()
     __plot_predictions_result()
 
 
-def __get_best_performing_tools():
+def __get_best_performing_version_per_tool():
     """
     Get best performing version of each tool, sort them and write them as csv file
     """
@@ -53,11 +54,17 @@ def __get_best_performing_tools():
             ['Tool', 'File Name', 'Initial Feature Count', 'Initial Row Count', 'Potential Over Fitting',
              'Processed Feature Count', 'Processed Row Count', 'Test Score', 'Train Score']]
         label_performance.to_csv(
-            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY, f"tools_{label}_best_performing_by_version.csv"),
+            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY,
+                         f"tools_{label}_best_performing_by_version_by_test_score.csv"),
+            index=False)
+
+        label_performance.sort_values(by='File Name', inplace=True)
+        label_performance.to_csv(
+            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY, f"tools_{label}_best_performing_by_version_by_name.csv"),
             index=False)
 
 
-def __get_worst_performing_tools():
+def __get_worst_performing_version_per_tool():
     """
     Get worst performing version of each tool, sort them and write them as csv file
     """
@@ -91,7 +98,14 @@ def __get_worst_performing_tools():
             ['Tool', 'File Name', 'Initial Feature Count', 'Initial Row Count', 'Potential Over Fitting',
              'Processed Feature Count', 'Processed Row Count', 'Test Score', 'Train Score']]
         label_performance.to_csv(
-            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY, f"tools_{label}_worst_performing_by_version.csv"),
+            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY,
+                         f"tools_{label}_worst_performing_by_version_by_test_score.csv"),
+            index=False)
+
+        label_performance.sort_values(by='File Name', inplace=True)
+        label_performance.to_csv(
+            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY,
+                         f"tools_{label}_worst_performing_by_version_by_name.csv"),
             index=False)
 
 
@@ -199,6 +213,34 @@ def __plot_predictions_result():
                     bbox_inches="tight")
         fig.clf()
         plt.close('all')
+
+
+def __count_best_split():
+    """
+
+    """
+
+    versions = dict()
+    version_count = pd.DataFrame()
+    for tool in Runtime_Datasets.VERIFIED_TOOLS:
+        for file in tool.verified_files:
+            for label, data in file.split_evaluation_results.items():
+                # Add index to keys
+                for index in list(data.index):
+                    if index not in version_count:
+                        version_count[index] = 0
+                    if index not in versions:
+                        versions[index] = 0
+
+                index = file.get_best_performing_split(label)
+
+                versions[index] += 1
+
+    versions = pd.Series(versions)
+
+    version_count = version_count.append(versions, ignore_index=True)
+    version_count.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"split_performance_count.csv"),
+                         index=False)
 
 
 def __row_helper(performance_df):
