@@ -7,23 +7,58 @@ import logging
 import matplotlib.pyplot as plt
 import seaborn as sns
 from Services.Configuration.Config import Config
+from RuntimeContants import Runtime_Datasets
 
 sns.set(style="whitegrid")
 
 
+def create_additional_data():
+    """
+    Creates additional data not tied to a specific tool or file
+    """
+    __create_best_performing_version_per_tool_data_set()
+    __create_worst_performing_version_per_tool_data_set()
+
+
 def generate_tool_statistics():
+    """
+    Plots and prints additional data not tied to a specific tool or file
+    """
     __count_best_split()
+    __calculate_median_mean()
     __get_best_performing_version_per_tool()
     __get_worst_performing_version_per_tool()
     __prediction_score_on_average_across_versions()
     __plot_predictions_result()
 
 
-def __get_best_performing_version_per_tool():
+def __calculate_median_mean():
     """
-    Get best performing version of each tool, sort them and write them as csv file
+    Calculates the median and mean
     """
 
+    df = pd.DataFrame(columns=["Data", "Label", "Mean", "Median", "Correlation"])
+
+    for label in Runtime_Datasets.BEST_PERFORMING_VERSIONS:
+        data = Runtime_Datasets.BEST_PERFORMING_VERSIONS[label]
+        df = df.append({"Data": "Best Performing Version", "Label": label, "Mean": data["Test Score"].mean(),
+                        "Median": data["Test Score"].median(),
+                        "Correlation": data['Test Score'].corr(data["Processed Feature Count"])}, ignore_index=True)
+
+    for label in Runtime_Datasets.WORST_PERFORMING_VERSIONS:
+        data = Runtime_Datasets.WORST_PERFORMING_VERSIONS[label]
+        df = df.append({"Data": "Worst Performing Version", "Label": label, "Mean": data["Test Score"].mean(),
+                        "Median": data["Test Score"].median(),
+                        "Correlation": data['Test Score'].corr(data["Processed Feature Count"])}, ignore_index=True)
+
+    df.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_statistics.csv"),
+              index=False)
+
+
+def __create_best_performing_version_per_tool_data_set():
+    """
+    Creates a dataset containing the best performing versions of each evaluated tool
+    """
     performances = dict()
 
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
@@ -42,32 +77,14 @@ def __get_best_performing_version_per_tool():
                 performances[label] = pd.DataFrame()
                 performances[label] = performances[label].append(version)
 
-    for label in performances:
-        if performances[label].empty:
-            continue
-
-        label_performance = performances[label]
-        label_performance = __row_helper(label_performance)
-
-        label_performance.sort_values(by=['Test Score'], inplace=True, ascending=False)
-        label_performance = label_performance[
-            ['Tool', 'File Name', 'Initial Feature Count', 'Initial Row Count', 'Potential Over Fitting',
-             'Processed Feature Count', 'Processed Row Count', 'Test Score', 'Train Score']]
-        label_performance.to_csv(
-            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY,
-                         f"tools_{label}_best_performing_by_version_by_test_score.csv"),
-            index=False)
-
-        label_performance.sort_values(by='File Name', inplace=True)
-        label_performance.to_csv(
-            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY, f"tools_{label}_best_performing_by_version_by_name.csv"),
-            index=False)
+    Runtime_Datasets.BEST_PERFORMING_VERSIONS = performances
 
 
-def __get_worst_performing_version_per_tool():
+def __create_worst_performing_version_per_tool_data_set():
     """
-    Get worst performing version of each tool, sort them and write them as csv file
+    Creates a dataset containing the worst performing versions of each evaluated tool
     """
+
     performances = dict()
 
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
@@ -86,24 +103,59 @@ def __get_worst_performing_version_per_tool():
                 performances[label] = pd.DataFrame()
                 performances[label] = performances[label].append(version)
 
-    for label in performances:
-        if performances[label].empty:
+    Runtime_Datasets.WORST_PERFORMING_VERSIONS = performances
+
+
+def __get_best_performing_version_per_tool():
+    """
+    Get best performing version of each tool, sort them and write them as csv file
+    """
+
+    for label in Runtime_Datasets.BEST_PERFORMING_VERSIONS:
+        if Runtime_Datasets.BEST_PERFORMING_VERSIONS[label].empty:
             continue
 
-        label_performance = performances[label]
-        label_performance = __row_helper(label_performance)
+        data = Runtime_Datasets.BEST_PERFORMING_VERSIONS[label]
+        data = __row_helper(data)
 
-        label_performance.sort_values(by=['Test Score'], inplace=True, ascending=False)
-        label_performance = label_performance[
+        data.sort_values(by=['Test Score'], inplace=True, ascending=False)
+        data = data[
             ['Tool', 'File Name', 'Initial Feature Count', 'Initial Row Count', 'Potential Over Fitting',
              'Processed Feature Count', 'Processed Row Count', 'Test Score', 'Train Score']]
-        label_performance.to_csv(
+        data.to_csv(
+            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY,
+                         f"tools_{label}_best_performing_by_version_by_test_score.csv"),
+            index=False)
+
+        data.sort_values(by='File Name', inplace=True)
+        data.to_csv(
+            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY, f"tools_{label}_best_performing_by_version_by_name.csv"),
+            index=False)
+
+
+def __get_worst_performing_version_per_tool():
+    """
+    Get worst performing version of each tool, sort them and write them as csv file
+    """
+
+    for label in Runtime_Datasets.WORST_PERFORMING_VERSIONS:
+        if Runtime_Datasets.WORST_PERFORMING_VERSIONS[label].empty:
+            continue
+
+        data = Runtime_Datasets.WORST_PERFORMING_VERSIONS[label]
+        data = __row_helper(data)
+
+        data.sort_values(by=['Test Score'], inplace=True, ascending=False)
+        data = data[
+            ['Tool', 'File Name', 'Initial Feature Count', 'Initial Row Count', 'Potential Over Fitting',
+             'Processed Feature Count', 'Processed Row Count', 'Test Score', 'Train Score']]
+        data.to_csv(
             os.path.join(Runtime_Folders.EVALUATION_DIRECTORY,
                          f"tools_{label}_worst_performing_by_version_by_test_score.csv"),
             index=False)
 
-        label_performance.sort_values(by='File Name', inplace=True)
-        label_performance.to_csv(
+        data.sort_values(by='File Name', inplace=True)
+        data.to_csv(
             os.path.join(Runtime_Folders.EVALUATION_DIRECTORY,
                          f"tools_{label}_worst_performing_by_version_by_name.csv"),
             index=False)
@@ -217,7 +269,7 @@ def __plot_predictions_result():
 
 def __count_best_split():
     """
-
+    Counts which split performs best and create a plot and dataset
     """
 
     versions = dict()
@@ -233,7 +285,6 @@ def __count_best_split():
                         versions[index] = 0
 
                 index = file.get_best_performing_split(label)
-
                 versions[index] += 1
 
     versions = pd.Series(versions)
@@ -241,6 +292,16 @@ def __count_best_split():
     version_count = version_count.append(versions, ignore_index=True)
     version_count.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"split_performance_count.csv"),
                          index=False)
+
+    ax = sns.boxplot(x=0, data=version_count.T,
+                     palette="Set3")
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+    fig = ax.get_figure()
+
+    fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"split_performance_count.jpg"),
+                bbox_inches="tight")
+    fig.clf()
+    plt.close('all')
 
 
 def __row_helper(performance_df):

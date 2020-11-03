@@ -277,6 +277,7 @@ class File:
                 else:
                     data_frames.append(pd.DataFrame(df[parts_row_count * part:]))
 
+            part = 0
             for data_frame in data_frames:
                 model, train_score, test_score, over_fitting, X, y_test, y_test_hat \
                     = Predictions.predict(label, data_frame.copy())
@@ -295,7 +296,8 @@ class File:
                      "Train Score": train_score, "Potential Over Fitting": over_fitting,
                      "Initial Row Count": len(data_frame),
                      "Initial Feature Count": len(data_frame.columns), "Processed Row Count": len(X),
-                     "Processed Feature Count": X.shape[1], "Total rows": total_rows}, ignore_index=True)
+                     "Processed Feature Count": X.shape[1], "Total rows": total_rows, "Part": part}, ignore_index=True)
+                part += 1
 
             self.split_evaluation_results[label].sort_values(by='Test Score', ascending=False, inplace=True)
 
@@ -337,8 +339,8 @@ class File:
             return None
 
         data = self.split_evaluation_results[label]
-        index = data.loc[data['Test Score'].idxmax()]
-        return index.name
+        row = data.loc[data['Test Score'].idxmax()]
+        return row['Part']
 
     def create_simple_data_set(self, label: str, test_score_threshold):
         """
@@ -718,8 +720,6 @@ class File:
         importance.sort_values(by='Gini-importance', inplace=True, ascending=False)
 
         self.feature_importances[label] = importance
-
-
 
     # Cleanup
     def free_memory(self):

@@ -72,6 +72,7 @@ if __name__ == '__main__':
             logging.info(f"Tool {tool.name} evaluated in {time_passed} seconds")
         print()
 
+    Tool_Statistics.create_additional_data()
     Tool_Statistics.generate_tool_statistics()
     Runtime_Statistics.get_application_stats()
 
