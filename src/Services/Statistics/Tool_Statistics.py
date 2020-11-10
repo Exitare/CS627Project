@@ -25,14 +25,92 @@ def generate_tool_statistics():
     Plots and prints additional data not tied to a specific tool or file
     """
     __count_best_split()
-    __calculate_median_mean()
+    __calculate_data_set_statistics()
     __get_best_performing_version_per_tool()
     __get_worst_performing_version_per_tool()
     __prediction_score_on_average_across_versions()
     __plot_predictions_result()
 
 
-def __calculate_median_mean():
+def __calculate_data_set_statistics():
+    """
+    Calculates the stats for all different data frames
+    """
+    whole_df = __calculate_whole_data_set_statistics()
+    simple_df = __calculate_simple_data_set_statistics()
+
+    frames = [whole_df, simple_df]
+    df = pd.concat(frames)
+
+    df.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_statistics.csv"),
+              index=False)
+
+    # g = sns.catplot(x="time", y="pulse", hue="kind", col="diet", data=df, height=5, aspect=.8)
+
+    # Plot per label
+    for label in Config.LABELS:
+        data = df.loc[df['Label'] == label]
+
+        if data.empty:
+            continue
+
+        data = data.reset_index()
+        del data["index"]
+
+        print(data)
+        melt_df = pd.melt(data, id_vars=['Data'], value_vars=['Mean', 'Median', 'Correlation'])
+        print(melt_df)
+        print(data["Data"])
+        input()
+
+        melt_df["Label"] = label
+        print(melt_df)
+
+        ax = sns.barplot(x="variable", y="value",  hue="Data", data=melt_df)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        fig = ax.get_figure()
+
+        fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_test_score_statistics.jpg"),
+                    bbox_inches="tight")
+        fig.clf()
+        plt.close('all')
+
+
+def __calculate_simple_data_set_statistics():
+    """
+    Calculates the statistics for the simple data sets
+    """
+    df = pd.DataFrame(columns=["Data", "Label", "Mean", "Median", "Correlation"])
+
+    # Gather data
+    temp_df = pd.DataFrame(
+        columns=["Label", "File Name", "Train Score", "Test Score", "Potential Over Fitting", "Initial Row Count",
+                 "Initial Feature Count", "Processed Row Count", "Processed Feature Count", "Features"])
+    for tool in Runtime_Datasets.VERIFIED_TOOLS:
+        for file in tool.verified_files:
+            for label, data in file.simple_dfs_evaluation.items():
+                temp_df = temp_df.append(data)
+                temp_df.fillna(label, inplace=True)
+
+    temp_df = temp_df.reset_index()
+    # remove newly created index column
+    del temp_df['index']
+
+    # Split into labels and print them
+    for label in Config.LABELS:
+        data = temp_df.loc[temp_df['Label'] == label]
+
+        if data.empty:
+            continue
+
+        df = df.append({"Data": "Simple Dataset", "Label": label, "Mean": data['Test Score'].mean(),
+                        "Median": data['Test Score'].median(),
+                        "Correlation": data["Test Score"].corr(data["Processed Feature Count"])}, ignore_index=True)
+
+    return df
+
+
+def __calculate_whole_data_set_statistics():
     """
     Calculates the median and mean
     """
@@ -51,8 +129,7 @@ def __calculate_median_mean():
                         "Median": data["Test Score"].median(),
                         "Correlation": data['Test Score'].corr(data["Processed Feature Count"])}, ignore_index=True)
 
-    df.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_statistics.csv"),
-              index=False)
+    return df
 
 
 def __create_best_performing_version_per_tool_data_set():
