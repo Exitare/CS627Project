@@ -303,7 +303,6 @@ class File:
 
         except BaseException as ex:
             logging.exception(ex)
-            input()
 
     def pca_analysis(self, label: str):
         """

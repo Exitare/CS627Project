@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from Services.Configuration.Config import Config
 from RuntimeContants import Runtime_Datasets
+import numpy as np
 
 sns.set(style="whitegrid")
 
@@ -54,20 +55,16 @@ def __calculate_data_set_statistics():
         if data.empty:
             continue
 
+        # Reset index and delete the new created column
         data = data.reset_index()
         del data["index"]
 
-        print(data)
         melt_df = pd.melt(data, id_vars=['Data'], value_vars=['Mean', 'Median', 'Correlation'])
-        print(melt_df)
-        print(data["Data"])
-        input()
-
         melt_df["Label"] = label
-        print(melt_df)
 
-        ax = sns.barplot(x="variable", y="value",  hue="Data", data=melt_df)
+        ax = sns.barplot(x="variable", y="value", hue="Data", data=melt_df)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        ax.set(yscale="log")
         fig = ax.get_figure()
 
         fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_test_score_statistics.jpg"),
@@ -90,7 +87,8 @@ def __calculate_simple_data_set_statistics():
         for file in tool.verified_files:
             for label, data in file.simple_dfs_evaluation.items():
                 temp_df = temp_df.append(data)
-                temp_df.fillna(label, inplace=True)
+                temp_df["Label"].fillna(label, inplace=True)
+                temp_df["Test Score"].fillna(0, inplace=True)
 
     temp_df = temp_df.reset_index()
     # remove newly created index column
@@ -103,9 +101,14 @@ def __calculate_simple_data_set_statistics():
         if data.empty:
             continue
 
-        df = df.append({"Data": "Simple Dataset", "Label": label, "Mean": data['Test Score'].mean(),
-                        "Median": data['Test Score'].median(),
-                        "Correlation": data["Test Score"].corr(data["Processed Feature Count"])}, ignore_index=True)
+        data.to_csv(
+            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY, f"test_data_frame.csv"),
+            index=False)
+
+        df = df.append({"Data": "Simple Dataset", "Label": label, "Mean": data["Test Score"].mean(),
+                        "Median": data["Test Score"].median(),
+                        "Correlation": data["Test Score"].astype(float).corr(
+                            data["Processed Feature Count"].astype(float))}, ignore_index=True)
 
     return df
 
@@ -119,15 +122,23 @@ def __calculate_whole_data_set_statistics():
 
     for label in Runtime_Datasets.BEST_PERFORMING_VERSIONS:
         data = Runtime_Datasets.BEST_PERFORMING_VERSIONS[label]
+
+        if data.empty:
+            continue
+
         df = df.append({"Data": "Best Performing Version", "Label": label, "Mean": data["Test Score"].mean(),
                         "Median": data["Test Score"].median(),
-                        "Correlation": data['Test Score'].corr(data["Processed Feature Count"])}, ignore_index=True)
+                        "Correlation": data["Test Score"].corr(data["Processed Feature Count"])}, ignore_index=True)
 
     for label in Runtime_Datasets.WORST_PERFORMING_VERSIONS:
         data = Runtime_Datasets.WORST_PERFORMING_VERSIONS[label]
+
+        if data.empty:
+            continue
+
         df = df.append({"Data": "Worst Performing Version", "Label": label, "Mean": data["Test Score"].mean(),
                         "Median": data["Test Score"].median(),
-                        "Correlation": data['Test Score'].corr(data["Processed Feature Count"])}, ignore_index=True)
+                        "Correlation": data["Test Score"].corr(data["Processed Feature Count"])}, ignore_index=True)
 
     return df
 
@@ -331,12 +342,45 @@ def __plot_predictions_result():
     for label in Config.LABELS:
         if label not in predictions_per_label:
             continue
+
         data = predictions_per_label[label]
-        ax = sns.boxplot(x="Tool", y="Test Score", data=data,
-                         palette="Set3")
-        ax = sns.swarmplot(x="Tool", y="Test Score", data=data, color=".25")
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
-        fig = ax.get_figure()
+
+        print(len(data))
+
+        # Clean outliers
+
+        data = data[np.abs(data["Test Score"] - data["Test Score"].mean()) <= (3 * data["Test Score"].std())]
+
+        print(len(data))
+
+        x = data["Tool"]
+        y = data["Test Score"]
+
+        fig, axs = plt.subplots(2, 2)
+        fig.suptitle("Test Scores by Tool")
+
+        axs[0, 0].plot(x, y)
+        axs[0, 0].set_title('Axis [0, 0]')
+        axs[0, 1].plot(x, y, 'tab:orange')
+        axs[0, 1].set_title('Axis [0, 1]')
+        axs[1, 0].plot(x, -y, 'tab:green')
+        axs[1, 0].set_title('Axis [1, 0]')
+        axs[1, 1].plot(x, -y, 'tab:red')
+        axs[1, 1].set_title('Axis [1, 1]')
+
+        for ax in axs.flat:
+            ax.set(xlabel='x-label', ylabel='y-label')
+
+        # Hide x labels and tick labels for top plots and y ticks for right plots.
+        for ax in axs.flat:
+            ax.label_outer()
+
+       # ax = sns.boxplot(x="Tool", y="Test Score", data=data,
+        #                 palette="Set3")
+        #ax = sns.swarmplot(x="Tool", y="Test Score", data=data, color=".25")
+        #ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+
+        #fig = ax.get_figure()
 
         fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_prediction_overview.jpg"),
                     bbox_inches="tight")
@@ -350,28 +394,30 @@ def __count_best_split():
     """
 
     versions = dict()
-    version_count = pd.DataFrame()
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         for file in tool.verified_files:
             for label, data in file.split_evaluation_results.items():
                 # Add index to keys
                 for index in list(data.index):
-                    if index not in version_count:
-                        version_count[index] = 0
                     if index not in versions:
                         versions[index] = 0
 
                 index = file.get_best_performing_split(label)
                 versions[index] += 1
 
-    versions = pd.Series(versions)
+    versions = {
+        "version": list(versions.keys()),
+        "count": list(versions.values())
+    }
 
-    version_count = version_count.append(versions, ignore_index=True)
-    version_count.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"split_performance_count.csv"),
-                         index=False)
+    versions = pd.DataFrame.from_dict(versions)
 
-    ax = sns.boxplot(x=0, data=version_count.T,
-                     palette="Set3")
+    versions.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"split_performance_count.csv"),
+                    index=False)
+
+    temp = versions.loc[versions['count'] != 0]
+
+    ax = sns.barplot(x="version", y="count", data=temp)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
     fig = ax.get_figure()
 
