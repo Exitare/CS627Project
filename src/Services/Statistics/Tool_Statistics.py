@@ -64,10 +64,8 @@ def __calculate_data_set_statistics():
 
         for variable in melt_df['variable'].unique():
             temp_df = melt_df.loc[melt_df['variable'] == variable]
-            print(temp_df)
-            input()
             ax = sns.barplot(x="variable", y="value", hue="Data", data=temp_df)
-            #ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+            # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
             ax.set(xlabel=variable, ylabel='Value')
             fig = ax.get_figure()
 
@@ -76,6 +74,7 @@ def __calculate_data_set_statistics():
                 bbox_inches="tight")
             fig.clf()
             plt.close('all')
+
 
 def __calculate_simple_data_set_statistics():
     """
@@ -256,7 +255,7 @@ def __prediction_score_on_average_across_versions():
     NOT including the merged files
     """
     try:
-        tool_scores = dict()
+        tool_avg_scores = dict()
         pd.DataFrame(columns=["Tool", "Test Score (avg)", "Versions", " Average Rows"])
         for tool in Runtime_Datasets.VERIFIED_TOOLS:
 
@@ -284,29 +283,50 @@ def __prediction_score_on_average_across_versions():
                 if label not in test_scores:
                     continue
 
-                if label not in tool_scores:
-                    tool_scores[label] = pd.DataFrame(
-                        columns=["Tool", "Test Score (avg)", "Versions", "Average Rows"])
-                    tool_scores[label] = tool_scores[label].append(
-                        {"Tool": tool.name, "Test Score (avg)": test_scores[label].mean(),
+                if label not in tool_avg_scores:
+                    tool_avg_scores[label] = pd.DataFrame(
+                        columns=["Tool", "Test Score", "Versions", "Average Rows"])
+                    tool_avg_scores[label] = tool_avg_scores[label].append(
+                        {"Tool": tool.name, "Test Score": test_scores[label].mean(),
                          "Versions": int(file_count),
                          "Average Rows": int(rows / file_count)}, ignore_index=True)
                 else:
-                    tool_scores[label] = tool_scores[label].append(
-                        {"Tool": tool.name, "Test Score (avg)": test_scores[label].mean(),
+                    tool_avg_scores[label] = tool_avg_scores[label].append(
+                        {"Tool": tool.name, "Test Score": test_scores[label].mean(),
                          "Versions": int(file_count),
                          "Average Rows": int(rows / file_count)}, ignore_index=True)
 
-        for label in tool_scores:
-            if tool_scores[label].empty:
+        for label in tool_avg_scores:
+            if tool_avg_scores[label].empty:
                 continue
 
-            tool_scores[label].sort_values(by="Test Score (avg)", ascending=False, inplace=True)
-            tool_scores[label].to_csv(
+            tool_avg_scores[label].sort_values(by="Test Score", ascending=False, inplace=True)
+            tool_avg_scores[label].to_csv(
                 Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"tools_{label}_test_score_on_average.csv"),
                 index=False)
 
-            # TODO Add graph (histogram test score averga per version
+            print()
+
+            # Plotting
+            ax = sns.scatterplot(data=tool_avg_scores[label], x="Average Rows", y="Test Score", hue="Tool")
+            ax.legend(bbox_to_anchor=(1.02, 1), loc=2)
+            fig = ax.get_figure()
+
+            fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY,
+                                      f"tools_{label}_test_score_on_average_score_by_rows.jpg"),
+                        bbox_inches="tight")
+            fig.clf()
+            plt.close('all')
+
+            ax = sns.scatterplot(data=tool_avg_scores[label], x="Versions", y="Test Score", hue="Tool")
+            ax.legend(bbox_to_anchor=(1.02, 1), loc=2)
+            fig = ax.get_figure()
+
+            fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY,
+                                      f"tools_{label}_test_score_on_average_score_by_versions.jpg"),
+                        bbox_inches="tight")
+            fig.clf()
+            plt.close('all')
 
 
     except BaseException as ex:
