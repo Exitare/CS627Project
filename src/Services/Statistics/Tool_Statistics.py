@@ -48,8 +48,6 @@ def __calculate_data_set_statistics():
     df.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_statistics.csv"),
               index=False)
 
-    # g = sns.catplot(x="time", y="pulse", hue="kind", col="diet", data=df, height=5, aspect=.8)
-
     # Plot per label
     for label in Config.LABELS:
         data = df.loc[df['Label'] == label]
@@ -61,22 +59,23 @@ def __calculate_data_set_statistics():
         data = data.reset_index()
         del data["index"]
 
-        # Clean outliers
-        data = data[np.abs(data["Median"] - data["Median"].mean()) <= (3 * data["Median"].std())]
-
         melt_df = pd.melt(data, id_vars=['Data'], value_vars=['Mean', 'Median', 'Correlation'])
         melt_df["Label"] = label
 
-        ax = sns.barplot(x="variable", y="value", hue="Data", data=melt_df)
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
-        ax.set(yscale="log")
-        fig = ax.get_figure()
+        for variable in melt_df['variable'].unique():
+            temp_df = melt_df.loc[melt_df['variable'] == variable]
+            print(temp_df)
+            input()
+            ax = sns.barplot(x="variable", y="value", hue="Data", data=temp_df)
+            #ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+            ax.set(xlabel=variable, ylabel='Value')
+            fig = ax.get_figure()
 
-        fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_test_score_statistics.jpg"),
-                    bbox_inches="tight")
-        fig.clf()
-        plt.close('all')
-
+            fig.savefig(
+                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_{variable}_test_score_statistics.jpg"),
+                bbox_inches="tight")
+            fig.clf()
+            plt.close('all')
 
 def __calculate_simple_data_set_statistics():
     """
@@ -218,7 +217,8 @@ def __get_best_performing_version_per_tool():
 
         data.sort_values(by='File Name', inplace=True)
         data.to_csv(
-            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY, f"tools_{label}_best_performing_by_version_by_name.csv"),
+            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY,
+                         f"tools_{label}_best_performing_by_version_by_name.csv"),
             index=False)
 
 
@@ -285,7 +285,8 @@ def __prediction_score_on_average_across_versions():
                     continue
 
                 if label not in tool_scores:
-                    tool_scores[label] = pd.DataFrame(columns=["Tool", "Test Score (avg)", "Versions", "Average Rows"])
+                    tool_scores[label] = pd.DataFrame(
+                        columns=["Tool", "Test Score (avg)", "Versions", "Average Rows"])
                     tool_scores[label] = tool_scores[label].append(
                         {"Tool": tool.name, "Test Score (avg)": test_scores[label].mean(),
                          "Versions": int(file_count),
