@@ -259,15 +259,9 @@ class File:
         try:
             df = self.preprocessed_df.copy()
 
-            # How many parts minimum. 3 is default.
-            parts: int = 3
-            if len(df) > 10000:
-                while len(df) / parts > 3333:
-                    parts += 1
-
             # how many rows should one part contain
             total_rows = int(len(df))
-            rows_per_chunk: int = int(len(df) / parts)
+            rows_per_chunk: int = int(len(df) * 0.2)
 
             chunks = Data_Frame_Helper.split_df(df, rows_per_chunk)
 
