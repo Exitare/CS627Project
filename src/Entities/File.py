@@ -14,6 +14,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from Services.Predictions import Predictions
+from Services.Helper import Data_Frame_Helper
 
 sns.set()
 
@@ -266,36 +267,29 @@ class File:
 
             # how many rows should one part contain
             total_rows = int(len(df))
-            parts_row_count: int = int(len(df) / parts)
+            rows_per_chunk: int = int(len(df) / parts)
 
-            data_frames = []
-            for part in range(parts):
-                if part == 0:
-                    data_frames.append(pd.DataFrame(df[:parts_row_count]))
-                elif 0 < part < parts - 1:
-                    data_frames.append(pd.DataFrame(df[(parts_row_count * part): (parts_row_count * (part + 1))]))
-                else:
-                    data_frames.append(pd.DataFrame(df[parts_row_count * part:]))
+            chunks = Data_Frame_Helper.split_df(df, rows_per_chunk)
 
             part = 0
-            for data_frame in data_frames:
+            for chunk in chunks:
                 model, train_score, test_score, over_fitting, X, y_test, y_test_hat \
-                    = Predictions.predict(label, data_frame.copy())
+                    = Predictions.predict(label, chunk.copy())
 
                 if model is None:
                     logging.warning("Could not create predictions because of insufficient data!")
                     continue
 
                 # Calculate feature importances
-                temp_df = data_frame.copy()
+                temp_df = chunk.copy()
                 del temp_df[label]
                 self.__calculate_feature_importance(label, model, temp_df)
 
                 self.split_evaluation_results[label] = self.split_evaluation_results[label].append(
                     {'File Name': self.name, "Test Score": test_score,
                      "Train Score": train_score, "Potential Over Fitting": over_fitting,
-                     "Initial Row Count": len(data_frame),
-                     "Initial Feature Count": len(data_frame.columns), "Processed Row Count": len(X),
+                     "Initial Row Count": len(chunk),
+                     "Initial Feature Count": len(chunk.columns), "Processed Row Count": len(X),
                      "Processed Feature Count": X.shape[1], "Total rows": total_rows, "Part": part}, ignore_index=True)
                 part += 1
 

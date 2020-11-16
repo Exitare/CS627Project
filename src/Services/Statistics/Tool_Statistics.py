@@ -9,6 +9,8 @@ import seaborn as sns
 from Services.Configuration.Config import Config
 from RuntimeContants import Runtime_Datasets
 import numpy as np
+import math
+from Services.Helper import Data_Frame_Helper
 
 sns.set(style="whitegrid")
 
@@ -59,6 +61,9 @@ def __calculate_data_set_statistics():
         data = data.reset_index()
         del data["index"]
 
+        # Clean outliers
+        data = data[np.abs(data["Median"] - data["Median"].mean()) <= (3 * data["Median"].std())]
+
         melt_df = pd.melt(data, id_vars=['Data'], value_vars=['Mean', 'Median', 'Correlation'])
         melt_df["Label"] = label
 
@@ -100,10 +105,6 @@ def __calculate_simple_data_set_statistics():
 
         if data.empty:
             continue
-
-        data.to_csv(
-            os.path.join(Runtime_Folders.EVALUATION_DIRECTORY, f"test_data_frame.csv"),
-            index=False)
 
         df = df.append({"Data": "Simple Dataset", "Label": label, "Mean": data["Test Score"].mean(),
                         "Median": data["Test Score"].median(),
@@ -304,6 +305,9 @@ def __prediction_score_on_average_across_versions():
                 Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"tools_{label}_test_score_on_average.csv"),
                 index=False)
 
+            # TODO Add graph (histogram test score averga per version
+
+
     except BaseException as ex:
         logging.exception(ex)
 
@@ -345,46 +349,40 @@ def __plot_predictions_result():
 
         data = predictions_per_label[label]
 
-        print(len(data))
+        # Create a new column Version which only contains the version number
+        data['Version'] = data.apply(
+            lambda x: x["File Name"].split('_')[-1] if ("merged" not in x["File Name"]) else x["File Name"], axis=1)
 
         # Clean outliers
-
         data = data[np.abs(data["Test Score"] - data["Test Score"].mean()) <= (3 * data["Test Score"].std())]
 
-        print(len(data))
+        # how many plots should be created
 
-        x = data["Tool"]
-        y = data["Test Score"]
+        unique_tools = data['Tool'].unique()
 
-        fig, axs = plt.subplots(2, 2)
-        fig.suptitle("Test Scores by Tool")
+        if len(unique_tools) > 4:
+            part_df = pd.DataFrame(columns=['Tool'])
+            i = 0
+            for tool in unique_tools:
+                if len(part_df['Tool']) >= 4:
+                    fig = sns.FacetGrid(part_df, col="Tool", hue="Version", legend_out=True, col_wrap=2)
+                    fig.map_dataframe(sns.scatterplot, x="Processed Feature Count", y="Test Score").add_legend()
+                    fig.set_axis_labels("Processed Feature Count", "Test Score")
+                    fig.savefig(
+                        Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_prediction_overview_{i}.jpg"),
+                        bbox_inches="tight")
+                    part_df = pd.DataFrame()
+                    i += 1
 
-        axs[0, 0].plot(x, y)
-        axs[0, 0].set_title('Axis [0, 0]')
-        axs[0, 1].plot(x, y, 'tab:orange')
-        axs[0, 1].set_title('Axis [0, 1]')
-        axs[1, 0].plot(x, -y, 'tab:green')
-        axs[1, 0].set_title('Axis [1, 0]')
-        axs[1, 1].plot(x, -y, 'tab:red')
-        axs[1, 1].set_title('Axis [1, 1]')
+                part_df = part_df.append(data.loc[data['Tool'] == tool])
 
-        for ax in axs.flat:
-            ax.set(xlabel='x-label', ylabel='y-label')
+        else:
+            fig = sns.FacetGrid(data, col="Tool", hue="Version", legend_out=True, col_wrap=3)
+            fig.map_dataframe(sns.scatterplot, x="Processed Feature Count", y="Test Score").add_legend()
+            fig.set_axis_labels("Processed Feature Count", "Test Score")
+            fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_prediction_overview.jpg"),
+                        bbox_inches="tight")
 
-        # Hide x labels and tick labels for top plots and y ticks for right plots.
-        for ax in axs.flat:
-            ax.label_outer()
-
-       # ax = sns.boxplot(x="Tool", y="Test Score", data=data,
-        #                 palette="Set3")
-        #ax = sns.swarmplot(x="Tool", y="Test Score", data=data, color=".25")
-        #ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
-
-        #fig = ax.get_figure()
-
-        fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_prediction_overview.jpg"),
-                    bbox_inches="tight")
-        fig.clf()
         plt.close('all')
 
 
