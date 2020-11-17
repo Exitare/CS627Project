@@ -168,7 +168,7 @@ class Tool:
                 if self.get_best_performing_version(label) is None:
                     continue
 
-                file.create_simple_data_set(label, self.get_best_performing_version(label)['Train Score'])
+                file.create_simple_data_set(label, self.get_best_performing_version(label)['Test Score'])
 
     def __prepare_best_performing_version_merged_file(self):
         """
@@ -313,8 +313,6 @@ class Tool:
 
             if data.empty:
                 continue
-
-            
 
             ax = sns.barplot(x="File Name", y="Test Score", data=data,
                              palette="Set3")
