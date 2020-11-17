@@ -27,12 +27,36 @@ def generate_tool_statistics():
     """
     Plots and prints additional data not tied to a specific tool or file
     """
+    __calculate_difference_between_best_and_worst_performing_version()
     __count_best_split()
     __calculate_data_set_statistics()
     __get_best_performing_version_per_tool()
     __get_worst_performing_version_per_tool()
     __prediction_score_on_average_across_versions()
     __plot_predictions_result()
+
+
+def __calculate_difference_between_best_and_worst_performing_version():
+    data = pd.DataFrame(columns=["Tool", "Difference", 'Label'])
+
+    for tool in Runtime_Datasets.VERIFIED_TOOLS:
+        for file in tool.verified_files:
+            for label in file.detected_labels:
+                difference = tool.get_best_performing_version(label)['Test Score'] - \
+                             tool.get_worst_performing_version(label)[
+                                 'Test Score']
+                data = data.append({"Tool": tool.name, "Difference": difference, "Label": label}, ignore_index=True)
+
+    print(data)
+
+    ax = sns.violinplot(x="Label", y="Difference", data=data)
+    fig = ax.get_figure()
+
+    fig.savefig(
+        Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_.jpg"),
+        bbox_inches="tight")
+    fig.clf()
+    plt.close('all')
 
 
 def __calculate_data_set_statistics():
@@ -425,7 +449,7 @@ def __count_best_split():
                 versions[index] += 1
 
     versions = {
-        "version": list(versions.keys()),
+        "parts": list(versions.keys()),
         "count": list(versions.values())
     }
 
@@ -436,7 +460,7 @@ def __count_best_split():
 
     temp = versions.loc[versions['count'] != 0]
 
-    ax = sns.barplot(x="version", y="count", data=temp)
+    ax = sns.barplot(x="parts", y="count", data=temp)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
     fig = ax.get_figure()
 
