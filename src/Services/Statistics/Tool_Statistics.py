@@ -34,6 +34,60 @@ def generate_tool_statistics():
     __get_worst_performing_version_per_tool()
     __prediction_score_on_average_across_versions()
     __plot_predictions_result()
+    __count_tool_statistics()
+
+
+def __count_tool_statistics():
+    """
+    Counts how many tools do have positive /negative values for a specific statistic
+    E.g how many have positive correlation
+    """
+
+    all_stats = pd.DataFrame(columns=["Data", "Label", "Mean", "Median", "Correlation"])
+
+    frames = []
+
+    for tool in Runtime_Datasets.VERIFIED_TOOLS:
+        frames.append(tool.statistics)
+
+    all_stats = pd.concat(frames)
+    all_stats["Correlation"].fillna(0, inplace=True)
+
+    count = pd.DataFrame(columns=["Label", "Data", "<0", "0", ">0"])
+
+    for label in all_stats["Label"].unique():
+        data = all_stats[all_stats["Label"] == label]
+
+        count = count.append(
+            {"Label": label, "Data": "Mean", "<0": len(data[data["Mean"] < 0]), "0": len(data[data["Mean"] == 0]),
+             ">0": len(data[data["Mean"] > 0])}, ignore_index=True)
+        count = count.append(
+            {"Label": label, "Data": "Median", "<0": len(data[data["Median"] < 0]), "0": len(data[data["Median"] == 0]),
+             ">0": len(data[data["Median"] > 0])}, ignore_index=True)
+        count = count.append(
+            {"Label": label, "Data": "Correlation", "<0": len(data[data["Correlation"] < 0]),
+             "0": len(data[data["Correlation"] == 0]),
+             ">0": len(data[data["Correlation"] > 0])}, ignore_index=True)
+
+    count.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_statistics_count.csv"),
+                 index=False)
+
+    for label in count["Label"].unique():
+        data = count[count["Label"] == label]
+
+        if data.empty:
+            continue
+
+        data = pd.melt(data, id_vars=['Data'], value_vars=['<0', '0', '>0'])
+        ax = sns.catplot(x="variable", y="value", hue="Data", data=data, kind="bar")
+        # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        ax.set(xlabel="statistic", ylabel='Value')
+
+        ax.fig.savefig(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_test_score_statistics_count.jpg"),
+            bbox_inches="tight")
+        ax.fig.clf()
+        plt.close('all')
 
 
 def __calculate_difference_between_best_and_worst_performing_version():
@@ -46,8 +100,6 @@ def __calculate_difference_between_best_and_worst_performing_version():
                              tool.get_worst_performing_version(label)[
                                  'Test Score']
                 data = data.append({"Tool": tool.name, "Difference": difference, "Label": label}, ignore_index=True)
-
-    print(data)
 
     ax = sns.violinplot(x="Label", y="Difference", data=data)
     fig = ax.get_figure()

@@ -26,6 +26,7 @@ class Tool:
         # All files eligible to be evaluated
         self.verified_files = []
 
+        self.statistics = pd.DataFrame(columns=["Data", "Label", "Mean", "Median", "Correlation"])
         # Evaluation results overview for all evaluated labels
         self.files_label_overview = dict()
 
@@ -119,7 +120,7 @@ class Tool:
 
             for label in file.detected_labels:
                 file.predict(label)
-                file.predict_partial(label)
+                file.predict_splits(label)
                 file.pca_analysis(label)
 
             # Copy the source file to the results folder
@@ -154,7 +155,7 @@ class Tool:
             for label in file.detected_labels:
                 # Predict values for single files
                 file.predict(label)
-                file.predict_partial(label)
+                file.predict_splits(label)
                 file.pca_analysis(label)
                 file.evaluated = True
 
@@ -234,6 +235,7 @@ class Tool:
             file.generate_plots()
 
         self.__plot_prediction_score_overview()
+        self.__plot_statistics()
 
     def generate_overview_data_sets(self):
         """
@@ -250,20 +252,6 @@ class Tool:
                 else:
                     self.files_label_overview[label] = pd.DataFrame()
                     self.files_label_overview[label] = self.files_label_overview[label].append(data)
-
-    def __add_merged_file(self):
-        """
-        Merges the raw data sets of all verified versions into a big one.
-        Assuming that all single files are valid this merged on should be valid too.
-        :return:
-        """
-        raw_df = []
-        for file in self.verified_files:
-            raw_df.append(file.raw_df)
-
-        merged_files_raw_df = pd.concat(raw_df, join='inner')
-        merged_file = File("merged_tool", self.folder, merged_files_raw_df)
-        self.verified_files.append(merged_file)
 
     # TODO: Return the file instead of the data row
     def get_best_performing_version(self, label: str):
@@ -301,6 +289,71 @@ class Tool:
         row_id = temp_data['Test Score'].argmin()
         return temp_data.loc[row_id]
 
+    def calculate_tool_statistics(self):
+        """
+        Calculates mean, median, and correlation
+        """
+
+        # File evaluation
+        for file in self.verified_files:
+            for label in file.detected_labels:
+                data = file.evaluation_results[label]
+
+                if data.empty:
+                    continue
+
+                self.statistics = self.statistics.append(
+                    {"Data": "Whole", "Label": label, "Mean": data["Test Score"].mean(),
+                     "Median": data["Test Score"].median(),
+                     "Correlation": data["Test Score"].astype(float).corr(
+                         data["Processed Feature Count"].astype(float))}, ignore_index=True)
+        # Splits
+        for file in self.verified_files:
+            for label in file.detected_labels:
+                data = file.split_evaluation_results[label]
+
+                if data.empty:
+                    continue
+
+                self.statistics = self.statistics.append(
+                    {"Data": "Split", "Label": label, "Mean": data["Test Score"].mean(),
+                     "Median": data["Test Score"].median(),
+                     "Correlation": data["Test Score"].astype(float).corr(
+                         data["Processed Feature Count"].astype(float))}, ignore_index=True)
+
+        # simple df evaluation
+        for file in self.verified_files:
+            for label in file.detected_labels:
+                data = file.simple_dfs_evaluation[label]
+
+                if data.empty:
+                    continue
+
+                self.statistics = self.statistics.append(
+                    {"Data": "Simple", "Label": label, "Mean": data["Test Score"].mean(),
+                     "Median": data["Test Score"].median(),
+                     "Correlation": data["Test Score"].astype(float).corr(
+                         data["Processed Feature Count"].astype(float))}, ignore_index=True)
+
+    def __plot_statistics(self):
+        """
+        Plots the tool statistics
+        """
+        for label in self.statistics['Label'].unique():
+            data = self.statistics.loc[self.statistics['Label'] == label]
+            data = pd.melt(data, id_vars=['Data'], value_vars=['Mean', 'Median', 'Correlation'])
+            data["value"].fillna(0)
+
+            ax = sns.barplot(x="variable", y="value", hue="Data", data=data)
+            ax.set(xlabel="Statistics", ylabel='Value')
+            fig = ax.get_figure()
+
+            fig.savefig(
+                Path.joinpath(self.folder, f"{label}_test_score_statistics.jpg"),
+                bbox_inches="tight")
+            fig.clf()
+            plt.close('all')
+
     def __plot_prediction_score_overview(self):
         """"
         Plots an overview
@@ -322,3 +375,17 @@ class Tool:
             fig.savefig(Path.joinpath(self.folder, f"{label}_prediction_overview.jpg"), bbox_inches="tight")
             fig.clf()
             plt.close('all')
+
+    def __add_merged_file(self):
+        """
+        Merges the raw data sets of all verified versions into a big one.
+        Assuming that all single files are valid this merged on should be valid too.
+        :return:
+        """
+        raw_df = []
+        for file in self.verified_files:
+            raw_df.append(file.raw_df)
+
+        merged_files_raw_df = pd.concat(raw_df, join='inner')
+        merged_file = File("merged_tool", self.folder, merged_files_raw_df)
+        self.verified_files.append(merged_file)

@@ -60,6 +60,7 @@ if __name__ == '__main__':
         tool.evaluate_additional_files()
         tool.create_simple_data_frames()
         tool.generate_overview_data_sets()
+        tool.calculate_tool_statistics()
         tool.generate_reports()
         tool.generate_plots()
         tool.free_memory()

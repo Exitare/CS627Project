@@ -252,7 +252,7 @@ class File:
         except BaseException as ex:
             logging.exception(ex)
 
-    def predict_partial(self, label: str):
+    def predict_splits(self, label: str):
         """
         Split the data into parts, and predicts results using only one part after another.
         """
@@ -261,7 +261,7 @@ class File:
 
             # how many rows should one part contain
             total_rows = int(len(df))
-            rows_per_chunk: int = int(len(df) * 0.2)
+            rows_per_chunk: int = int(len(df) * 0.1)
 
             chunks = Data_Frame_Helper.split_df(df, rows_per_chunk)
 
