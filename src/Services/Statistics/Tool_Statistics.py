@@ -81,7 +81,7 @@ def __count_tool_statistics():
         data = pd.melt(data, id_vars=['Data'], value_vars=['<0', '0', '>0'])
         ax = sns.catplot(x="variable", y="value", hue="Data", data=data, kind="bar")
         # ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
-        ax.set(xlabel="statistic", ylabel='Value')
+        ax.set(xlabel="Distribution", ylabel='Count')
 
         ax.fig.savefig(
             Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_test_score_statistics_count.jpg"),
@@ -96,9 +96,18 @@ def __calculate_difference_between_best_and_worst_performing_version():
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         for file in tool.verified_files:
             for label in file.detected_labels:
-                difference = tool.get_best_performing_version(label)['Test Score'] - \
-                             tool.get_worst_performing_version(label)[
-                                 'Test Score']
+
+                if tool.get_best_performing_version(label) is None or tool.get_worst_performing_version(label) is None:
+                    continue
+
+                best_performing_version = tool.get_best_performing_version(label)['Test Score']
+                worst_performing_version = tool.get_worst_performing_version(label)[
+                    'Test Score']
+
+                if best_performing_version is None or worst_performing_version is None:
+                    continue
+
+                difference = best_performing_version - worst_performing_version
                 data = data.append({"Tool": tool.name, "Difference": difference, "Label": label}, ignore_index=True)
 
     ax = sns.violinplot(x="Label", y="Difference", data=data)
@@ -457,6 +466,9 @@ def __plot_predictions_result():
 
         unique_tools = data['Tool'].unique()
 
+        if len(unique_tools) == 0:
+            continue
+
         if len(unique_tools) > 4:
             part_df = pd.DataFrame(columns=['Tool'])
             i = 0
@@ -474,7 +486,7 @@ def __plot_predictions_result():
                 part_df = part_df.append(data.loc[data['Tool'] == tool])
 
         else:
-            fig = sns.FacetGrid(data, col="Tool", hue="Version", legend_out=True, col_wrap=3)
+            fig = sns.FacetGrid(data, col="Tool", hue="Version", legend_out=True, col_wrap=len(unique_tools))
             fig.map_dataframe(sns.scatterplot, x="Processed Feature Count", y="Test Score").add_legend()
             fig.set_axis_labels("Processed Feature Count", "Test Score")
             fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{label}_prediction_overview.jpg"),
