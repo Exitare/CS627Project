@@ -500,31 +500,29 @@ def __count_best_split():
     Counts which split performs best and create a plot and dataset
     """
 
-    versions = dict()
+    split_df = pd.DataFrame(columns=["Split", "Count", "Label"])
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         for file in tool.verified_files:
             for label, data in file.split_evaluation_results.items():
-                # Add index to keys
-                for index in list(data.index):
-                    if index not in versions:
-                        versions[index] = 0
+                split: int = file.get_best_performing_split(label)
 
-                index = file.get_best_performing_split(label)
-                versions[index] += 1
+                # Add row if dataframe is empty
+                if split_df.empty:
+                    split_df = split_df.append({"Split": split, "Count": 1, "Label": label}, ignore_index=True)
+                    continue
 
-    versions = {
-        "parts": list(versions.keys()),
-        "count": list(versions.values())
-    }
+                # Check if split is already in data frame or not
+                if split in split_df["Split"].values and label in split_df["Label"].values:
+                    split_df.at[split_df.loc[split_df["Split"] == split].index[0], 'Count'] += 1
+                else:
+                    split_df = split_df.append({"Split": split, "Count": 1, "Label": label}, ignore_index=True)
 
-    versions = pd.DataFrame.from_dict(versions)
-
-    versions.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"split_performance_count.csv"),
+    split_df.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"split_performance_count.csv"),
                     index=False)
 
-    temp = versions.loc[versions['count'] != 0]
+    split_df = split_df.loc[split_df['Count'] != 0]
 
-    ax = sns.barplot(x="parts", y="count", data=temp)
+    ax = sns.barplot(x="Split", y="Count", hue="Label", data=split_df)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
     fig = ax.get_figure()
 

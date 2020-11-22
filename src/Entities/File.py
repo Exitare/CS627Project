@@ -327,7 +327,7 @@ class File:
 
         data = self.split_evaluation_results[label]
         row = data.loc[data['Test Score'].idxmax()]
-        return row['Part']
+        return int(row['Part'])
 
     def create_simple_data_set(self, label: str, test_score_threshold):
         """
