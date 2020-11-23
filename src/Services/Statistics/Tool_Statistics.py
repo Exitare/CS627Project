@@ -93,30 +93,44 @@ def __calculate_difference_between_best_and_worst_performing_version():
     """
     Calculates the difference between the best and worst performing version
     """
-    data = pd.DataFrame(columns=["Tool", "Difference", 'Label'])
+    all_tools = pd.DataFrame(columns=["Tool", "Difference", 'Label'])
+    multi_tools = pd.DataFrame(columns=["Tool", "Difference", 'Label'])
 
-    for tool in Runtime_Datasets.VERIFIED_TOOLS:
-        for file in tool.verified_files:
-            for label in file.detected_labels:
+    for label in Config.LABELS:
+        for tool in Runtime_Datasets.VERIFIED_TOOLS:
 
-                if tool.get_best_performing_version(label) is None or tool.get_worst_performing_version(label) is None:
-                    continue
+            if tool.get_best_performing_version(label) is None or tool.get_worst_performing_version(label) is None:
+                continue
 
-                best_performing_version = tool.get_best_performing_version(label)['Test Score']
-                worst_performing_version = tool.get_worst_performing_version(label)[
-                    'Test Score']
+            best_performing_version = tool.get_best_performing_version(label)['Test Score']
+            worst_performing_version = tool.get_worst_performing_version(label)[
+                'Test Score']
 
-                if best_performing_version is None or worst_performing_version is None:
-                    continue
+            if best_performing_version is None or worst_performing_version is None:
+                continue
 
-                difference = best_performing_version - worst_performing_version
-                data = data.append({"Tool": tool.name, "Difference": difference, "Label": label}, ignore_index=True)
+            difference = best_performing_version - worst_performing_version
+            all_tools = all_tools.append({"Tool": tool.name, "Difference": difference, "Label": label},
+                                         ignore_index=True)
 
-    ax = sns.violinplot(x="Label", y="Difference", data=data)
+            if len(tool.verified_files) > 1:
+                multi_tools = multi_tools.append({"Tool": tool.name, "Difference": difference, "Label": label},
+                                                 ignore_index=True)
+
+    ax = sns.violinplot(x="Label", y="Difference", data=all_tools)
     fig = ax.get_figure()
 
     fig.savefig(
-        Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_.jpg"),
+        Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_all_tools.jpg"),
+        bbox_inches="tight")
+    fig.clf()
+    plt.close('all')
+
+    ax = sns.violinplot(x="Label", y="Difference", data=multi_tools)
+    fig = ax.get_figure()
+
+    fig.savefig(
+        Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_multi_tools.jpg"),
         bbox_inches="tight")
     fig.clf()
     plt.close('all')
