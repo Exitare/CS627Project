@@ -2,6 +2,8 @@ from sklearn import preprocessing
 from sklearn.feature_selection import VarianceThreshold
 import numpy as np
 import ast
+import logging
+from Services.Configuration import Config
 
 np.random.seed(10)
 
@@ -131,6 +133,8 @@ def remove_bad_columns(df):
     for column in df.columns:
         for bad in bad_columns:
             if bad in column and column in df.columns:
+                if Config.DEBUG:
+                    logging.debug(f"Throwing {column} away!")
                 del df[bad]
 
     return df

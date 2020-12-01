@@ -57,7 +57,6 @@ class File:
             if not Config.MEMORY_SAVING_MODE:
                 self.raw_df = File_Management.read_file(self.full_name)
                 if self.raw_df is None:
-
                     if Config.DEBUG:
                         logging.info("Raw df is empty!")
                     self.verified = False
@@ -98,8 +97,7 @@ class File:
         if not self.verified:
             if Config.DEBUG:
                 logging.info(f"{self.name} is not verified!")
-                input()
-
+                sleep(1)
             return
 
         # The folder where all reports and plots are getting stored, only created if file is valid
