@@ -7,9 +7,6 @@ from Services.Processing import PreProcessing
 from time import sleep
 import numpy as np
 import logging
-from sklearn.metrics import r2_score
-from sklearn.model_selection import train_test_split, KFold
-from sklearn.ensemble import RandomForestRegressor
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
@@ -27,6 +24,7 @@ class File:
         :param tool_folder:
         :param raw_df:
         """
+
         # Provides information whether the entity is a merged too file or a "real" file
         if raw_df is not None:
             self.merged_file = True
@@ -59,6 +57,9 @@ class File:
             if not Config.MEMORY_SAVING_MODE:
                 self.raw_df = File_Management.read_file(self.full_name)
                 if self.raw_df is None:
+
+                    if Config.DEBUG:
+                        logging.info("Raw df is empty!")
                     self.verified = False
                     return
             else:
@@ -95,11 +96,14 @@ class File:
 
         # Return, because the file is not eligible to be evaluated.
         if not self.verified:
+            if Config.DEBUG:
+                logging.info(f"{self.name} is not verified!")
+                input()
+
             return
 
         # The folder where all reports and plots are getting stored, only created if file is valid
         self.folder = Folder_Management.create_file_folder(tool_folder, self.name)
-
         if self.folder is not None:
             self.verified = True
         else:
@@ -167,7 +171,7 @@ class File:
         """
         for label in Config.LABELS:
             if label in self.preprocessed_df:
-                if Config.VERBOSE:
+                if Config.DEBUG:
                     logging.info(f"Found label {label} in file {self.name}")
                 self.detected_labels.append(label)
 
@@ -187,24 +191,27 @@ class File:
         :return:
         """
         columns, rows, features = self.get_raw_df_statistics()
+
         if rows < Config.MINIMUM_ROW_COUNT:
-            if Config.VERBOSE:
+            if Config.DEBUG:
                 logging.warning(f"{self.name} has insufficient rows ({rows}).")
                 logging.warning("The file will not be evaluated.")
                 sleep(1)
             self.verified = False
 
         if columns < Config.MINIMUM_COLUMN_COUNT:
-            if Config.VERBOSE:
+            if Config.DEBUG:
                 logging.warning(f"{self.name} has insufficient columns ({columns}).")
                 logging.warning("The file will not be evaluated.")
+                logging.warning(self.raw_df)
+                input()
                 sleep(1)
             self.verified = False
 
         # check for infinity values
         for column in self.preprocessed_df:
             if self.preprocessed_df[column].any() > np.iinfo('i').max:
-                if Config.VERBOSE:
+                if Config.DEBUG:
                     logging.warning(f"Detected infinity values in preprocessed data set!")
                     logging.warning(f"File will not be evaluated.")
                 self.verified = False
@@ -287,7 +294,8 @@ class File:
                      "Processed Feature Count": X.shape[1], "Total rows": total_rows, "Part": part}, ignore_index=True)
                 part += 1
 
-            self.split_evaluation_results[label].sort_values(by='Test Score', ascending=False, inplace=True)
+            if not self.split_evaluation_results[label].empty:
+                self.split_evaluation_results[label].sort_values(by='Test Score', ascending=False, inplace=True)
 
         except BaseException as ex:
             logging.exception(ex)
@@ -364,13 +372,13 @@ class File:
                 # Check if the number of features changed.
                 # If not continue
                 if previous_feature_count == feature_count:
-                    if Config.VERBOSE:
+                    if Config.DEBUG:
                         logging.info("Skipping because of same feature count")
                     threshold = self.__lower_threshold(threshold)
                     continue
 
                 if feature_count == 0:
-                    if Config.VERBOSE:
+                    if Config.DEBUG:
                         logging.info("Skipping because no features found")
                     continue
 
@@ -382,7 +390,7 @@ class File:
 
                 # Check if there is more than just one column
                 if len(simple_df.columns) <= 1:
-                    if Config.VERBOSE:
+                    if Config.DEBUG:
                         logging.info("Skipping because df has only one column")
                     threshold = self.__lower_threshold(threshold)
                     continue
@@ -667,7 +675,9 @@ class File:
                 plt.close('all')
 
         except BaseException as ex:
-            logging.exception(ex)
+            if Config.DEBUG:
+                logging.exception(ex)
+                input()
             return
 
     def __plot_pca_analysis_scatter(self):
@@ -681,6 +691,7 @@ class File:
                     continue
 
                 temp_data = data.copy()
+
                 temp_data[label] = np.log(temp_data[label])
 
                 ax = sns.scatterplot(x=data[0], y=data[1],
@@ -693,7 +704,9 @@ class File:
                 fig.clf()
                 plt.close('all')
         except BaseException as ex:
-            logging.exception(ex)
+            if Config.DEBUG:
+                logging.exception(ex)
+                input()
 
     def __calculate_feature_importance(self, label: str, model, df):
         """

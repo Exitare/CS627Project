@@ -1,5 +1,4 @@
 [GENERAL]
-verbose_mode = 0
 debug_mode = 0
 percentage_removal = 1
 merged_tool_evaluation = 1
@@ -19,7 +18,7 @@ memory_var_summary_name = Average_Memory_Var-R2-Scores
 excluded_files = Excluded_Files
 
 [FILE_SETTINGS]
-min_row_count_per_file = 1000
+min_row_count_per_file = 100
 min_column_count_per_file = 2
 labels = runtime, memory, memory.max_usage_in_bytes
 

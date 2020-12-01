@@ -1,6 +1,8 @@
 from sklearn import preprocessing
 from sklearn.feature_selection import VarianceThreshold
 import numpy as np
+import ast
+
 np.random.seed(10)
 
 
@@ -14,12 +16,11 @@ def pre_process_data_set(df):
     :param df:
     :return:
     """
+    df = remove_bad_columns(df)
     df.replace([np.inf, -np.inf], np.nan)
     df[df == np.inf] = np.nan
-    df = remove_bad_columns(df)
     df = fill_na(df)
     df = convert_factorial_to_numerical(df)
-
     # Remove columns only containing 0
     df = df[(df.T != 0).any()]
     return df
@@ -55,21 +56,104 @@ def remove_bad_columns(df):
     :param df:
     :return:
     """
-    columns = []
-    if 'job_runner_name' in df.columns:
-        columns.append('job_runner_name')
 
-    if 'handler' in df.columns:
-        columns.append('handler')
+    bad_columns = []
+    search_columns = [
+        'job_runner_name',
+        'handler',
+        'destination_id',
+        'input_file',
+        'chromInfo',
+        'workflow_invocation_uuid',
+        'regionsFiles',
+        'values',
+        'regionsFile',
+        '|__identifier__',
+        'blackListFile',
+    ]
 
-    if 'destination_id' in df.columns:
-        columns.append('destination_id')
+    bad_ends = ['id', 'identifier', '__identifier__', 'indeces']
 
-    if 'input_file' in df.columns:
-        columns.append('input_file')
+    bad_starts = ["__workflow_invocation_uuid__", "chromInfo", '__job_resource',
+                  'reference_source', 'reference_genome', 'rg',
+                  'readGroup', 'refGenomeSource', 'genomeSource'
+                  ]
 
-    for column in columns:
-        del df[column]
+    for column in df.columns:
+        for search in search_columns:
+            if search in column:
+                bad_columns.append(column)
+
+    for column in df.columns:
+        for word in bad_ends:
+            if column.endswith(word):
+                bad_columns.append(column)
+
+        for word in bad_starts:
+            if column.startswith(word):
+                bad_columns.append(column)
+
+    for column in df.columns:
+        series = df[column].dropna()
+
+        # trim string of ""   This is necessary to check if the parameter is full of list or dict objects
+        if df[column].dtype == object and all(
+                type(item) == str and item.startswith('"') and item.endswith('"') for item in series):
+            try:
+                df[column] = df[column].str[1:-1].astype(float)
+            except:
+                df[column] = df[column].str[1:-1]
+
+        # if more than half of the rows have a unique value, remove the categorical feature
+        if df[column].dtype == object and len(df[column].unique()) >= 0.5 * df.shape[0]:
+            bad_columns.append(column)
+
+        # if number empty is greater than half, remove
+        if df[column].isnull().sum() >= 0.75 * df.shape[0]:
+            bad_columns.append(column)
+
+        # if the number of categories is greater than 10 remove
+        if df[column].dtype == object and len(df[column].unique()) >= 100:
+            bad_columns.append(column)
+
+        # if the feature is a list remove
+        if all(type(item) == str and item.startswith("[") and item.endswith("]") for item in
+               series):  # and item.startswith("[{'src'")
+            if all(type(ast.literal_eval(item)) == list for item in series):
+                bad_columns.append(column)
+
+        # if the feature is a dict remove
+        if all(type(item) == str and item.startswith("{") and item.endswith("}") for item in
+               series):  # and item.startswith("[{'src'")
+            if all(type(ast.literal_eval(item)) == list for item in series):
+                bad_columns.append(column)
+
+    for column in df.columns:
+        for bad in bad_columns:
+            if bad in column and column in df.columns:
+                del df[bad]
+
+    return df
+
+
+def clean_data(df):
+    # make an alert if the number of categories in a column exceeds threshold_num_of_categories
+    threshold_num_of_categories = 30
+
+    for column in df:
+        try:
+            df[column] = df[column].astype(float)
+            df[column] = df[column].fillna(0)
+        except (ValueError, TypeError) as ex:
+            df[column] = df[column].astype(str)
+            if len(df[column].unique()) > threshold_num_of_categories:
+                print(f"Deleting column {column}, because too many categories.")
+                del df[column]
+                continue
+
+        if df[column].is_monotonic:
+            print(f"Deleting column {column}, because it is monotonic")
+            del df[column]
 
     return df
 
@@ -95,6 +179,7 @@ def fill_na(df):
     Filling all NAs.
     Changing boolean values to string values to replace them.
     """
+
     numeric_columns = df.select_dtypes(exclude=['object']).columns
     categorical_columns = df.select_dtypes(exclude=['int', 'float']).columns
 

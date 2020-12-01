@@ -69,7 +69,7 @@ class Tool:
         self.verified_files = [file for file in self.all_files if file.verified]
         self.excluded_files = [file for file in self.all_files if not file.verified]
 
-        if Config.DEBUG_MODE:
+        if Config.DEBUG:
             logging.info(
                 f"Tool contains {len(self.excluded_files)} excluded files and {len(self.verified_files)} verified files.")
 

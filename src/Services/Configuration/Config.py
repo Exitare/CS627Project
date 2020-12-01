@@ -7,11 +7,10 @@ import logging
 # Config.py
 class Config:
     # General
-    VERBOSE = False
     PERCENTAGE_REMOVAL = False
     MERGED_TOOL_EVALUATION = False
     MEMORY_SAVING_MODE = False
-    DEBUG_MODE = False
+    DEBUG = False
 
     # Data
     DATA_ROOT_DIRECTORY = Path()
@@ -45,8 +44,7 @@ def read_conf():
     try:
 
         # General
-        Config.VERBOSE = bool(int(config['GENERAL']['verbose_mode']))
-        Config.DEBUG_MODE = bool(int(config['GENERAL']['debug_mode']))
+        Config.DEBUG = bool(int(config['GENERAL']['debug_mode']))
         Config.PERCENTAGE_REMOVAL = bool(int(config['GENERAL']['percentage_removal']))
         Config.MERGED_TOOL_EVALUATION = bool(int(config['GENERAL']['merged_tool_evaluation']))
         Config.MEMORY_SAVING_MODE = bool(int(config['GENERAL']['memory_saving_mode']))

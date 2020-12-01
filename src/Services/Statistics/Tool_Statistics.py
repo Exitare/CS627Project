@@ -11,6 +11,7 @@ from RuntimeContants import Runtime_Datasets
 import numpy as np
 import math
 from Services.Helper import Data_Frame_Helper
+from scipy import stats
 
 sns.set(style="whitegrid")
 
@@ -45,26 +46,33 @@ def __count_tool_statistics():
 
     all_tools_stats = pd.DataFrame(columns=["Data", "Label", "Mean", "Median", "Correlation"])
     multi_tool_stats = pd.DataFrame(columns=["Data", "Label", "Mean", "Median", "Correlation"])
-    frames = []
+
+    all_tool_frames = []
+    multi_tool_frames = []
 
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         if len(tool.verified_files) > 1:
-            multi_tool_stats.append(tool.statistics)
-        frames.append(tool.statistics)
+            multi_tool_frames.append(tool.statistics)
+        all_tool_frames.append(tool.statistics)
 
-    all_tools_stats = pd.concat(frames)
-    all_tools_stats["Correlation"].fillna(0, inplace=True)
+    if len(all_tool_frames) != 0:
+        all_tools_stats = pd.concat(all_tool_frames)
+        all_tools_stats["Correlation"].fillna(0, inplace=True)
 
-    multi_tool_stats = pd.concat(frames)
-    multi_tool_stats["Correlation"].fillna(0, inplace=True)
+    if len(multi_tool_frames) != 0:
+        multi_tool_stats = pd.concat(multi_tool_frames)
+        multi_tool_stats["Correlation"].fillna(0, inplace=True)
 
     for label in multi_tool_stats["Label"].unique():
         data = multi_tool_stats[multi_tool_stats["Label"] == label]
+        # Remove outliers
+
+        data = data[np.abs(data["Mean"] - data["Mean"].mean()) <= (3 * data["Mean"].std())]
 
         data = pd.melt(data, id_vars=['Data'], value_vars=['Mean', 'Median', 'Correlation'])
         data["Label"] = label
 
-        ax = sns.violinplot(x="Label", y="Difference", data=data)
+        ax = sns.violinplot(x="variable", y="value", data=data)
         fig = ax.get_figure()
 
         fig.savefig(
@@ -74,12 +82,15 @@ def __count_tool_statistics():
         plt.close('all')
 
     for label in all_tools_stats["Label"].unique():
-        data = all_tools_stats[multi_tool_stats["Label"] == label]
+        data = all_tools_stats[all_tools_stats["Label"] == label]
+
+        # Remove outliers
+        data = data[np.abs(data["Mean"] - data["Mean"].mean()) <= (3 * data["Mean"].std())]
 
         data = pd.melt(data, id_vars=['Data'], value_vars=['Mean', 'Median', 'Correlation'])
         data["Label"] = label
 
-        ax = sns.violinplot(x="Label", y="Difference", data=data)
+        ax = sns.violinplot(x="variable", y="value", data=data)
         fig = ax.get_figure()
 
         fig.savefig(
@@ -117,23 +128,25 @@ def __calculate_difference_between_best_and_worst_performing_version():
                 multi_tools = multi_tools.append({"Tool": tool.name, "Difference": difference, "Label": label},
                                                  ignore_index=True)
 
-    ax = sns.violinplot(x="Label", y="Difference", data=all_tools)
-    fig = ax.get_figure()
+    if not all_tools.empty:
+        ax = sns.violinplot(x="Label", y="Difference", data=all_tools)
+        fig = ax.get_figure()
 
-    fig.savefig(
-        Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_all_tools.jpg"),
-        bbox_inches="tight")
-    fig.clf()
-    plt.close('all')
+        fig.savefig(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_all_tools.jpg"),
+            bbox_inches="tight")
+        fig.clf()
+        plt.close('all')
 
-    ax = sns.violinplot(x="Label", y="Difference", data=multi_tools)
-    fig = ax.get_figure()
+    if not multi_tools.empty:
+        ax = sns.violinplot(x="Label", y="Difference", data=multi_tools)
+        fig = ax.get_figure()
 
-    fig.savefig(
-        Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_multi_tools.jpg"),
-        bbox_inches="tight")
-    fig.clf()
-    plt.close('all')
+        fig.savefig(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_multi_tools.jpg"),
+            bbox_inches="tight")
+        fig.clf()
+        plt.close('all')
 
 
 def __calculate_data_set_statistics():
@@ -538,14 +551,15 @@ def __count_best_split():
 
     split_df = split_df.loc[split_df['Count'] != 0]
 
-    ax = sns.barplot(x="Split", y="Count", hue="Label", data=split_df)
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
-    fig = ax.get_figure()
+    if not split_df.empty:
+        ax = sns.barplot(x="Split", y="Count", hue="Label", data=split_df)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+        fig = ax.get_figure()
 
-    fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"split_performance_count.jpg"),
-                bbox_inches="tight")
-    fig.clf()
-    plt.close('all')
+        fig.savefig(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"split_performance_count.jpg"),
+                    bbox_inches="tight")
+        fig.clf()
+        plt.close('all')
 
 
 def __row_helper(performance_df):

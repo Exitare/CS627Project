@@ -52,7 +52,7 @@ def load_tools():
     # Verify all tools
     for tool in Runtime_Datasets.DETECTED_TOOLS:
         tool.verify()
-        if Config.DEBUG_MODE:
+        if Config.DEBUG:
             if tool.verified:
                 logging.debug(f"Tool {tool.name} is verified.")
             else:

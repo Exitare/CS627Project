@@ -34,9 +34,9 @@ def remove_folder(path):
     try:
         shutil.rmtree(path)
     except OSError as ex:
-        folder_management.warning(f"Could not delete folder {path}")
+        logging.warning(f"Could not delete folder {path}")
         if Config.DEBUG_MODE:
-            folder_management.warning(ex)
+            logging.warning(ex)
 
 
 def create_directory(path: str):
@@ -49,9 +49,9 @@ def create_directory(path: str):
         Path(path).mkdir(parents=True, exist_ok=True)
 
     except OSError as ex:
-        folder_management.critical(ex)
-        folder_management.critical(f"Creation of the directory {path} failed.")
-        folder_management.critical("Stopping application")
+        logging.critical(ex)
+        logging.critical(f"Creation of the directory {path} failed.")
+        logging.critical("Stopping application")
         sys.exit()
 
 
