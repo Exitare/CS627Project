@@ -233,25 +233,33 @@ def __calculate_whole_data_set_statistics():
 
     df = pd.DataFrame(columns=["Data", "Label", "Mean", "Median", "Correlation"])
 
-    for label in Runtime_Datasets.BEST_PERFORMING_VERSIONS:
-        data = Runtime_Datasets.BEST_PERFORMING_VERSIONS[label]
+    for label in Runtime_Datasets.BEST_PERFORMING_VERSIONS["Label"].unique():
+        data = Data_Frame_Helper.get_label_data(Runtime_Datasets.BEST_PERFORMING_VERSIONS, label)
 
         if data.empty:
             continue
 
-        df = df.append({"Data": "Best Performing Version", "Label": label, "Mean": data["Test Score"].mean(),
-                        "Median": data["Test Score"].median(),
-                        "Correlation": data["Test Score"].corr(data["Processed Feature Count"])}, ignore_index=True)
+        df = df.append(
+            {
+                "Data": "Best Performing Version",
+                "Label": label, "Mean": data["Test Score"].mean(),
+                "Median": data["Test Score"].median(),
+                "Correlation": data["Test Score"].corr(data["Processed Feature Count"])
+            }, ignore_index=True)
 
-    for label in Runtime_Datasets.WORST_PERFORMING_VERSIONS:
-        data = Runtime_Datasets.WORST_PERFORMING_VERSIONS[label]
+    for label in Runtime_Datasets.WORST_PERFORMING_VERSIONS["Label"].unique():
+        data = Data_Frame_Helper.get_label_data(Runtime_Datasets.WORST_PERFORMING_VERSIONS, label)
 
         if data.empty:
             continue
 
-        df = df.append({"Data": "Worst Performing Version", "Label": label, "Mean": data["Test Score"].mean(),
-                        "Median": data["Test Score"].median(),
-                        "Correlation": data["Test Score"].corr(data["Processed Feature Count"])}, ignore_index=True)
+        df = df.append(
+            {"Data": "Worst Performing Version",
+             "Label": label,
+             "Mean": data["Test Score"].mean(),
+             "Median": data["Test Score"].median(),
+             "Correlation": data["Test Score"].corr(data["Processed Feature Count"])
+             }, ignore_index=True)
 
     return df
 
@@ -260,7 +268,7 @@ def __create_best_performing_version_per_tool_data_set():
     """
     Creates a dataset containing the best performing versions of each evaluated tool
     """
-    performances = dict()
+    performances = pd.DataFrame()
 
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         for label in Config.LABELS:
@@ -271,22 +279,15 @@ def __create_best_performing_version_per_tool_data_set():
 
             # Add the tool name to the version row
             version['Tool'] = tool.name
+            version["Label"] = label
 
-            if label in performances:
-                performances[label] = performances[label].append(version)
-            else:
-                performances[label] = pd.DataFrame()
-                performances[label] = performances[label].append(version)
-
-    Runtime_Datasets.BEST_PERFORMING_VERSIONS = performances
+            Runtime_Datasets.BEST_PERFORMING_VERSIONS = Runtime_Datasets.BEST_PERFORMING_VERSIONS.append(version)
 
 
 def __create_worst_performing_version_per_tool_data_set():
     """
     Creates a dataset containing the worst performing versions of each evaluated tool
     """
-
-    performances = dict()
 
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         for label in Config.LABELS:
@@ -297,14 +298,9 @@ def __create_worst_performing_version_per_tool_data_set():
 
             # Add the tool name to the version row
             version['Tool'] = tool.name
+            version["Label"] = label
 
-            if label in performances:
-                performances[label] = performances[label].append(version)
-            else:
-                performances[label] = pd.DataFrame()
-                performances[label] = performances[label].append(version)
-
-    Runtime_Datasets.WORST_PERFORMING_VERSIONS = performances
+            Runtime_Datasets.WORST_PERFORMING_VERSIONS = Runtime_Datasets.WORST_PERFORMING_VERSIONS.append(version)
 
 
 def __get_best_performing_version_per_tool():
@@ -312,11 +308,13 @@ def __get_best_performing_version_per_tool():
     Get best performing version of each tool, sort them and write them as csv file
     """
 
-    for label in Runtime_Datasets.BEST_PERFORMING_VERSIONS:
-        if Runtime_Datasets.BEST_PERFORMING_VERSIONS[label].empty:
-            continue
+    for label in Runtime_Datasets.BEST_PERFORMING_VERSIONS["Label"].unique():
 
-        data = Runtime_Datasets.BEST_PERFORMING_VERSIONS[label]
+        data = Data_Frame_Helper.get_label_data(Runtime_Datasets.BEST_PERFORMING_VERSIONS, label)
+
+        if data.empty:
+            return
+
         data = __row_helper(data)
 
         data.sort_values(by=['Test Score'], inplace=True, ascending=False)
@@ -340,11 +338,13 @@ def __get_worst_performing_version_per_tool():
     Get worst performing version of each tool, sort them and write them as csv file
     """
 
-    for label in Runtime_Datasets.WORST_PERFORMING_VERSIONS:
-        if Runtime_Datasets.WORST_PERFORMING_VERSIONS[label].empty:
-            continue
+    for label in Runtime_Datasets.WORST_PERFORMING_VERSIONS["Label"].unique():
 
-        data = Runtime_Datasets.WORST_PERFORMING_VERSIONS[label]
+        data = Data_Frame_Helper.get_label_data(Runtime_Datasets.WORST_PERFORMING_VERSIONS, label)
+
+        if data.empty:
+            return
+
         data = __row_helper(data)
 
         data.sort_values(by=['Test Score'], inplace=True, ascending=False)
@@ -372,7 +372,7 @@ def __prediction_score_on_average_across_versions():
         tool_avg_scores = pd.DataFrame(columns=["Label", "Tool", "Test Score (avg)", "Versions", " Average Rows"])
         for tool in Runtime_Datasets.VERIFIED_TOOLS:
 
-            test_scores = dict()
+            test_scores = pd.DataFrame(columns=["Label", "File", "Test Score"])
             # Get all files which are verified but not "merged" files
             files = [file for file in tool.verified_files if not file.merged_file]
             # helper for calculating the average row count of all versions
@@ -381,31 +381,29 @@ def __prediction_score_on_average_across_versions():
             file_count = 0
 
             for file in files:
-                for label in file.detected_labels:
-                    # Check if label is present in test_scores
-                    if label not in test_scores:
-                        test_scores[label] = pd.Series()
-
+                for label in file.evaluation_results["Label"].unique():
                     if label in file.evaluation_results:
-                        test_scores[label] = test_scores[label].append(file.evaluation_results[label]['Test Score'])
+                        test_scores = test_scores.append(
+                            {
+                                "Label": label,
+                                "File": file.name,
+                                "Test Score": file.evaluation_results[label]["Test Score"]
+                            }, ignore_index=True
+                        )
                         rows += file.get_pre_processed_df_statistics()[1]
                         file_count += 1
 
-            # Merge gathered data together
-            for label in Config.LABELS:
-                if label not in test_scores:
-                    continue
 
-                if label not in tool_avg_scores:
-                    tool_avg_scores = tool_avg_scores.append(
-                        {"Label": label, "Tool": tool.name, "Test Score": test_scores[label].mean(),
-                         "Versions": int(file_count),
-                         "Average Rows": int(rows / file_count)}, ignore_index=True)
-                else:
-                    tool_avg_scores = tool_avg_scores.append(
-                        {"Label": label, "Tool": tool.name, "Test Score": test_scores[label].mean(),
-                         "Versions": int(file_count),
-                         "Average Rows": int(rows / file_count)}, ignore_index=True)
+            # Merge gathered data together
+            for label in test_scores["Label"].unique():
+                tool_avg_scores = tool_avg_scores.append(
+                    {
+                        "Label": label,
+                        "Tool": tool.name,
+                        "Test Score": file.evaluation_results[label].mean(),
+                        "Versions": int(file_count),
+                        "Average Rows": int(rows / file_count)
+                    }, ignore_index=True)
 
         # Plotting
         ax = sns.violinplot(data=tool_avg_scores, x="Label", y="Test Score")

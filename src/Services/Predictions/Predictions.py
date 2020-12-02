@@ -1,15 +1,14 @@
 from sklearn.metrics import r2_score
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from Services.Configuration.Config import Config
 from Services.Processing import PreProcessing
 import logging
 
 
-
 def predict(label: str, dataframe):
     """
-
+    Trains the model and calculates the r2 score
     """
     if label not in dataframe:
         logging.warning(f"Label {label} is not present in provided dataframe!")
@@ -29,7 +28,7 @@ def predict(label: str, dataframe):
     X = X.loc[X_indices]
     y = y.loc[X_indices]
 
-    if source_row_count != len(X) and Config.VERBOSE:
+    if source_row_count != len(X) and Config.DEBUG:
         logging.info(f"Removed {source_row_count - len(X)} row(s). Source had {source_row_count}.")
 
     X = PreProcessing.variance_selection(X)

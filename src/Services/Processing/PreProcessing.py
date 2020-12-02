@@ -3,7 +3,7 @@ from sklearn.feature_selection import VarianceThreshold
 import numpy as np
 import ast
 import logging
-from Services.Configuration import Config
+from Services.Configuration.Config import Config
 
 np.random.seed(10)
 

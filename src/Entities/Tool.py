@@ -10,6 +10,7 @@ import os
 import seaborn as sns
 import shutil
 import matplotlib.pyplot as plt
+from Services.Helper import Data_Frame_Helper
 
 
 class Tool:
@@ -28,7 +29,7 @@ class Tool:
 
         self.statistics = pd.DataFrame(columns=["Data", "Label", "Mean", "Median", "Correlation"])
         # Evaluation results overview for all evaluated labels
-        self.files_label_overview = dict()
+        self.files_label_overview = pd.DataFrame()
 
         # if all checks out, the tool will be flag as verified
         # Tools flagged as not verified will not be evaluated
@@ -164,23 +165,23 @@ class Tool:
         Creates the simple data frame for each file, using the best performing tool as reference
         """
         for file in self.verified_files:
-            print(f"Creating simple data from for file {file.name}")
-            for label in file.detected_labels:
-                if self.get_best_performing_version(label) is None:
-                    continue
-
-                file.create_simple_data_set(label, self.get_best_performing_version(label)['Test Score'])
+            logging.info(f"Creating simple data from for file {file.name}")
+            file.create_simple_data_set()
 
     def __prepare_best_performing_version_merged_file(self):
         """
         Prepares a merged data set which contains only data from version with a test score > 0.6
         """
 
-        for label in self.files_label_overview:
+        for label in self.files_label_overview["Label"].unique():
             best_versions_df = []
 
-            best_performing = self.files_label_overview[label][self.files_label_overview[label]['Test Score'] > 0.6][
-                'File Name'].tolist()
+            data = Data_Frame_Helper.get_label_data(self.files_label_overview, label)
+
+            if data.empty:
+                continue
+
+            best_performing = data[data['Test Score'] > 0.6]['File Name'].tolist()
 
             for file in self.verified_files:
                 if file.name in best_performing and not file.merged_file:
@@ -213,13 +214,15 @@ class Tool:
         for file in self.verified_files:
             file.generate_reports()
 
-        for label in self.files_label_overview:
-            if self.files_label_overview[label].empty:
+        for label in self.files_label_overview["Label"].unique():
+            data = Data_Frame_Helper.get_label_data(self.files_label_overview, label)
+
+            if data.empty:
                 continue
 
-            self.files_label_overview[label].sort_values(by='Test Score', ascending=False, inplace=True)
-            self.files_label_overview[label].to_csv(os.path.join(self.folder, f"{label}_overview_files_report.csv"),
-                                                    index=False)
+            data.sort_values(by='Test Score', ascending=False, inplace=True)
+            data.to_csv(os.path.join(self.folder, f"{label}_overview_files_report.csv"),
+                        index=False)
 
         logging.info("All reports generated.")
         sleep(1)
@@ -243,15 +246,16 @@ class Tool:
         """
 
         # Clean dictionary
-        self.files_label_overview.clear()
+        self.files_label_overview = pd.DataFrame()
 
         for file in self.verified_files:
-            for label, data in file.evaluation_results.items():
-                if label in self.files_label_overview:
-                    self.files_label_overview[label] = self.files_label_overview[label].append(data)
-                else:
-                    self.files_label_overview[label] = pd.DataFrame()
-                    self.files_label_overview[label] = self.files_label_overview[label].append(data)
+            for label in file.evaluation_results["Label"].unique():
+                data = Data_Frame_Helper.get_label_data(file.evaluation_results, label)
+
+                if data.empty:
+                    continue
+
+                self.files_label_overview = self.files_label_overview.append(data)
 
     # TODO: Return the file instead of the data row
     def get_best_performing_version(self, label: str):
@@ -259,17 +263,15 @@ class Tool:
         Returns the best performing version of the tool for the specific label
         """
 
-        if label not in self.files_label_overview:
-            return None
+        data = Data_Frame_Helper.get_label_data(self.files_label_overview, label)
 
-        if self.files_label_overview[label].empty:
+        if data.empty:
             return None
 
         # Create a copy to manipulate the data
-        temp_data = self.files_label_overview[label].copy()
-        temp_data = temp_data.reset_index()
-        row_id = temp_data['Test Score'].argmax()
-        return temp_data.loc[row_id]
+        data = data.reset_index()
+        row_id = data['Test Score'].argmax()
+        return data.loc[row_id]
 
     # TODO: Return the file instead of the data row
     def get_worst_performing_version(self, label: str):
@@ -277,17 +279,14 @@ class Tool:
         Returns the worst performing version of the tool
         """
 
-        if label not in self.files_label_overview:
+        data = Data_Frame_Helper.get_label_data(self.files_label_overview, label)
+
+        if data.empty:
             return None
 
-        if self.files_label_overview[label].empty:
-            return None
-
-            # Create a copy to manipulate the data
-        temp_data = self.files_label_overview[label].copy()
-        temp_data = temp_data.reset_index()
-        row_id = temp_data['Test Score'].argmin()
-        return temp_data.loc[row_id]
+        data = data.reset_index()
+        row_id = data['Test Score'].argmin()
+        return data.loc[row_id]
 
     def calculate_tool_statistics(self):
         """
@@ -296,51 +295,64 @@ class Tool:
 
         # File evaluation
         for file in self.verified_files:
-            for label in file.detected_labels:
-                data = file.evaluation_results[label]
+            for label in file.evaluation_results["Label"].unique():
+                data = Data_Frame_Helper.get_label_data(file.evaluation_results, label)
 
                 if data.empty:
                     continue
 
                 self.statistics = self.statistics.append(
-                    {"Data": "Whole", "Label": label, "Mean": data["Test Score"].mean(),
-                     "Median": data["Test Score"].median(),
-                     "Correlation": data["Test Score"].astype(float).corr(
-                         data["Processed Feature Count"].astype(float))}, ignore_index=True)
+                    {
+                        "Data": "Whole",
+                        "Label": label,
+                        "Mean": data["Test Score"].mean(),
+                        "Median": data["Test Score"].median(),
+                        "Correlation": data["Test Score"].astype(float).corr(
+                            data["Processed Feature Count"].astype(float))
+                    }, ignore_index=True)
         # Splits
         for file in self.verified_files:
-            for label in file.detected_labels:
-                data = file.split_evaluation_results[label]
+            for label in file.split_evaluation_results["Label"].unique():
+                data = Data_Frame_Helper.get_label_data(file.split_evaluation_results, label)
 
                 if data.empty:
                     continue
 
                 self.statistics = self.statistics.append(
-                    {"Data": "Split", "Label": label, "Mean": data["Test Score"].mean(),
-                     "Median": data["Test Score"].median(),
-                     "Correlation": data["Test Score"].astype(float).corr(
-                         data["Processed Feature Count"].astype(float))}, ignore_index=True)
+                    {
+                        "Data": "Split",
+                        "Label": label,
+                        "Mean": data["Test Score"].mean(),
+                        "Median": data["Test Score"].median(),
+                        "Correlation": data["Test Score"].astype(float).corr(
+                            data["Processed Feature Count"].astype(float))
+                    }, ignore_index=True)
 
         # simple df evaluation
         for file in self.verified_files:
-            for label in file.detected_labels:
-                data = file.simple_dfs_evaluation[label]
+            for label in file.simple_dfs_evaluation["Label"].unique():
+                data = Data_Frame_Helper.get_label_data(file.simple_dfs_evaluation, label)
 
                 if data.empty:
                     continue
 
                 self.statistics = self.statistics.append(
-                    {"Data": "Simple", "Label": label, "Mean": data["Test Score"].mean(),
-                     "Median": data["Test Score"].median(),
-                     "Correlation": data["Test Score"].astype(float).corr(
-                         data["Processed Feature Count"].astype(float))}, ignore_index=True)
+                    {
+                        "Data": "Simple",
+                        "Label": label,
+                        "Mean": data["Test Score"].mean(),
+                        "Median": data["Test Score"].median(),
+                        "Correlation": data["Test Score"].astype(float).corr(
+                            data["Processed Feature Count"].astype(float))
+                    }, ignore_index=True)
 
     def __plot_statistics(self):
         """
         Plots the tool statistics
         """
         for label in self.statistics['Label'].unique():
-            data = self.statistics.loc[self.statistics['Label'] == label]
+            data = Data_Frame_Helper.get_label_data(self.statistics, label)
+
             data = pd.melt(data, id_vars=['Data'], value_vars=['Mean', 'Median', 'Correlation'])
             data["value"].fillna(0)
 
@@ -358,11 +370,9 @@ class Tool:
         """"
         Plots an overview
         """
-        for label in Config.LABELS:
-            if label not in self.files_label_overview:
-                continue
+        for label in self.files_label_overview["Label"].unique():
 
-            data = self.files_label_overview[label]
+            data = Data_Frame_Helper.get_label_data(self.files_label_overview, label)
 
             if data.empty:
                 continue

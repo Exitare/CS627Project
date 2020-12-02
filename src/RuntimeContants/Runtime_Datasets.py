@@ -9,6 +9,6 @@ EXCLUDED_TOOLS = []
 VERIFIED_TOOLS = []
 
 # Dataset contains the best performing version for each tool
-BEST_PERFORMING_VERSIONS = []
+BEST_PERFORMING_VERSIONS = pd.DataFrame()
 # Dataset contains the worst performing version for each tool
-WORST_PERFORMING_VERSIONS = []
+WORST_PERFORMING_VERSIONS = pd.DataFrame()
