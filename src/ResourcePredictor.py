@@ -5,10 +5,10 @@ from Services.FileSystem import Folder_Management
 from Services.ToolLoader import Tool_Loader
 from RuntimeContants import Runtime_Datasets
 from Services.Statistics import Runtime_Statistics, Tool_Statistics
+from Entities.Tool_Statistics import ToolStatistics
 import logging
 import time
 import os
-
 
 logging.basicConfig(filename='log.log', level=logging.DEBUG)
 logging.getLogger().setLevel(logging.DEBUG)
@@ -73,8 +73,12 @@ if __name__ == '__main__':
             logging.info(f"Tool {tool.name} evaluated in {time_passed} seconds")
         print()
 
-    Tool_Statistics.create_additional_data()
-    Tool_Statistics.generate_tool_statistics()
+    print("ToolStatistics")
+    tool_stats = ToolStatistics()
+    tool_stats.plot()
+
+    # Tool_Statistics.create_additional_data()
+    # Tool_Statistics.generate_tool_statistics()
     Runtime_Statistics.get_application_stats()
 
     logging.info("Done")

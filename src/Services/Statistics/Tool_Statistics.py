@@ -407,10 +407,6 @@ def __prediction_score_on_average_across_versions():
                         "Average Rows": int(rows / file_count)
                     }, ignore_index=True)
 
-        print("Tool avg")
-        print(tool_avg_scores)
-        tool_avg_scores.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"tools_test_score_on_average.csv"))
-        input()
         # Plotting
         ax = sns.violinplot(data=tool_avg_scores, x="Label", y="Test Score")
         ax.legend(bbox_to_anchor=(1.02, 1), loc=2)
@@ -551,7 +547,7 @@ def __count_best_split():
     split_df = split_df.loc[split_df['Count'] != 0]
 
     if not split_df.empty:
-        ax = sns.violinplot(x="Split", y="Count", hue="Label", data=split_df)
+        ax = sns.violinplot(x="Label", y="Count", data=split_df)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
         fig = ax.get_figure()
 

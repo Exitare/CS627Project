@@ -355,7 +355,8 @@ class File:
                                                   max_depth=Config.FOREST_MAX_DEPTH,
                                                   random_state=1)
 
-                # Create simple data sets for
+                # Create simple data sets
+                # TODO: Percentage not fixed count
                 for i in range(5, 6):
                     selector = RFE(estimator, n_features_to_select=i, step=1)
                     selector = selector.fit(X, y)
@@ -421,7 +422,6 @@ class File:
             data.to_csv(Path.joinpath(self.split_folder, f"{label}_split_evaluation_report.csv"), index=False)
 
         # Report for combined datasets (whole, splits)
-        # TODO: Fix this up
         combined_evaluation_data_set = self.__create_combined_evaluation_data_set()
         for label in combined_evaluation_data_set["Label"].unique():
             data = Data_Frame_Helper.get_label_data(combined_evaluation_data_set, label)

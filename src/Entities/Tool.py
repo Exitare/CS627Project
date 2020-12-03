@@ -183,27 +183,20 @@ class Tool:
             if data.empty:
                 continue
 
-            best_performing = data[data['Test Score'] > 0.6]['File Name'].tolist()
+            best_performing = data[data['Test Score'] > 0.7]['File Name'].tolist()
 
             for file in self.verified_files:
                 if file.name in best_performing and not file.merged_file:
                     best_versions_df.append(file.raw_df)
 
             if len(best_versions_df) <= 1:
+                if Config.DEBUG:
+                    logging.debug("Best performing data sets length is <= 1. Skipping...")
                 return
 
             best_version_files_raw_df = pd.concat(best_versions_df, join='inner')
             best_version_merged_file = File(f"{label}_best_version_merged_file", self.folder, best_version_files_raw_df)
             self.verified_files.append(best_version_merged_file)
-
-    def __prepare_most_important_feature_data_set(self):
-        """
-        Generates a data set for each version which contains only the most important features for each version
-        """
-
-        for file in self.verified_files:
-            if file.merged_file:
-                continue
 
     def generate_reports(self):
         """
