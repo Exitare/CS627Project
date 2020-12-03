@@ -92,7 +92,7 @@ class File:
         self.simple_dfs = dict()
         self.simple_dfs_evaluation = pd.DataFrame(
             columns=['File Name', "Label", 'Train Score', 'Test Score', 'Potential Over Fitting', 'Initial Row Count',
-                     'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count', 'Features'])
+                     'Initial Feature Count', 'Processed Row Count', 'Processed Feature Count'])
 
         # Prepare the internal data structure
         # self.prepare_internal_data_structure()
@@ -225,7 +225,7 @@ class File:
             # Calculate feature importances
             temp_df = self.preprocessed_df.copy()
             del temp_df[label]
-            self.__calculate_feature_importance(label, model, temp_df)
+            # self.__calculate_feature_importance(label, model, temp_df)
 
             self.evaluation_results = self.evaluation_results.append(
                 {
@@ -277,7 +277,7 @@ class File:
                 # Calculate feature importances
                 temp_df = chunk.copy()
                 del temp_df[label]
-                self.__calculate_feature_importance(label, model, temp_df)
+                # self.__calculate_feature_importance(label, model, temp_df)
 
                 self.split_evaluation_results = self.split_evaluation_results.append(
                     {
@@ -324,14 +324,10 @@ class File:
         """
         Returns the best performing split
         """
-
-        if label not in self.split_evaluation_results:
-            return None
-
-        if self.split_evaluation_results[label].empty:
-            return None
-
         data = Data_Frame_Helper.get_label_data(self.split_evaluation_results, label)
+        if data is None:
+            return None
+
         row = data.loc[data['Test Score'].idxmax()]
         return int(row['Part'])
 
@@ -360,14 +356,13 @@ class File:
                                                   random_state=1)
 
                 # Create simple data sets for
-                for i in range(5, 10):
+                for i in range(5, 6):
                     selector = RFE(estimator, n_features_to_select=i, step=1)
                     selector = selector.fit(X, y)
                     df = X[X.columns[selector.get_support(indices=True)]].copy()
                     df[label] = y
 
                     # Add new simple dataset to list
-
                     if label not in self.simple_dfs:
                         self.simple_dfs[label] = list()
                         self.simple_dfs[label].append(df)
@@ -384,18 +379,24 @@ class File:
 
         for label, data_sets in self.simple_dfs.items():
             for data_set in data_sets:
-
-                model, train_score, test_score, over_fitting, X, y_test, y_test_hat = Predictions.predict(label, data)
+                data = data_set.copy()
+                model, train_score, test_score, over_fitting, X, y_test, y_test_hat = Predictions.predict(label,
+                                                                                                          data)
 
                 # Store the simple df evaluation in a dataframe and in a list
-                self.simple_dfs_evaluation[label] = self.simple_dfs_evaluation[label].append(
-                    {'File Name': self.name, "Test Score": test_score,
-                     "Train Score": train_score, "Potential Over Fitting": over_fitting,
-                     "Initial Row Count": len(self.raw_df.index),
-                     "Initial Feature Count": len(self.raw_df.columns) - 1, "Processed Row Count": len(X),
-                     "Processed Feature Count": X.shape[1], "Features": [feature for feature in features]},
+                self.simple_dfs_evaluation = self.simple_dfs_evaluation.append(
+                    {
+                        "File Name": self.name,
+                        "Label": label,
+                        "Test Score": test_score,
+                        "Train Score": train_score,
+                        "Potential Over Fitting": over_fitting,
+                        "Initial Row Count": len(self.raw_df.index),
+                        "Initial Feature Count": len(self.raw_df.columns) - 1,
+                        "Processed Row Count": len(X),
+                        "Processed Feature Count": X.shape[1]
+                    },
                     ignore_index=True)
-
 
     # Reports
     def generate_reports(self):
@@ -427,17 +428,19 @@ class File:
             data.to_csv(Path.joinpath(self.folder, f"{label}_combined_evaluation_report.csv"), index=False)
 
         # Report the dataframes for simple df
-        for label in self.simple_dfs["Label"].unique():
+        for label, data_sets in self.simple_dfs.items():
+
             if self.simple_df_folder is None:
                 continue
-            data = Data_Frame_Helper.get_label_data(self.simple_dfs, label)
-            counter = 0
 
-            for simple_df in data:
-                if simple_df.empty:
+            counter = 0
+            for data_set in data_sets:
+                if data_set.empty:
+                    if Config.DEBUG:
+                        logging.debug("Dataset is empty! Skipping")
                     continue
 
-                simple_df.to_csv(Path.joinpath(self.simple_df_folder, f"{label}_simple_df_{counter}.csv"))
+                data_set.to_csv(Path.joinpath(self.simple_df_folder, f"{label}_simple_df_{counter}.csv"))
                 counter += 1
 
         # Report the evaluations for simple df
@@ -458,18 +461,17 @@ class File:
         for label in self.split_evaluation_results["Label"].unique():
             data = Data_Frame_Helper.get_label_data(self.split_evaluation_results, label)
             data['split'] = True
-            compare_evaluations = compare_evaluations[label].append(data)
+            compare_evaluations = compare_evaluations.append(data)
 
         for label in self.evaluation_results["Label"].unique():
             data = Data_Frame_Helper.get_label_data(self.evaluation_results, label)
             data['split'] = False
-            compare_evaluations = compare_evaluations[label].append(data)
+            compare_evaluations = compare_evaluations.append(data)
 
         for label in self.simple_dfs_evaluation["Label"].unique():
             data = Data_Frame_Helper.get_label_data(self.simple_dfs_evaluation, label)
-
             data['split'] = False
-            compare_evaluations[label] = compare_evaluations[label].append(data)
+            compare_evaluations = compare_evaluations.append(data)
 
         return compare_evaluations
 
@@ -481,8 +483,8 @@ class File:
         """
         self.__plot_predicted_values(True)
         self.__plot_predicted_values(False)
-        self.__plot_feature_importance()
-        self.__plot_feature_to_label_correlation()
+        # self.__plot_feature_importance()
+        # self.__plot_feature_to_label_correlation()
         self.__plot_pca_analysis()
         self.__plot_pca_analysis_scatter()
         self.__plot_simple_df_test_scores()
@@ -495,14 +497,6 @@ class File:
         try:
             for label in self.simple_dfs_evaluation["Label"].unique():
                 data = self.simple_dfs_evaluation[self.simple_dfs_evaluation["Label"] == label].copy()
-                data = data.append(
-                    {
-                        'Test Score': self.evaluation_results[label]['Test Score'].values[0],
-                        'Features': "",
-                        'Processed Feature Count': self.evaluation_results[label]['Processed Feature Count'].values[0]
-                    },
-                    ignore_index=True)
-
                 ax = sns.barplot(x="Processed Feature Count", y="Test Score", data=data)
                 ax.set(xlabel='Features', ylabel='Test Score')
                 ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
@@ -551,7 +545,6 @@ class File:
         for label in self.feature_importances["Label"].unique():
 
             data = Data_Frame_Helper.get_label_data(self.feature_importances, label)
-
             indices = data[data['Gini-importance'].gt(0.01)].index
             feature_importance = data.T[indices]
 
@@ -576,7 +569,7 @@ class File:
 
             data = Data_Frame_Helper.get_label_data(self.feature_importances, label)
 
-            indices = data[data['Gini-importance'].gt(0.01)].index  #
+            indices = data[data['Gini-importance'].gt(0.01)].index
             feature_importance = data.T[indices]
 
             important_features = []
@@ -603,8 +596,9 @@ class File:
         Plots all features and their weight
         """
         try:
-            for label in self.pca_components["Label"].unique():
-                data = Data_Frame_Helper.get_label_data(self.pca_components, label)
+            for label, data in self.pca_components.items():
+                if data is None:
+                    continue
 
                 features = range(data.n_components_)
                 plt.bar(features, data.explained_variance_ratio_, color='black')
@@ -629,10 +623,11 @@ class File:
         """
 
         try:
-            for label in self.pca_components_data_frames["Label"].unique():
-                data = Data_Frame_Helper.get_label_data(self.pca_components_data_frames, label)
-                temp_data = data.copy()
+            for label, data in self.pca_components_data_frames.items():
+                if data.empty:
+                    continue
 
+                temp_data = data.copy()
                 temp_data[label] = np.log(temp_data[label])
 
                 ax = sns.scatterplot(x=data[0], y=data[1],
@@ -653,6 +648,8 @@ class File:
         """
         Calculates the feature importance for the given model
         """
+
+        # TODO: Fix mixing of all importances
         feats = {}  # a dict to hold feature_name: feature_importance
         for feature, importance in zip(df.columns, model.feature_importances_):
             feats[feature] = importance  # add the name/value pair

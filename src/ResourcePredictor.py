@@ -58,7 +58,7 @@ if __name__ == '__main__':
         tool.generate_overview_data_sets()
         tool.prepare_additional_files()
         tool.evaluate_additional_files()
-        tool.create_simple_data_frames()
+        tool.create_simple_data_sets()
         tool.generate_overview_data_sets()
         tool.calculate_tool_statistics()
         tool.generate_reports()

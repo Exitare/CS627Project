@@ -369,7 +369,7 @@ def __prediction_score_on_average_across_versions():
     NOT including the merged files
     """
     try:
-        tool_avg_scores = pd.DataFrame(columns=["Label", "Tool", "Test Score (avg)", "Versions", " Average Rows"])
+        tool_avg_scores = pd.DataFrame(columns=["Label", "Tool", "Test Score", "Versions", "Average Rows"])
         for tool in Runtime_Datasets.VERIFIED_TOOLS:
 
             test_scores = pd.DataFrame(columns=["Label", "File", "Test Score"])
@@ -382,17 +382,19 @@ def __prediction_score_on_average_across_versions():
 
             for file in files:
                 for label in file.evaluation_results["Label"].unique():
-                    if label in file.evaluation_results:
-                        test_scores = test_scores.append(
-                            {
-                                "Label": label,
-                                "File": file.name,
-                                "Test Score": file.evaluation_results[label]["Test Score"]
-                            }, ignore_index=True
-                        )
-                        rows += file.get_pre_processed_df_statistics()[1]
-                        file_count += 1
+                    data = Data_Frame_Helper.get_label_data(file.evaluation_results, label)
+                    if data.empty:
+                        continue
+                    test_scores = test_scores.append(
+                        {
+                            "Label": label,
+                            "File": file.name,
+                            "Test Score": data["Test Score"].values[0]
+                        }, ignore_index=True
+                    )
 
+                    rows += file.get_pre_processed_df_statistics()[1]
+                    file_count += 1
 
             # Merge gathered data together
             for label in test_scores["Label"].unique():
@@ -400,11 +402,15 @@ def __prediction_score_on_average_across_versions():
                     {
                         "Label": label,
                         "Tool": tool.name,
-                        "Test Score": file.evaluation_results[label].mean(),
+                        "Test Score": test_scores[test_scores["Label"] == label]["Test Score"].mean(),
                         "Versions": int(file_count),
                         "Average Rows": int(rows / file_count)
                     }, ignore_index=True)
 
+        print("Tool avg")
+        print(tool_avg_scores)
+        tool_avg_scores.to_csv(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"tools_test_score_on_average.csv"))
+        input()
         # Plotting
         ax = sns.violinplot(data=tool_avg_scores, x="Label", y="Test Score")
         ax.legend(bbox_to_anchor=(1.02, 1), loc=2)
@@ -522,8 +528,11 @@ def __count_best_split():
     split_df = pd.DataFrame(columns=["Split", "Count", "Label"])
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         for file in tool.verified_files:
-            for label, data in file.split_evaluation_results.items():
+            for label in file.split_evaluation_results["Label"].unique():
                 split: int = file.get_best_performing_split(label)
+
+                if split is None:
+                    continue
 
                 # Add row if dataframe is empty
                 if split_df.empty:
@@ -542,7 +551,7 @@ def __count_best_split():
     split_df = split_df.loc[split_df['Count'] != 0]
 
     if not split_df.empty:
-        ax = sns.barplot(x="Split", y="Count", hue="Label", data=split_df)
+        ax = sns.violinplot(x="Split", y="Count", hue="Label", data=split_df)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
         fig = ax.get_figure()
 

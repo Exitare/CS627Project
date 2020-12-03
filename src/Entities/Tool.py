@@ -160,13 +160,15 @@ class Tool:
                 file.pca_analysis(label)
                 file.evaluated = True
 
-    def create_simple_data_frames(self):
+    def create_simple_data_sets(self):
         """
         Creates the simple data frame for each file, using the best performing tool as reference
         """
         for file in self.verified_files:
-            logging.info(f"Creating simple data from for file {file.name}")
+            logging.info(f"Creating simple data sets from for version {file.name}")
             file.create_simple_data_set()
+            file.evaluate_simple_data_set()
+            # TODO: add violin plot for test score distribution
 
     def __prepare_best_performing_version_merged_file(self):
         """
@@ -301,6 +303,7 @@ class Tool:
                 if data.empty:
                     continue
 
+                # TODO: Check correlation calculation
                 self.statistics = self.statistics.append(
                     {
                         "Data": "Whole",
