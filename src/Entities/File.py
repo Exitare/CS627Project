@@ -84,7 +84,7 @@ class File:
         # Contains the features importances for each file
         self.feature_importances = pd.DataFrame()
         # Contains the pca components with supporting functions for all labels
-        self.pca_components = dict()  # TODO: maybe error prone
+        self.pca_components = dict()
         # Contains all pca components as df for each label
         self.pca_components_data_frames = dict()
         # Contains all simple dfs. Needs to be a dict, because simple dfs needs to be created for a target value
@@ -356,9 +356,13 @@ class File:
                                                   random_state=1)
 
                 # Create simple data sets
-                # TODO: Percentage not fixed count
-                for i in range(5, 6):
-                    selector = RFE(estimator, n_features_to_select=i, step=1)
+                for i in range(10, 20, 10):
+                    features_to_select: int = int(len(X.columns) * (i / 100))
+                    print("Features to select")
+                    print(len(X.columns))
+                    print(features_to_select)
+
+                    selector = RFE(estimator, n_features_to_select=features_to_select, step=1)
                     selector = selector.fit(X, y)
                     df = X[X.columns[selector.get_support(indices=True)]].copy()
                     df[label] = y

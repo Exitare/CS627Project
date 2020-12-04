@@ -1,161 +1,74 @@
 import pandas as pd
-from Services.Configuration.Config import Config
-from RuntimeContants import Runtime_Datasets, Runtime_Folders
+from RuntimeContants import Runtime_Folders
 import seaborn as sns
 import matplotlib.pyplot as plt
 from pathlib import Path
-from Services.Helper import Data_Frame_Helper
+from Services.Statistics import Tool_Statistics
+import numpy as np
 
 sns.set(style="whitegrid")
 
 
 class ToolStatistics:
-    all_tools_test_score_evaluation = pd.DataFrame()
+    all_tools_evaluations = pd.DataFrame()
     all_tools_performance_difference = pd.DataFrame(columns=["Tool", "Difference", 'Label'])
     multi_tools_performance_difference = pd.DataFrame(columns=["Tool", "Difference", 'Label'])
     whole_data_set_test_scores = pd.DataFrame(columns=["Source", "Tool", "Label", "Mean", "Median", "Correlation"])
     simple_data_set_test_scores = pd.DataFrame(columns=["Source", "Tool", "Label", "Mean", "Median", "Correlation"])
+    all_merged_files_evaluations = pd.DataFrame()
 
     def __init__(self):
         """
         All tool statistic calculation are done here. No plotting!
         """
-        self.__gather_all_tool_evaluations()
-        self.__calculate_tool_performance_difference()
-        self.__calculate_simple_data_set_statistics()
-        self.__calculate_whole_data_set_statistics()
 
-    def __gather_all_tool_evaluations(self):
+        self.all_tools_evaluations = Tool_Statistics.get_all_tool_evaluations()
+        self.all_tools_performance_difference, self.multi_tools_performance_difference = \
+            Tool_Statistics.calculate_tool_performance_difference()
+        self.whole_data_set_test_scores = Tool_Statistics.calculate_simple_data_set_statistics()
+        self.simple_data_set_test_scores = Tool_Statistics.calculate_whole_data_set_statistics()
+        self.all_merged_files_evaluations = Tool_Statistics.get_all_merged_files_evaluations()
+
+    def write_csv_files(self):
         """
-        Concat all evaluations into one big file
+        Write all datasets to the evaluation folder
         """
-        for tool in Runtime_Datasets.VERIFIED_TOOLS:
-            for file in tool.verified_files:
-                data = file.simple_dfs_evaluation.copy()
-                data["Origin"] = "Simple Data Set"
-                self.all_tools_test_score_evaluation = self.all_tools_test_score_evaluation.append(data)
+        self.all_merged_files_evaluations.to_csv(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"all_merged_files_evaluations.csv"), index=False)
 
-                data = file.evaluation_results.copy()
-                data["Origin"] = "Whole Data Set"
-                self.all_tools_test_score_evaluation = self.all_tools_test_score_evaluation.append(data)
+        self.all_tools_evaluations.to_csv(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"all_tools_evaluations.csv"), index=False)
 
-                data = file.split_evaluation_results.copy()
-                data["Origin"] = "Split Data Set"
-                self.all_tools_test_score_evaluation = self.all_tools_test_score_evaluation.append(data)
+        self.all_tools_performance_difference.to_csv(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"all_tools_performance_difference.csv"), index=False)
 
-    def __calculate_tool_performance_difference(self):
-        """
-        Calculates the difference between the best and worst performing version of each tool
-        """
+        self.multi_tools_performance_difference.to_csv(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"multi_tools_performance_difference.csv"), index=False)
 
-        for label in Config.LABELS:
-            for tool in Runtime_Datasets.VERIFIED_TOOLS:
+        self.whole_data_set_test_scores.to_csv(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_score_whole_data_sets.csv"), index=False)
 
-                if tool.get_best_performing_version(label) is None or tool.get_worst_performing_version(label) is None:
-                    continue
-
-                best_performing_version = tool.get_best_performing_version(label)['Test Score']
-                worst_performing_version = tool.get_worst_performing_version(label)[
-                    'Test Score']
-
-                if best_performing_version is None or worst_performing_version is None:
-                    continue
-
-                difference = best_performing_version - worst_performing_version
-                self.all_tools_performance_difference = self.all_tools_performance_difference.append(
-                    {
-                        "Tool": tool.name,
-                        "Difference": difference,
-                        "Label": label
-                    },
-                    ignore_index=True)
-
-                if len(tool.verified_files) > 1:
-                    self.multi_tools_performance_difference = self.multi_tools_performance_difference.append(
-                        {
-                            "Tool": tool.name,
-                            "Difference": difference,
-                            "Label": label
-                        },
-                        ignore_index=True)
-
-    def __calculate_whole_data_set_statistics(self):
-        """
-        Calculates the median, mean and correlation of all whole data sets
-        """
-
-        # Gathers all test score statistics
-        for tool in Runtime_Datasets.VERIFIED_TOOLS:
-            for file in tool.verified_files:
-                for label in file.evaluation_results["Label"].unique():
-                    data = Data_Frame_Helper.get_label_data(file.evaluation_results, label)
-                    if data.empty:
-                        continue
-
-                    self.whole_data_set_test_scores = self.whole_data_set_test_scores.append(
-                        {
-                            "Source": "Whole Dataset",
-                            "Label": label,
-                            "Tool": tool,
-                            "Mean": data["Test Score"].mean(),
-                            "Median": data["Test Score"].median(),
-                            "Correlation": data["Test Score"].astype(float).corr(
-                                data["Processed Feature Count"].astype(float))
-                        }, ignore_index=True)
-
-    def __calculate_simple_data_set_statistics(self):
-        """
-        Calculates the statistics for the simple data sets
-        """
-
-        # Gather data
-        temp_df = pd.DataFrame(
-            columns=["Label", "Tool", "File Name", "Train Score", "Test Score", "Potential Over Fitting",
-                     "Initial Row Count", "Initial Feature Count", "Processed Row Count", "Processed Feature Count"])
-        for tool in Runtime_Datasets.VERIFIED_TOOLS:
-            for file in tool.verified_files:
-                for label in file.simple_dfs_evaluation["Label"].unique():
-                    data = Data_Frame_Helper.get_label_data(file.simple_dfs_evaluation, label)
-                    temp_df = temp_df.append(data)
-                    temp_df["Tool"].fillna(tool.name, inplace=True)
-
-        temp_df = temp_df.reset_index()
-        # remove newly created index column
-        del temp_df['index']
-
-        # Split into labels
-        for label in temp_df["Label"].unique():
-            data = temp_df.loc[temp_df['Label'] == label]
-
-            if data.empty:
-                continue
-
-            for tool in data["Tool"].unique():
-                tool_data = data[data["Tool"] == tool]
-                self.simple_data_set_test_scores = self.simple_data_set_test_scores.append(
-                    {
-                        "Source": "Simple Dataset",
-                        "Label": label,
-                        "Tool": tool,
-                        "Mean": tool_data["Test Score"].mean(),
-                        "Median": tool_data["Test Score"].median(),
-                        "Correlation": tool_data["Test Score"].astype(float).corr(
-                            tool_data["Processed Feature Count"].astype(float))
-                    }, ignore_index=True)
+        self.simple_data_set_test_scores.to_csv(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_score_simple_data_sets.csv"), index=False)
 
     def plot(self):
         """
         Calls all plot functions
         """
         self.__plot_tools_performance_difference()
-        self.__plot_test_scores()
+        self.__plot_r2_scores()
+        self.__plot_merged_tools_evaluations()
 
     def __plot_tools_performance_difference(self):
         """
         Plots the tools performance difference
         """
         if not self.all_tools_performance_difference.empty:
-            ax = sns.violinplot(x="Label", y="Difference", data=self.all_tools_performance_difference)
+            data = self.all_tools_performance_difference[np.abs(
+                self.all_tools_performance_difference["Difference"] - self.all_tools_performance_difference[
+                    "Difference"].mean()) <= (3 * self.all_tools_performance_difference["Difference"].std())]
+
+            ax = sns.violinplot(x="Label", y="Difference", data=data)
             fig = ax.get_figure()
 
             fig.savefig(
@@ -165,7 +78,11 @@ class ToolStatistics:
             plt.close('all')
 
         if not self.multi_tools_performance_difference.empty:
-            ax = sns.violinplot(x="Label", y="Difference", data=self.multi_tools_performance_difference)
+            data = self.multi_tools_performance_difference[np.abs(
+                self.multi_tools_performance_difference["Difference"] - self.multi_tools_performance_difference[
+                    "Difference"].mean()) <= (3 * self.multi_tools_performance_difference["Difference"].std())]
+
+            ax = sns.violinplot(x="Label", y="Difference", data=data)
             fig = ax.get_figure()
 
             fig.savefig(
@@ -174,19 +91,32 @@ class ToolStatistics:
             fig.clf()
             plt.close('all')
 
-    def __plot_test_scores(self):
+    def __plot_r2_scores(self):
         """
         Plot all r2 scores for all tools
         """
 
-        for origin in self.all_tools_test_score_evaluation["Origin"]:
-            data = self.all_tools_test_score_evaluation[self.all_tools_test_score_evaluation["Origin"] == origin].copy()
+        for origin in self.all_tools_evaluations["Origin"]:
+            data = self.all_tools_evaluations[self.all_tools_evaluations["Origin"] == origin].copy()
 
             ax = sns.violinplot(x="Label", y="Test Score", data=data)
             fig = ax.get_figure()
 
             fig.savefig(
-                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"{origin}_r2_scores.jpg"),
+                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores_{origin}.jpg"),
                 bbox_inches="tight")
             fig.clf()
             plt.close('all')
+
+    def __plot_merged_tools_evaluations(self):
+        """
+        Plot the Test Score distribution for only merged versions
+        """
+        ax = sns.violinplot(x="Label", y="Test Score", data=self.all_merged_files_evaluations)
+        fig = ax.get_figure()
+
+        fig.savefig(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_score_merged_version.jpg"),
+            bbox_inches="tight")
+        fig.clf()
+        plt.close('all')

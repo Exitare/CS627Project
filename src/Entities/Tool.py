@@ -352,7 +352,7 @@ class Tool:
             data = pd.melt(data, id_vars=['Data'], value_vars=['Mean', 'Median', 'Correlation'])
             data["value"].fillna(0)
 
-            ax = sns.barplot(x="variable", y="value", hue="Data", data=data)
+            ax = sns.violinplot(x="variable", y="value", hue="Data", data=data)
             ax.set(xlabel="Statistics", ylabel='Value')
             fig = ax.get_figure()
 

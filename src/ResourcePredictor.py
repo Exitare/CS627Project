@@ -75,6 +75,7 @@ if __name__ == '__main__':
 
     print("ToolStatistics")
     tool_stats = ToolStatistics()
+    tool_stats.write_csv_files()
     tool_stats.plot()
 
     # Tool_Statistics.create_additional_data()
