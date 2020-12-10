@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from Services.Statistics import Tool_Statistics
 import numpy as np
+import plotly.express as px
 
 sns.set(style="whitegrid")
 
@@ -59,6 +60,21 @@ class ToolStatistics:
         self.__plot_r2_scores()
         self.__plot_merged_tools_evaluations()
 
+    def __plot_tools_above_threshold(self):
+        for origin in self.all_tools_evaluations["Origin"]:
+            data = self.all_tools_evaluations[self.all_tools_evaluations["Origin"] == origin].copy()
+
+            data = data[data["Test Score"] > 0.7]
+
+            ax = sns.barplot(x="Label", y="Test Score", data=data)
+            fig = ax.get_figure()
+
+            fig.savefig(
+                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores_{origin}.jpg"),
+                bbox_inches="tight")
+            fig.clf()
+            plt.close('all')
+
     def __plot_tools_performance_difference(self):
         """
         Plots the tools performance difference
@@ -68,13 +84,14 @@ class ToolStatistics:
                 self.all_tools_performance_difference["Difference"] - self.all_tools_performance_difference[
                     "Difference"].mean()) <= (3 * self.all_tools_performance_difference["Difference"].std())]
 
-            ax = sns.violinplot(x="Label", y="Difference", data=data)
-            fig = ax.get_figure()
+            fig = px.violin(data, y="Difference", x="Label", box=True, points="all",
+                            hover_data=data.columns)
 
-            fig.savefig(
-                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_all_tools.jpg"),
-                bbox_inches="tight")
-            fig.clf()
+            fig.write_html(
+                str(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_all_tools.html")))
+            fig.write_image(str(
+                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_all_tools.jpg")))
+
             plt.close('all')
 
         if not self.multi_tools_performance_difference.empty:
@@ -82,13 +99,14 @@ class ToolStatistics:
                 self.multi_tools_performance_difference["Difference"] - self.multi_tools_performance_difference[
                     "Difference"].mean()) <= (3 * self.multi_tools_performance_difference["Difference"].std())]
 
-            ax = sns.violinplot(x="Label", y="Difference", data=data)
-            fig = ax.get_figure()
+            fig = px.violin(data, y="Difference", x="Label", box=True, points="all",
+                            hover_data=data.columns)
 
-            fig.savefig(
-                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_multi_tools.jpg"),
-                bbox_inches="tight")
-            fig.clf()
+            fig.write_html(
+                str(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_multi_tools.html")))
+            fig.write_image(str(
+                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"test_score_difference_multi_tools.jpg")))
+
             plt.close('all')
 
     def __plot_r2_scores(self):
@@ -99,24 +117,44 @@ class ToolStatistics:
         for origin in self.all_tools_evaluations["Origin"]:
             data = self.all_tools_evaluations[self.all_tools_evaluations["Origin"] == origin].copy()
 
-            ax = sns.violinplot(x="Label", y="Test Score", data=data)
-            fig = ax.get_figure()
+            data = data[np.abs(data["Test Score"] - data["Test Score"].mean()) <= (3 * data["Test Score"].std())]
 
-            fig.savefig(
-                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores_{origin}.jpg"),
-                bbox_inches="tight")
-            fig.clf()
+            fig = px.violin(data, x="Label", y="Test Score", box=True, points="all",
+                            hover_data=data.columns)
+
+            fig.write_html(
+                str(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores_{origin}.html")))
+            fig.write_image(str(
+                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores_{origin}.jpg")))
+
             plt.close('all')
+
+        # Remove outliers
+        data = self.all_tools_evaluations[
+            np.abs(self.all_tools_evaluations["Test Score"] - self.all_tools_evaluations["Test Score"].mean()) <= (
+                    3 * self.all_tools_evaluations["Test Score"].std())]
+
+        fig = px.violin(data, x="Label", y="Test Score", box=True, points="all",
+                        hover_data=data.columns)
+
+        fig.write_html(
+            str(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores.html")))
+        fig.write_image(str(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores.jpg")))
+
+        plt.close('all')
 
     def __plot_merged_tools_evaluations(self):
         """
         Plot the Test Score distribution for only merged versions
         """
-        ax = sns.violinplot(x="Label", y="Test Score", data=self.all_merged_files_evaluations)
-        fig = ax.get_figure()
 
-        fig.savefig(
-            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_score_merged_version.jpg"),
-            bbox_inches="tight")
-        fig.clf()
+        fig = px.violin(self.all_merged_files_evaluations, x="Label", y="Test Score", box=True, points="all",
+                        hover_data=self.all_merged_files_evaluations.columns)
+
+        fig.write_html(
+            str(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_score_merged_version.html")))
+        fig.write_image(str(
+            Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_score_merged_version.jpg")))
+
         plt.close('all')

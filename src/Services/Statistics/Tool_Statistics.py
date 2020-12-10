@@ -146,7 +146,7 @@ def calculate_simple_data_set_statistics():
                 {
                     "Source": "Simple Dataset",
                     "Label": label,
-                    "Tool": tool.name,
+                    "Tool": tool_data["Tool"],
                     "Mean": tool_data["Test Score"].mean(),
                     "Median": tool_data["Test Score"].median(),
                     "Correlation": tool_data["Test Score"].astype(float).corr(
@@ -172,3 +172,12 @@ def get_all_merged_files_evaluations():
             all_merged_files_evaluations = all_merged_files_evaluations.append(file.split_evaluation_results)
 
     return all_merged_files_evaluations
+
+
+def get_tools_above_threshold():
+    data = pd.DataFrame()
+
+    for tool in Runtime_Datasets.VERIFIED_TOOLS:
+        versions = pd.DataFrame()
+
+    return pd.DataFrame()
