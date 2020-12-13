@@ -11,7 +11,7 @@ import seaborn as sns
 import shutil
 import matplotlib.pyplot as plt
 from Services.Helper import Data_Frame_Helper
-
+import numpy as np
 
 class Tool:
     def __init__(self, name: str):
@@ -123,6 +123,8 @@ class Tool:
                 file.predict(label)
                 file.predict_splits(label)
                 file.pca_analysis(label)
+                # TODO: Readd that
+                # file.k_means(label)
 
             # Copy the source file to the results folder
             # If its a merged file use the virtual one.
@@ -183,7 +185,8 @@ class Tool:
             if data.empty:
                 continue
 
-            best_performing = data[data['Test Score'] > 0.7]['File Name'].tolist()
+            quantile = data["Test Score"].quantile(0.7)
+            best_performing = data[data['Test Score'] >= quantile]['File Name'].tolist()
 
             for file in self.verified_files:
                 if file.name in best_performing and not file.merged_file:
@@ -348,6 +351,9 @@ class Tool:
         """
         for label in self.statistics['Label'].unique():
             data = Data_Frame_Helper.get_label_data(self.statistics, label)
+            # Remove outliers
+
+            data = data[np.abs(data["Mean"] - data["Mean"].mean()) <= (3 * data["Mean"].std())]
 
             data = pd.melt(data, id_vars=['Data'], value_vars=['Mean', 'Median', 'Correlation'])
             data["value"].fillna(0)

@@ -6,6 +6,7 @@ from pathlib import Path
 from Services.Statistics import Tool_Statistics
 import numpy as np
 import plotly.express as px
+from Services.Helper import Data_Frame_Helper
 
 sns.set(style="whitegrid")
 
@@ -58,6 +59,8 @@ class ToolStatistics:
         """
         self.__plot_tools_performance_difference()
         self.__plot_r2_scores()
+        self.__plot_r2_scores_by_mean()
+        self.__plot_r2_scores_by_median()
         self.__plot_merged_tools_evaluations()
 
     def __plot_tools_above_threshold(self):
@@ -143,6 +146,74 @@ class ToolStatistics:
             Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores.jpg")))
 
         plt.close('all')
+
+    def __plot_r2_scores_by_mean(self):
+        """
+
+        """
+        for label in self.all_tools_evaluations["Label"].unique():
+            data = Data_Frame_Helper.get_label_data(self.all_tools_evaluations, label)
+
+            data = data[np.abs(data["Test Score"] - data["Test Score"].mean()) <= (3 * data["Test Score"].std())]
+
+            tool_mean = pd.DataFrame(columns=["Label", "Tool", "Mean"])
+
+            for tool in data["Tool"].unique():
+                tool_data = data[data["Tool"] == tool].copy()
+
+                tool_mean = tool_mean.append(
+                    {
+                        "Label": label,
+                        "Tool": tool,
+                        "Mean": tool_data["Test Score"].mean()
+                    },
+                    ignore_index=True
+                )
+
+            tool_mean.to_csv()
+
+            fig = px.violin(tool_mean, x="Label", y="Mean", box=True, points="all",
+                            hover_data=tool_mean.columns)
+
+            fig.write_html(
+                str(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores_by_mean.html")))
+            fig.write_image(str(
+                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores_by_mean.jpg")))
+
+            plt.close('all')
+
+    def __plot_r2_scores_by_median(self):
+        """
+
+        """
+        for label in self.all_tools_evaluations["Label"].unique():
+            data = Data_Frame_Helper.get_label_data(self.all_tools_evaluations, label)
+
+            data = data[np.abs(data["Test Score"] - data["Test Score"].mean()) <= (3 * data["Test Score"].std())]
+
+            tool_mean = pd.DataFrame(columns=["Label", "Tool", "Median"])
+
+            for tool in data["Tool"].unique():
+                tool_data = data[data["Tool"] == tool].copy()
+
+                tool_mean = tool_mean.append(
+                    {
+                        "Label": label,
+                        "Tool": tool,
+                        "Median": tool_data["Test Score"].median()
+                    },
+                    ignore_index=True
+                )
+
+            fig = px.violin(tool_mean, x="Label", y="Median", box=True, points="all",
+                            hover_data=tool_mean.columns)
+
+            fig.write_html(
+                str(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores_by_median.html")))
+            fig.write_image(str(
+                Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores_by_median.jpg")))
+
+            plt.close('all')
 
     def __plot_merged_tools_evaluations(self):
         """

@@ -14,6 +14,7 @@ from Services.Predictions import Predictions
 from Services.Helper import Data_Frame_Helper
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_selection import RFE
+from sklearn.cluster import KMeans
 
 sns.set()
 
@@ -83,8 +84,10 @@ class File:
         self.predicted_results = pd.DataFrame(columns=["Label", 'y', 'y_hat'])
         # Contains the features importances for each file
         self.feature_importances = pd.DataFrame()
-        # Contains the pca components with supporting functions for all labels
-        self.pca_components = dict()
+        # Contains the pca object with supporting functions for all labels
+        self.pca = dict()
+        # Contains the pca scores calculated
+        self.pca_scores = dict()
         # Contains all pca components as df for each label
         self.pca_components_data_frames = dict()
         # Contains all simple dfs. Needs to be a dict, because simple dfs needs to be created for a target value
@@ -309,16 +312,43 @@ class File:
             y = df[label]
             del df[label]
             X = df
-            X = PreProcessing.normalize_X(X)
-            X = PreProcessing.variance_selection(X)
 
-            self.pca_components[label] = PCA()
-            X = self.pca_components[label].fit_transform(X)
-            self.pca_components_data_frames[label] = pd.DataFrame(X)
-            self.pca_components_data_frames[label][label] = pd.Series(y.values)
+            pca = PCA()
+            pca_data = pca.fit(X)
+            component_id = next(x for x, val in enumerate(pca.explained_variance_ratio_.cumsum()) if val > 0.8)
+            pca = PCA(n_components=component_id + 1)
+            pca_scores = pca.fit_transform(X)
+
+            self.pca[label] = pca
+            self.pca_scores[label] = pca_scores
 
         except BaseException as ex:
             logging.exception(ex)
+
+    def k_means(self, label: str):
+        """
+
+        """
+        inertias = []
+
+        # Creating 10 K-Mean models while varying the number of clusters (k)
+
+        data = self.pca[label]
+
+        for k in range(1, 6):
+            model = KMeans(n_clusters=k)
+
+            # Fit model to samples
+            model.fit(data.n_components_.iloc[:, :3])
+
+            # Append the inertia to the list of inertias
+            inertias.append(model.inertia_)
+
+        plt.plot(range(1, 10), inertias, '-p', color='gold')
+        plt.xlabel('number of clusters, k')
+        plt.ylabel('inertia')
+
+        plt.show()
 
     def get_best_performing_split(self, label: str):
         """
@@ -356,11 +386,8 @@ class File:
                                                   random_state=1)
 
                 # Create simple data sets
-                for i in range(10, 20, 10):
+                for i in range(20, 100, 20):
                     features_to_select: int = int(len(X.columns) * (i / 100))
-                    print("Features to select")
-                    print(len(X.columns))
-                    print(features_to_select)
 
                     selector = RFE(estimator, n_features_to_select=features_to_select, step=1)
                     selector = selector.fit(X, y)
@@ -600,12 +627,12 @@ class File:
         Plots all features and their weight
         """
         try:
-            for label, data in self.pca_components.items():
-                if data is None:
+            for label, pca in self.pca.items():
+                if pca is None:
                     continue
 
-                features = range(data.n_components_)
-                plt.bar(features, data.explained_variance_ratio_, color='black')
+                features = range(pca.n_components_)
+                plt.bar(features, pca.explained_variance_ratio_, color='black')
                 plt.xlabel('PCA features')
                 plt.ylabel('variance %')
                 plt.xticks(features)

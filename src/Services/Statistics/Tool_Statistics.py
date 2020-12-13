@@ -21,23 +21,26 @@ def get_all_tool_evaluations():
     Concat all evaluations into one big file
     """
 
-    all_tools_test_score_evaluation = pd.DataFrame()
+    all_tools_evaluation = pd.DataFrame()
 
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         for file in tool.verified_files:
             data = file.simple_dfs_evaluation.copy()
             data["Origin"] = "Simple Data Set"
-            all_tools_test_score_evaluation = all_tools_test_score_evaluation.append(data)
+            data["Tool"] = tool.name
+            all_tools_evaluation = all_tools_evaluation.append(data)
 
             data = file.evaluation_results.copy()
             data["Origin"] = "Whole Data Set"
-            all_tools_test_score_evaluation = all_tools_test_score_evaluation.append(data)
+            data["Tool"] = tool.name
+            all_tools_evaluation = all_tools_evaluation.append(data)
 
             data = file.split_evaluation_results.copy()
             data["Origin"] = "Split Data Set"
-            all_tools_test_score_evaluation = all_tools_test_score_evaluation.append(data)
+            data["Tool"] = tool.name
+            all_tools_evaluation = all_tools_evaluation.append(data)
 
-    return all_tools_test_score_evaluation
+    return all_tools_evaluation
 
 
 def calculate_tool_performance_difference():
