@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from Services.Helper import Data_Frame_Helper
 import numpy as np
 
+
 class Tool:
     def __init__(self, name: str):
         self.name = name
@@ -171,35 +172,6 @@ class Tool:
             file.create_simple_data_set()
             file.evaluate_simple_data_set()
             # TODO: add violin plot for test score distribution
-
-    def __prepare_best_performing_version_merged_file(self):
-        """
-        Prepares a merged data set which contains only data from version with a test score > 0.6
-        """
-
-        for label in self.files_label_overview["Label"].unique():
-            best_versions_df = []
-
-            data = Data_Frame_Helper.get_label_data(self.files_label_overview, label)
-
-            if data.empty:
-                continue
-
-            quantile = data["Test Score"].quantile(0.7)
-            best_performing = data[data['Test Score'] >= quantile]['File Name'].tolist()
-
-            for file in self.verified_files:
-                if file.name in best_performing and not file.merged_file:
-                    best_versions_df.append(file.raw_df)
-
-            if len(best_versions_df) <= 1:
-                if Config.DEBUG:
-                    logging.debug("Best performing data sets length is <= 1. Skipping...")
-                return
-
-            best_version_files_raw_df = pd.concat(best_versions_df, join='inner')
-            best_version_merged_file = File(f"{label}_best_version_merged_file", self.folder, best_version_files_raw_df)
-            self.verified_files.append(best_version_merged_file)
 
     def generate_reports(self):
         """
@@ -388,6 +360,8 @@ class Tool:
             fig.clf()
             plt.close('all')
 
+    #### Merged files
+
     def __add_merged_file(self):
         """
         Merges the raw data sets of all verified versions into a big one.
@@ -401,3 +375,34 @@ class Tool:
         merged_files_raw_df = pd.concat(raw_df, join='inner')
         merged_file = File("merged_tool", self.folder, merged_files_raw_df)
         self.verified_files.append(merged_file)
+
+    def __prepare_best_performing_version_merged_file(self):
+        """
+        Prepares a merged data set which contains only data from version with a test score > 0.6
+        """
+
+        for label in self.files_label_overview["Label"].unique():
+            best_versions_df = []
+
+            data = Data_Frame_Helper.get_label_data(self.files_label_overview, label)
+
+            if data.empty:
+                continue
+
+            quantile = data["Test Score"].quantile(0.7)
+            best_performing = data[data['Test Score'] >= quantile]['File Name'].tolist()
+
+            for file in self.verified_files:
+                if file.name in best_performing and not file.merged_file:
+                    best_versions_df.append(file.raw_df)
+
+            if len(best_versions_df) <= 1:
+                if Config.DEBUG:
+                    logging.debug("Best performing data sets length is <= 1. Skipping...")
+                return
+
+            best_version_files_raw_df = pd.concat(best_versions_df, join='inner')
+            best_version_merged_file = File(f"{label}_best_version_merged_file", self.folder, best_version_files_raw_df)
+            self.verified_files.append(best_version_merged_file)
+
+    #### End Merged Files

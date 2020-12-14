@@ -125,6 +125,7 @@ class ToolStatistics:
             fig = px.violin(data, x="Label", y="Test Score", box=True, points="all",
                             hover_data=data.columns)
 
+            fig.update_layout(yaxis_range=[0, 2])
             fig.write_html(
                 str(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores_{origin}.html")))
             fig.write_image(str(
@@ -140,6 +141,7 @@ class ToolStatistics:
         fig = px.violin(data, x="Label", y="Test Score", box=True, points="all",
                         hover_data=data.columns)
 
+        fig.update_layout(yaxis_range=[0, 2])
         fig.write_html(
             str(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_scores.html")))
         fig.write_image(str(
@@ -223,6 +225,7 @@ class ToolStatistics:
         fig = px.violin(self.all_merged_files_evaluations, x="Label", y="Test Score", box=True, points="all",
                         hover_data=self.all_merged_files_evaluations.columns)
 
+        fig.update_layout(yaxis_range=[0, 2])
         fig.write_html(
             str(Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_score_merged_version.html")))
         fig.write_image(str(
