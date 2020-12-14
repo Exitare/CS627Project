@@ -27,7 +27,7 @@ def read_file(path: str):
     try:
         return pd.read_csv(f"{Config.DATA_RAW_DIRECTORY}/{path}")
     except OSError as ex:
-        if Config.VERBOSE:
+        if Config.DEBUG:
             print(ex)
         return None
 

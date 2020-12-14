@@ -23,7 +23,7 @@ def create_evaluation_folder():
     except OSError as ex:
         folder_management.warning(f"Could not create evaluation directory {path}")
         folder_management.warning("Stopping application")
-        if Config.DEBUG_MODE:
+        if Config.DEBUG:
             folder_management.warning(ex)
         sys.exit()
     else:
@@ -35,7 +35,7 @@ def remove_folder(path):
         shutil.rmtree(path)
     except OSError as ex:
         logging.warning(f"Could not delete folder {path}")
-        if Config.DEBUG_MODE:
+        if Config.DEBUG:
             logging.warning(ex)
 
 
@@ -69,7 +69,7 @@ def create_tool_folder(tool_name: str):
     except OSError as ex:
         folder_management.warning(f"The folder creation for tool {tool_name} failed.")
         folder_management.warning("The tool evaluation will be skipped!")
-        if Config.DEBUG_MODE:
+        if Config.DEBUG:
             folder_management.warning(ex)
         return None
     else:
@@ -91,7 +91,7 @@ def create_file_folder(tool_path: Path, file_name: str):
     except BaseException as ex:
         logging.warning(f"The folder creation for file {file_name} failed.")
         logging.warning("The file evaluation will be skipped!")
-        if Config.DEBUG_MODE:
+        if Config.DEBUG:
             logging.warning(ex)
         return None
 
@@ -109,7 +109,7 @@ def create_folder(path: Path):
     except BaseException as ex:
         logging.warning(f"The folder creation for file {path} failed.")
         logging.warning("The file evaluation will be skipped!")
-        if Config.DEBUG_MODE:
+        if Config.DEBUG:
             logging.warning(ex)
         return None
 
