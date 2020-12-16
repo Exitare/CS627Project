@@ -365,14 +365,17 @@ class Tool:
     def __add_merged_file(self):
         """
         Merges the raw data sets of all verified versions into a big one.
-        Assuming that all single files are valid this merged on should be valid too.
+        Assuming that all single files are valid this merged one should be valid too.
+        The new merged dataset is considered the raw data frame for the new create file object.
         :return:
         """
-        raw_df = []
+        merged_raw_df = []
         for file in self.verified_files:
-            raw_df.append(file.raw_df)
+            df = file.raw_df.copy()
+            df["Version"] = f"{file.version}"
+            merged_raw_df.append(df)
 
-        merged_files_raw_df = pd.concat(raw_df, join='inner')
+        merged_files_raw_df = pd.concat(merged_raw_df, join='inner')
         merged_file = File("merged_tool", self.folder, merged_files_raw_df)
         self.verified_files.append(merged_file)
 
@@ -394,7 +397,9 @@ class Tool:
 
             for file in self.verified_files:
                 if file.name in best_performing and not file.merged_file:
-                    best_versions_df.append(file.raw_df)
+                    df = file.raw_df.copy()
+                    df["Version"] = file.version
+                    best_versions_df.append(df)
 
             if len(best_versions_df) <= 1:
                 if Config.DEBUG:

@@ -40,6 +40,7 @@ class File:
 
         # Name of file with extension
         self.full_name = full_name
+        self.version = (os.path.splitext(self.full_name)[0].split("_"))[-1]
 
         if not self.merged_file:
             # Name of file without extension

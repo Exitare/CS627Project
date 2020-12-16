@@ -232,3 +232,23 @@ class ToolStatistics:
             Path.joinpath(Runtime_Folders.EVALUATION_DIRECTORY, f"r2_score_merged_version.jpg")))
 
         plt.close('all')
+
+    def __generate_df_tool_by_mean(self, data):
+        for label in self.all_tools_evaluations["Label"].unique():
+            data = Data_Frame_Helper.get_label_data(self.all_tools_evaluations, label)
+
+            data = data[np.abs(data["Test Score"] - data["Test Score"].mean()) <= (3 * data["Test Score"].std())]
+
+            tool_mean = pd.DataFrame(columns=["Label", "Tool", "Median"])
+
+            for tool in data["Tool"].unique():
+                tool_data = data[data["Tool"] == tool].copy()
+
+                tool_mean = tool_mean.append(
+                    {
+                        "Label": label,
+                        "Tool": tool,
+                        "Median": tool_data["Test Score"].median()
+                    },
+                    ignore_index=True
+                )

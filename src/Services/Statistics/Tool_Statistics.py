@@ -163,7 +163,7 @@ def get_all_merged_files_evaluations():
     """
     Gathers all merged files
     """
-    all_merged_files_evaluations = pd.DataFrame()
+    all_merged_files_evaluations = pd.DataFrame(columns=["Tool"])
 
     for tool in Runtime_Datasets.VERIFIED_TOOLS:
         for file in tool.verified_files:
@@ -173,14 +173,6 @@ def get_all_merged_files_evaluations():
             all_merged_files_evaluations = all_merged_files_evaluations.append(file.evaluation_results)
             all_merged_files_evaluations = all_merged_files_evaluations.append(file.simple_dfs_evaluation)
             all_merged_files_evaluations = all_merged_files_evaluations.append(file.split_evaluation_results)
+            all_merged_files_evaluations["Tool"].fillna(tool.name, inplace=True)
 
     return all_merged_files_evaluations
-
-
-def get_tools_above_threshold():
-    data = pd.DataFrame()
-
-    for tool in Runtime_Datasets.VERIFIED_TOOLS:
-        versions = pd.DataFrame()
-
-    return pd.DataFrame()
