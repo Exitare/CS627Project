@@ -1,7 +1,7 @@
 wheel==0.34.2
 Cython==0.29.21
 cycler==0.10.0
-joblib==0.14.1
+joblib==1.2.0
 kiwisolver==1.1.0
 numpy==1.18.1
 matplotlib==3.2.0
